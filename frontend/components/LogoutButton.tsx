@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth";
+import { getCsrfToken } from "@/lib/axios";
 
 interface LogoutButtonProps {
   className?: string;
@@ -19,35 +20,21 @@ export default function LogoutButton({ className }: LogoutButtonProps) {
     console.log("Starting logout process...");
 
     try {
-      // Use direct fetch request to clear HTTP-only cookies first
-      try {
-        const backendUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-        // Fix API path - ensure we're calling the correct endpoint
-        await fetch(`${backendUrl}/api/clear-session-cookies`, {
-          method: "GET",
-          credentials: "include", // Include cookies in the request
-        });
-        console.log("Server-side cookie clearing initiated");
-      } catch (clearError) {
-        console.error("Error clearing server-side cookies:", clearError);
-      }
-
-      // Then use our comprehensive logout utility
+      // Execute the logout function
       await logout();
-
-      // Redirect to login page
+      
+      console.log("Logout completed, redirecting...");
+      
+      // Redirect to login page after a short delay
       setTimeout(() => {
         // Force a complete page refresh to ensure all state is reset
         window.location.href = "/login";
-      }, 500);
+      }, 300);
     } catch (error) {
       console.error("Logout failed with error:", error);
 
       // Still redirect to login even if logout API fails
       window.location.href = "/login";
-    } finally {
-      setIsLoggingOut(false);
     }
   };
 
