@@ -19,6 +19,9 @@ const getCsrfTokenFromCookie = () => {
   return null;
 };
 
+// Export the function for direct use
+export { getCsrfTokenFromCookie };
+
 // Create axios instance with updated CORS configuration
 const instance: CustomAxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000",

@@ -11,16 +11,16 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    // Define role constants
     const ROLE_SUPERADMIN = 0;
     const ROLE_ADMIN = 1;
     const ROLE_USER = 2;
     
-
+    // Define role names mapping
     public static $roles = [
         self::ROLE_SUPERADMIN => 'superadmin',
         self::ROLE_ADMIN => 'admin',
         self::ROLE_USER => 'user',
-        
     ];
 
     protected $primaryKey = 'id_user';
@@ -54,6 +54,9 @@ class User extends Authenticatable
 
     protected $appends = ['role_name'];
 
+    /**
+     * Get the role name attribute
+     */
     public function getRoleNameAttribute()
     {
         return self::$roles[$this->role] ?? 'unknown';
@@ -64,5 +67,27 @@ class User extends Authenticatable
         $array = parent::toArray();
         $array['role_name'] = $this->role_name;
         return $array;
+    }
+
+    /**
+     * Define a method to check if user has a specific role
+     */
+    public function hasRole($role)
+    {
+        // If role is a string (name), convert to role ID
+        if (!is_numeric($role)) {
+            $roleMap = array_flip(self::$roles);
+            $role = $roleMap[strtolower($role)] ?? -1;
+        }
+        
+        return $this->role === (int)$role;
+    }
+    
+    /**
+     * Check if user is admin or superadmin
+     */
+    public function isAdminOrHigher()
+    {
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPERADMIN]);
     }
 }

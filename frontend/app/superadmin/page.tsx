@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/auth/LogoutButton";
 import axios from "axios";
 
 interface UserData {
@@ -89,10 +89,10 @@ const SuperadminPage = () => {
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900">
-                User Dashboard
+                Dashboard
               </h3>
               <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Welcome to your user dashboard
+                Welcome to your dashboard
               </p>
               {error && (
                 <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
