@@ -17,14 +17,14 @@ export function middleware(request: NextRequest) {
   // Get cookies
   const userRole = request.cookies.get("user_role")?.value;
   const roleName = request.cookies.get("role_name")?.value;
-  
+
   // In Next.js, auth_session isn't automatically set - we need to check
   // for our own session cookie or token
   const sessionToken = request.cookies.get("auth_session")?.value;
   const isAuthenticated = Boolean(userRole); // Use userRole as authentication indicator
-  
+
   const path = request.nextUrl.pathname;
-  
+
   // Debug information
   console.log({
     path,
@@ -34,10 +34,12 @@ export function middleware(request: NextRequest) {
   });
 
   // Skip middleware for public routes that don't need auth
-  const publicRoutes = ['/login', '/register', '/forgot-password'];
-  if (publicRoutes.some(route => path.startsWith(route))) {
-    // If authenticated user tries to access login/register, redirect based on role
-    if (isAuthenticated) {
+  const publicRoutes = ["/login", "/register", "/forgot-password", "/"];
+  if (
+    publicRoutes.some((route) => path === route || path.startsWith(route + "?"))
+  ) {
+    // Only redirect login/register pages, not the root path
+    if (isAuthenticated && path !== "/") {
       if (userRole === String(ROLE_SUPERADMIN)) {
         return NextResponse.redirect(new URL("/superadmin", request.url));
       } else if (userRole === String(ROLE_ADMIN)) {
@@ -48,24 +50,38 @@ export function middleware(request: NextRequest) {
     }
     return NextResponse.next();
   }
-  
+
   // If not authenticated and trying to access protected route, redirect to login
   if (!isAuthenticated) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-  
+
   // Role-based route protection
-  if (path.startsWith('/superadmin')) {
+  if (path.startsWith("/superadmin")) {
     if (userRole !== String(ROLE_SUPERADMIN)) {
-      return NextResponse.redirect(new URL("/", request.url));
+      // Instead of redirecting to root, send to a specific dashboard based on role
+      if (userRole === String(ROLE_ADMIN)) {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      } else {
+        return NextResponse.redirect(new URL("/user", request.url));
+      }
     }
-  } else if (path.startsWith('/admin')) {
-    if (userRole !== String(ROLE_ADMIN) && userRole !== String(ROLE_SUPERADMIN)) {
-      return NextResponse.redirect(new URL("/", request.url));
+  } else if (path.startsWith("/admin")) {
+    if (
+      userRole !== String(ROLE_ADMIN) &&
+      userRole !== String(ROLE_SUPERADMIN)
+    ) {
+      // Redirect to user dashboard instead of root
+      return NextResponse.redirect(new URL("/user", request.url));
     }
-  } else if (path.startsWith('/user')) {
-    if (userRole !== String(ROLE_USER) && userRole !== String(ROLE_ADMIN) && userRole !== String(ROLE_SUPERADMIN)) {
-      return NextResponse.redirect(new URL("/", request.url));
+  } else if (path.startsWith("/user")) {
+    if (
+      userRole !== String(ROLE_USER) &&
+      userRole !== String(ROLE_ADMIN) &&
+      userRole !== String(ROLE_SUPERADMIN)
+    ) {
+      // This should rarely happen if authentication is working properly
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 

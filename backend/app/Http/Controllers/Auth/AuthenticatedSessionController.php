@@ -36,15 +36,18 @@ class AuthenticatedSessionController extends Controller
 
         return response()->json([
             'user' => [
-                'id' => $user->id,
+                'id' => $user->id_user,
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
             ],
+            // Include token in response for API testing
+            'access_token' => $token,
+            'token_type' => 'Bearer',
             'message' => 'Logged in successfully',
         ])->withCookie($cookie);
     }
-
+    
     /**
      * Destroy an authenticated session.
      */

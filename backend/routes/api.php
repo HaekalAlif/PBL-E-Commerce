@@ -3,18 +3,9 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\User\UserController;
-use App\Http\Controllers\Admin\UserManagementController;
-use App\Models\User;
+use App\Http\Controllers\Admin\UserManagementController;    
 
 require __DIR__.'/auth.php';
-
-// Add a test route to check API connectivity
-Route::get('/test', function() {
-    return response()->json([
-        'status' => 'success',
-        'message' => 'API is working'
-    ]);
-});
 
 // Protected routes (requiring authentication)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -29,4 +20,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/{id}', [UserManagementController::class, 'update']);
         Route::delete('/{id}', [UserManagementController::class, 'destroy']);
     });
-});
+}); 
