@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import axiosInstance, { getCsrfToken } from "@/lib/axios";
 import {
   Card,
@@ -15,13 +16,58 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Store, MapPin, Phone, Edit, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Store,
+  MapPin,
+  Phone,
+  Edit,
+  Trash2,
+  Link2,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+// Import dialog components
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+interface UserData {
+  id_user: number;
+  email: string;
+  has_store: boolean;
+  store?: {
+    id_toko: number;
+    nama_toko: string;
+    slug: string;
+  };
+}
 
 interface TokoData {
   id_toko: number;
   nama_toko: string;
+  slug: string;
   deskripsi: string;
   alamat: string;
   kontak: string;
@@ -36,29 +82,54 @@ const TokoPage = () => {
   const [tokoData, setTokoData] = useState<TokoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  // Add edit form state
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    nama_toko: "",
+    deskripsi: "",
+    alamat: "",
+    kontak: "",
+  });
+  const [updateLoading, setUpdateLoading] = useState(false);
 
   useEffect(() => {
     const fetchTokoData = async () => {
       try {
-        const response = await axiosInstance.get("/api/toko/my-store", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+        setLoading(true);
+        setError(null);
+
+        // Base URL for API
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+        // Simple approach: just call the my-store endpoint directly
+        const response = await axios.get(`${apiUrl}/toko/my-store`, {
+          withCredentials: true,
         });
 
+        // Track the response for debugging
+        console.log("Store API response:", response.data);
+
+        // Update state based on response
         if (response.data.success) {
           setTokoData(response.data.data);
         } else {
-          setError(response.data.message || "Gagal memuat data toko");
+          setTokoData(null);
         }
       } catch (error: any) {
-        if (error.response && error.response.status === 404) {
-          // No store exists - this is an expected case
+        console.error("Error fetching toko data:", error);
+
+        if (error.response?.status === 404) {
+          // User doesn't have a store - this is normal, not an error
           setTokoData(null);
+        } else if (error.response?.status === 401) {
+          setError("Sesi login telah berakhir. Silakan login kembali");
+          setTimeout(() => router.push("/login"), 1500);
         } else {
-          setError("Terjadi kesalahan saat memuat data toko");
-          console.error("Error fetching toko data:", error);
+          const errorMsg = error.response?.data?.message || error.message;
+          setError(`Terjadi kesalahan: ${errorMsg}`);
         }
       } finally {
         setLoading(false);
@@ -66,23 +137,73 @@ const TokoPage = () => {
     };
 
     fetchTokoData();
-  }, []);
+  }, [router]);
 
+  // Initialize edit form with current data
+  const openEditForm = () => {
+    if (!tokoData) return;
+
+    setEditForm({
+      nama_toko: tokoData.nama_toko,
+      deskripsi: tokoData.deskripsi,
+      alamat: tokoData.alamat,
+      kontak: tokoData.kontak,
+    });
+    setEditFormOpen(true);
+  };
+
+  // Handle form input changes
+  const handleEditFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle form submission
+  const handleUpdateToko = async () => {
+    try {
+      setUpdateLoading(true);
+
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+      const response = await axiosInstance.put("/api/toko", editForm);
+
+      if (response.data.success) {
+        // Update local state with the updated data
+        setTokoData(response.data.data);
+        // Close the dialog
+        setEditFormOpen(false);
+        // Show success toast
+        toast.success("Berhasil", {
+          description: "Toko berhasil diperbarui",
+        });
+      } else {
+        toast.error("Gagal", {
+          description: response.data.message || "Gagal memperbarui toko",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error updating store:", error);
+      toast.error("Error", {
+        description:
+          error.response?.data?.message ||
+          "Terjadi kesalahan saat memperbarui toko",
+      });
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  // Update delete handler to use AlertDialog
   const handleDeleteToko = async () => {
-    if (!confirm("Apakah Anda yakin ingin menghapus toko ini?")) return;
-
     try {
       setLoading(true);
-
-      // Get a fresh CSRF token before making the delete request
-      await getCsrfToken();
-
-      const response = await axiosInstance.delete("/api/toko", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await axiosInstance.delete("/api/toko");
 
       if (response.data.success) {
         toast.success("Berhasil", {
@@ -96,19 +217,195 @@ const TokoPage = () => {
       }
     } catch (error: any) {
       console.error("Error deleting toko:", error);
-
-      if (error.response?.status === 419) {
-        toast.error("Error", {
-          description:
-            "Error CSRF token. Silakan muat ulang halaman dan coba lagi.",
-        });
-      } else {
-        toast.error("Error", {
-          description: "Terjadi kesalahan saat menghapus toko",
-        });
-      }
+      toast.error("Error", {
+        description:
+          error.response?.data?.message ||
+          "Terjadi kesalahan saat menghapus toko",
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyTokoLink = () => {
+    if (!tokoData) return;
+
+    const baseUrl = window.location.origin;
+    const tokoUrl = `${baseUrl}/toko/${tokoData.slug}`;
+
+    navigator.clipboard.writeText(tokoUrl).then(() => {
+      toast.success("Link toko berhasil disalin", {
+        description: "Link telah disalin ke clipboard",
+      });
+    });
+  };
+
+  // Separate component for the edit form to isolate state
+  const EditTokoDialog = ({
+    open,
+    onOpenChange,
+    initialData,
+    onSave,
+    isSaving,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    initialData: TokoData | null;
+    onSave: (formData: any) => Promise<void>;
+    isSaving: boolean;
+  }) => {
+    // Local form state isolated from parent component
+    const [form, setForm] = useState({
+      nama_toko: initialData?.nama_toko || "",
+      deskripsi: initialData?.deskripsi || "",
+      alamat: initialData?.alamat || "",
+      kontak: initialData?.kontak || "",
+    });
+
+    // Update local form when initialData changes
+    useEffect(() => {
+      if (initialData && open) {
+        setForm({
+          nama_toko: initialData.nama_toko,
+          deskripsi: initialData.deskripsi,
+          alamat: initialData.alamat,
+          kontak: initialData.kontak,
+        });
+      }
+    }, [initialData, open]);
+
+    // Form change handler
+    const handleChange = (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      const { name, value } = e.target;
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    };
+
+    // Form submission handler - close dialog immediately
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      // Close dialog immediately
+      onOpenChange(false);
+      // Then save in background
+      onSave(form);
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Edit Toko</DialogTitle>
+              <DialogDescription>
+                Perbarui informasi toko Anda disini.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="nama_toko">Nama Toko</Label>
+                <Input
+                  id="nama_toko"
+                  name="nama_toko"
+                  value={form.nama_toko}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="deskripsi">Deskripsi</Label>
+                <Textarea
+                  id="deskripsi"
+                  name="deskripsi"
+                  rows={4}
+                  value={form.deskripsi}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="alamat">Alamat</Label>
+                <Input
+                  id="alamat"
+                  name="alamat"
+                  value={form.alamat}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="kontak">Kontak</Label>
+                <Input
+                  id="kontak"
+                  name="kontak"
+                  value={form.kontak}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSaving}
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Handle save from dialog - optimistic UI update
+  const handleSaveToko = async (formData: any) => {
+    try {
+      setIsUpdating(true);
+
+      // Optimistically update the UI with the new data
+      const tempUpdatedToko = { ...tokoData, ...formData };
+      setTokoData(tempUpdatedToko as TokoData);
+
+      // Make the API request
+      const response = await axiosInstance.put("/api/toko", formData);
+
+      if (response.data.success) {
+        // Update with the actual data from server
+        setTokoData(response.data.data);
+        toast.success("Berhasil", {
+          description: "Toko berhasil diperbarui",
+        });
+      } else {
+        // Revert to previous data on failure
+        setTokoData(tokoData);
+        toast.error("Gagal", {
+          description: response.data.message || "Gagal memperbarui toko",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error updating store:", error);
+      // Revert to previous data on error
+      setTokoData(tokoData);
+      toast.error("Error", {
+        description:
+          error.response?.data?.message ||
+          "Terjadi kesalahan saat memperbarui toko",
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -173,7 +470,7 @@ const TokoPage = () => {
               <CardTitle className="text-2xl font-bold">
                 {tokoData.nama_toko}
               </CardTitle>
-              <CardDescription className="mt-1">
+              <CardDescription className="mt-1 flex items-center gap-2">
                 {tokoData.is_active ? (
                   <Badge
                     variant="outline"
@@ -189,25 +486,58 @@ const TokoPage = () => {
                     Tidak Aktif
                   </Badge>
                 )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={copyTokoLink}
+                  className="flex items-center gap-1 text-xs text-gray-500"
+                >
+                  <Link2 className="h-3 w-3" /> Salin Link
+                </Button>
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              {/* Replace edit button to use the new state */}
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => router.push(`/user/toko/edit`)}
+                onClick={() => setEditDialogOpen(true)}
                 className="flex items-center gap-1"
               >
                 <Edit className="h-4 w-4" /> Edit
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleDeleteToko}
-                className="flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" /> Hapus
-              </Button>
+
+              {/* Replace delete button with AlertDialog */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" /> Hapus
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Konfirmasi Penghapusan</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Apakah Anda yakin ingin menghapus toko ini? Tindakan ini
+                      tidak dapat dibatalkan.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteToko}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Hapus
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </CardHeader>
@@ -252,6 +582,15 @@ const TokoPage = () => {
                   {new Date(tokoData.updated_at).toLocaleDateString("id-ID")}
                 </span>
               </div>
+              <div className="flex justify-between col-span-2">
+                <span className="text-gray-500">URL Toko:</span>
+                <span
+                  className="text-blue-600 hover:underline cursor-pointer"
+                  onClick={copyTokoLink}
+                >
+                  {`/toko/${tokoData.slug}`}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -274,7 +613,28 @@ const TokoPage = () => {
         </Alert>
       )}
 
+      {/* Debug information - remove in production */}
+      {process.env.NODE_ENV !== "production" && debugInfo && (
+        <div className="mb-6 p-4 bg-gray-100 rounded text-xs">
+          <details>
+            <summary className="font-bold cursor-pointer">Debug Info</summary>
+            <pre className="mt-2 overflow-auto max-h-96">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+
       {renderTokoContent()}
+
+      {/* Use the new isolated EditTokoDialog component */}
+      <EditTokoDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        initialData={tokoData}
+        onSave={handleSaveToko}
+        isSaving={isUpdating}
+      />
     </div>
   );
 };

@@ -69,18 +69,13 @@ const CreateTokoPage = () => {
     setError(null);
 
     try {
-      // First, ensure we have a fresh CSRF token
-      await getCsrfToken();
+      // Get the CSRF token from cookies (no API call)
+      const csrfToken = getCsrfToken();
 
       console.log("Making POST request to create store");
 
-      // Use the custom axios instance that handles CSRF tokens
-      const response = await axiosInstance.post(`/api/toko`, values, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      // Simply make the request - auth is handled by cookies
+      const response = await axiosInstance.post(`/api/toko`, values);
 
       if (response.data.success) {
         toast.success("Berhasil", {

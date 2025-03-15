@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from "axios";
 // Extend AxiosInstance to include sanctum property
 interface CustomAxiosInstance extends AxiosInstance {
   sanctum?: {
-    csrf: () => Promise<any>;
+    csrf: () => string | null;
   };
 }
 
@@ -30,21 +30,17 @@ const instance: CustomAxiosInstance = axios.create({
     "X-Requested-With": "XMLHttpRequest",
     Accept: "application/json",
   },
-  withCredentials: true, // This ensures cookies are sent with requests
+  withCredentials: true, // This ensures cookies are sent with requests (including auth cookies)
 });
 
 // Request interceptor
 instance.interceptors.request.use(
   (config) => {
     // Get CSRF token from cookie
-    const token = getCsrfTokenFromCookie();
-
-    if (token) {
-      // Log the token being sent (for debugging)
-      console.log(`Setting X-XSRF-TOKEN header: ${token.substring(0, 10)}...`);
-
+    const csrfToken = getCsrfTokenFromCookie();
+    if (csrfToken) {
       // Set the X-XSRF-TOKEN header with the token value
-      config.headers["X-XSRF-TOKEN"] = token;
+      config.headers["X-XSRF-TOKEN"] = csrfToken;
     } else {
       console.warn("No XSRF-TOKEN cookie found for request");
     }
@@ -105,34 +101,28 @@ instance.interceptors.response.use(
   }
 );
 
-// Helper function for direct Sanctum endpoints
+// Helper function for Sanctum endpoints - simplified to just get the token
 instance.sanctum = {
-  csrf: async () => {
-    try {
-      const response = await instance.get("/sanctum/csrf-cookie");
-      console.log("CSRF cookie refreshed");
-      return response;
-    } catch (error) {
-      console.error("Error refreshing CSRF cookie:", error);
-      throw error;
+  csrf: () => {
+    const token = getCsrfTokenFromCookie();
+    if (token) {
+      console.log("Using existing CSRF token from cookies");
+      return token;
     }
+    console.warn("No CSRF token found in cookies");
+    return null;
   },
 };
 
 export default instance;
 
-// Export a function to get a fresh CSRF token
-export async function getCsrfToken(url = "/sanctum/csrf-cookie") {
-  try {
-    const response = await instance.get(url);
-    const token = getCsrfTokenFromCookie();
-    console.log(
-      "New CSRF token obtained:",
-      token ? `${token.substring(0, 10)}...` : "none"
-    );
-    return response;
-  } catch (error) {
-    console.error("Error getting CSRF token:", error);
-    throw error;
+// Simplified function - no API call, just returns the token from cookies
+export function getCsrfToken() {
+  const token = getCsrfTokenFromCookie();
+  if (token) {
+    console.log("Using existing CSRF token:", token.substring(0, 10) + "...");
+  } else {
+    console.warn("No CSRF token found in cookies");
   }
+  return token;
 }

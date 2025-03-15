@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Toko;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class TokoManagementController extends Controller
 {
@@ -46,11 +47,33 @@ class TokoManagementController extends Controller
     }
 
     /**
-     * Display the specified store.
+     * Display the specified store by ID.
      */
     public function show($id)
     {
         $toko = Toko::with('user', 'creator', 'updater')->find($id);
+        
+        if (!$toko) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Toko tidak ditemukan'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => $toko
+        ]);
+    }
+
+    /**
+     * Display the specified store by slug.
+     */
+    public function showBySlug($slug)
+    {
+        $toko = Toko::with('user', 'creator', 'updater')
+                    ->where('slug', $slug)
+                    ->first();
         
         if (!$toko) {
             return response()->json([
@@ -95,8 +118,24 @@ class TokoManagementController extends Controller
             ], 422);
         }
         
+        // If name has changed, update the slug
+        if ($request->has('nama_toko') && $request->nama_toko !== $toko->nama_toko) {
+            $slug = Str::slug($request->nama_toko);
+            
+            // Ensure slug is unique
+            $originalSlug = $slug;
+            $count = 1;
+            
+            while (Toko::where('slug', $slug)->where('id_toko', '!=', $toko->id_toko)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+            
+            $request->merge(['slug' => $slug]);
+        }
+        
         $toko->fill($request->only([
             'nama_toko',
+            'slug',
             'deskripsi',
             'alamat',
             'kontak',
