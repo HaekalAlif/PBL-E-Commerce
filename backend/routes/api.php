@@ -58,10 +58,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [UserManagementController::class, 'destroy']);
         });
         
-        // Toko management (admin only)
+        // Toko management (admin only) - Moved outside the admin prefix to match the frontend request URL
         Route::prefix('admin/toko')->group(function() {
             Route::get('/', [TokoManagementController::class, 'index']);
-            // ...other admin routes
+            Route::get('/{id}', [TokoManagementController::class, 'show']);
+            Route::put('/{id}', [TokoManagementController::class, 'update']);
+            Route::delete('/{id}', [TokoManagementController::class, 'destroy']);
+            Route::put('/{id}/soft-delete', [TokoManagementController::class, 'softDelete']);
+            Route::put('/{id}/restore', [TokoManagementController::class, 'restore']);
         });
     });
 });

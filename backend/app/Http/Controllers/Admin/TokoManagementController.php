@@ -6,223 +6,301 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Toko;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class TokoManagementController extends Controller
 {
     /**
      * Display a listing of the stores.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
-        $query = Toko::with('user');
-        
-        // Filter by active status if specified
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
-        
-        // Filter by deletion status if specified
-        if ($request->has('is_deleted')) {
-            $query->where('is_deleted', $request->is_deleted);
-        } else {
-            // By default, show only non-deleted stores
+        try {
+            $query = Toko::with('user');
+            
+            // Default to non-deleted stores
             $query->where('is_deleted', false);
+            
+            // Search by store name
+            if ($request->has('search') && $request->search !== '') {
+                $query->where('nama_toko', 'like', '%' . $request->search . '%');
+            }
+            
+            // Get all stores (paginated if specified)
+            if ($request->has('per_page')) {
+                $toko = $query->paginate($request->per_page);
+            } else {
+                $toko = $query->get();
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Stores retrieved successfully',
+                'data' => $toko
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve stores: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
-        
-        // Search by store name
-        if ($request->has('search')) {
-            $query->where('nama_toko', 'like', '%' . $request->search . '%');
-        }
-        
-        // Paginate results
-        $perPage = $request->per_page ?? 15;
-        $toko = $query->paginate($perPage);
-        
-        return response()->json([
-            'success' => true,
-            'data' => $toko
-        ]);
     }
 
     /**
      * Display the specified store by ID.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
-        $toko = Toko::with('user', 'creator', 'updater')->find($id);
-        
-        if (!$toko) {
+        try {
+            $toko = Toko::with('user')->where('id_toko', $id)->where('is_deleted', false)->first();
+            
+            if (!$toko) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Store not found',
+                    'data' => null
+                ], 404);
+            }
+            
             return response()->json([
-                'success' => false,
-                'message' => 'Toko tidak ditemukan'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Store retrieved successfully',
+                'data' => $toko
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve store: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
-        
-        return response()->json([
-            'success' => true,
-            'data' => $toko
-        ]);
     }
 
     /**
      * Display the specified store by slug.
+     *
+     * @param  string  $slug
+     * @return \Illuminate\Http\JsonResponse
      */
     public function showBySlug($slug)
     {
-        $toko = Toko::with('user', 'creator', 'updater')
+        try {
+            $toko = Toko::with('user')
                     ->where('slug', $slug)
+                    ->where('is_deleted', false)
                     ->first();
-        
-        if (!$toko) {
+            
+            if (!$toko) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Store not found',
+                    'data' => null
+                ], 404);
+            }
+            
             return response()->json([
-                'success' => false,
-                'message' => 'Toko tidak ditemukan'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Store retrieved successfully',
+                'data' => $toko
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve store: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
-        
-        return response()->json([
-            'success' => true,
-            'data' => $toko
-        ]);
+    }
+
+    /**
+     * Store a new store.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'id_user' => 'required|exists:users,id_user',
+                'nama_toko' => 'required|string|max:255',
+                'deskripsi' => 'nullable|string',
+                'alamat' => 'nullable|string|max:255',
+                'kontak' => 'nullable|string|max:255',
+                'is_active' => 'boolean',
+            ]);
+
+            // Generate a unique slug
+            $slug = Str::slug($validated['nama_toko']);
+            $originalSlug = $slug;
+            $count = 1;
+            
+            while (Toko::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count++;
+            }
+            
+            $validated['slug'] = $slug;
+            $validated['is_active'] = $validated['is_active'] ?? true;
+            $validated['is_deleted'] = false;
+            $validated['created_by'] = Auth::id();
+            $validated['updated_by'] = Auth::id();
+
+            $toko = Toko::create($validated);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Store created successfully',
+                'data' => $toko
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create store: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     /**
      * Update the specified store.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $id)
     {
-        $toko = Toko::find($id);
-        
-        if (!$toko) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Toko tidak ditemukan'
-            ], 404);
-        }
-        
-        $validator = Validator::make($request->all(), [
-            'nama_toko' => 'sometimes|string|max:255',
-            'deskripsi' => 'sometimes|string',
-            'alamat' => 'sometimes|string|max:255',
-            'kontak' => 'sometimes|string|max:255',
-            'is_active' => 'sometimes|boolean',
-            'is_deleted' => 'sometimes|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => $validator->errors()
-            ], 422);
-        }
-        
-        // If name has changed, update the slug
-        if ($request->has('nama_toko') && $request->nama_toko !== $toko->nama_toko) {
-            $slug = Str::slug($request->nama_toko);
+        try {
+            $toko = Toko::where('id_toko', $id)->where('is_deleted', false)->first();
             
-            // Ensure slug is unique
-            $originalSlug = $slug;
-            $count = 1;
-            
-            while (Toko::where('slug', $slug)->where('id_toko', '!=', $toko->id_toko)->exists()) {
-                $slug = $originalSlug . '-' . $count++;
+            if (!$toko) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Store not found',
+                    'data' => null
+                ], 404);
             }
             
-            $request->merge(['slug' => $slug]);
+            $validated = $request->validate([
+                'nama_toko' => 'sometimes|required|string|max:255',
+                'deskripsi' => 'nullable|string',
+                'alamat' => 'nullable|string|max:255',
+                'kontak' => 'nullable|string|max:255',
+                'is_active' => 'sometimes|boolean',
+            ]);
+            
+            // If name has changed, update the slug
+            if (isset($validated['nama_toko']) && $validated['nama_toko'] !== $toko->nama_toko) {
+                $slug = Str::slug($validated['nama_toko']);
+                $originalSlug = $slug;
+                $count = 1;
+                
+                while (Toko::where('slug', $slug)->where('id_toko', '!=', $toko->id_toko)->exists()) {
+                    $slug = $originalSlug . '-' . $count++;
+                }
+                
+                $validated['slug'] = $slug;
+            }
+            
+            $validated['updated_by'] = Auth::id();
+            
+            $toko->update($validated);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Store updated successfully',
+                'data' => $toko
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update store: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
-        
-        $toko->fill($request->only([
-            'nama_toko',
-            'slug',
-            'deskripsi',
-            'alamat',
-            'kontak',
-            'is_active',
-            'is_deleted'
-        ]));
-        
-        $toko->updated_by = Auth::id();
-        $toko->save();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Toko berhasil diperbarui',
-            'data' => $toko
-        ]);
     }
 
     /**
-     * Remove the specified store (hard delete).
+     * Soft delete a store.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy($id)
     {
-        $toko = Toko::find($id);
-        
-        if (!$toko) {
+        try {
+            $toko = Toko::where('id_toko', $id)->where('is_deleted', false)->first();
+            
+            if (!$toko) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Store not found',
+                    'data' => null
+                ], 404);
+            }
+            
+            $toko->update([
+                'is_deleted' => true,
+                'is_active' => false,
+                'updated_by' => Auth::id()
+            ]);
+            
             return response()->json([
-                'success' => false,
-                'message' => 'Toko tidak ditemukan'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Store deleted successfully',
+                'data' => null
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete store: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
-        
-        // Perform hard delete
-        $toko->delete();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Toko berhasil dihapus permanen'
-        ]);
     }
     
     /**
-     * Soft delete a store
-     */
-    public function softDelete($id)
-    {
-        $toko = Toko::find($id);
-        
-        if (!$toko) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Toko tidak ditemukan'
-            ], 404);
-        }
-        
-        $toko->is_deleted = true;
-        $toko->is_active = false;
-        $toko->updated_by = Auth::id();
-        $toko->save();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Toko berhasil dihapus'
-        ]);
-    }
-    
-    /**
-     * Restore a soft-deleted store
+     * Restore a soft-deleted store.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
      */
     public function restore($id)
     {
-        $toko = Toko::find($id);
-        
-        if (!$toko) {
+        try {
+            $toko = Toko::where('id_toko', $id)->where('is_deleted', true)->first();
+            
+            if (!$toko) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Deleted store not found',
+                    'data' => null
+                ], 404);
+            }
+            
+            $toko->update([
+                'is_deleted' => false,
+                'updated_by' => Auth::id()
+            ]);
+            
             return response()->json([
-                'success' => false,
-                'message' => 'Toko tidak ditemukan'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Store restored successfully',
+                'data' => $toko
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to restore store: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
         }
-        
-        $toko->is_deleted = false;
-        $toko->updated_by = Auth::id();
-        $toko->save();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Toko berhasil dipulihkan',
-            'data' => $toko
-        ]);
     }
 }
