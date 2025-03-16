@@ -6,6 +6,7 @@ use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\User\TokoController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\TokoManagementController;
+use App\Http\Controllers\Admin\KategoriController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -66,6 +67,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [TokoManagementController::class, 'destroy']);
             Route::put('/{id}/soft-delete', [TokoManagementController::class, 'softDelete']);
             Route::put('/{id}/restore', [TokoManagementController::class, 'restore']);
+        });
+        
+        // Kategori management (admin only)
+        Route::prefix('admin/kategori')->group(function() {
+            Route::get('/', [KategoriController::class, 'index']);
+            Route::post('/', [KategoriController::class, 'store']);
+            Route::get('/{id}', [KategoriController::class, 'show']);
+            Route::put('/{id}', [KategoriController::class, 'update']);
+            Route::delete('/{id}', [KategoriController::class, 'destroy']);
         });
     });
 });

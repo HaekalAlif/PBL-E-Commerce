@@ -88,7 +88,7 @@ export default function StoreManagementPage() {
     <div className="container mx-auto py-6 space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-2xl font-bold">User Management</CardTitle>
+          <CardTitle className="text-2xl font-bold">Store Management</CardTitle>
           <div className="flex space-x-2">
             <Button onClick={fetchStores} size="sm" variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
