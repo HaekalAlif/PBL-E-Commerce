@@ -39,7 +39,10 @@ const menuGroups = [
   },
   {
     label: "Store",
-    items: [{ title: "Toko", url: "/user/toko", icon: Store, badge: "" }],
+    items: [
+      { title: "Toko", url: "/user/toko", icon: Store, badge: "" },
+      { title: "Products", url: "/user/toko/barang", icon: Store, badge: "" }
+    ],
   },
 ];
 

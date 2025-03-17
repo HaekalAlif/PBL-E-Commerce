@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Kategori extends Model
 {
@@ -64,5 +65,13 @@ class Kategori extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by', 'id_user');
+    }
+
+    /**
+     * Relasi dengan barang yang termasuk dalam kategori ini
+     */
+    public function barang(): HasMany
+    {
+        return $this->hasMany(Barang::class, 'id_kategori', 'id_kategori');
     }
 }
