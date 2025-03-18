@@ -35,13 +35,16 @@ import Logout from "@/components/auth/LogoutButton";
 const menuGroups = [
   {
     label: "Overview",
-    items: [{ title: "Dashboard", url: "/user", icon: Home, badge: "" }],
+    items: [
+      { title: "Dashboard", url: "/user", icon: Home, badge: "" },
+      { title: "Alamat", url: "/user/alamat", icon: Home, badge: "" },
+    ],
   },
   {
     label: "Store",
     items: [
       { title: "Toko", url: "/user/toko", icon: Store, badge: "" },
-      { title: "Products", url: "/user/toko/barang", icon: Store, badge: "" }
+      { title: "Products", url: "/user/toko/barang", icon: Store, badge: "" },
     ],
   },
 ];

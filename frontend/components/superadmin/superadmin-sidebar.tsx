@@ -62,10 +62,39 @@ const menuGroups = [
     ],
   },
   {
-    label: "Auction",
-    icon: Gavel,
+    label: "Transaction",
+    icon: Receipt,
     items: [
-      { title: "Auctions", url: "/superadmin/lelang", icon: Gavel, badge: "" },
+      {
+        title: "Orders",
+        url: "/superadmin/pembelian",
+        icon: ClipboardList,
+        badge: "",
+      },
+      {
+        title: "Payments",
+        url: "/superadmin/pembayaran",
+        icon: ArrowUpDown,
+        badge: "",
+      },
+      {
+        title: "Withdrawals",
+        url: "/superadmin/pencairan-dana",
+        icon: ArrowUpDown,
+        badge: "",
+      },
+      {
+        title: "Balances",
+        url: "/superadmin/saldo",
+        icon: BarChart3,
+        badge: "",
+      },
+      {
+        title: "Financial Audit",
+        url: "/superadmin/audit",
+        icon: Shield,
+        badge: "",
+      },
     ],
   },
   {

@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\TokoManagementController;
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\BarangManagementController;
+use App\Http\Controllers\RegionController;
+use App\Http\Controllers\User\AlamatUserController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -35,6 +37,12 @@ Route::prefix('toko')->group(function() {
 
 // Add a public kategori endpoint for the frontend
 Route::get('/kategori', [KategoriController::class, 'index']);
+
+// Region routes
+Route::get('/provinces', [RegionController::class, 'getProvinces']);
+Route::get('/provinces/{id}/regencies', [RegionController::class, 'getRegencies']);
+Route::get('/regencies/{id}/districts', [RegionController::class, 'getDistricts']);
+Route::get('/districts/{id}/villages', [RegionController::class, 'getVillages']);
 
 // Protected routes - require authentication
 Route::middleware('auth:sanctum')->group(function () {
@@ -78,6 +86,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id_barang}/gambar/{id_gambar}', [GambarBarangController::class, 'destroy'])->where('id_barang', '[0-9]+');
     });
     
+    // User Address Management
+    Route::get('/user/addresses', [AlamatUserController::class, 'index']);
+    Route::get('/user/addresses/{id}', [AlamatUserController::class, 'show']);
+    Route::post('/user/addresses', [AlamatUserController::class, 'store']);
+    Route::put('/user/addresses/{id}', [AlamatUserController::class, 'update']);
+    Route::delete('/user/addresses/{id}', [AlamatUserController::class, 'destroy']);
+    Route::put('/user/addresses/{id}/primary', [AlamatUserController::class, 'setPrimary']);
+
     // Admin routes
     Route::middleware('role:admin,superadmin')->group(function() {  // Fixed typo from jmiddleware to middleware
         // User management (admin only)

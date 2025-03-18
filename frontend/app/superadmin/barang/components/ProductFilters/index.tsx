@@ -204,12 +204,6 @@ export default function ProductFilters({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Refresh button */}
-          <Button variant="outline" size="sm" onClick={onRefresh}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
-          </Button>
-
           {/* Clear filters button */}
           {showClearButton && (
             <Button variant="ghost" size="sm" onClick={onClearFilters}>

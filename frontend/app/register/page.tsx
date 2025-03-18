@@ -6,328 +6,243 @@ import Link from "next/link";
 import axios from "@/lib/axios";
 import { getCsrfToken } from "@/lib/axios";
 import {
-  FaUser,
-  FaLock,
-  FaEnvelope,
-  FaPhone,
-  FaCalendar,
-  FaIdCard,
-} from "react-icons/fa";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    username: "",
     name: "",
+    username: "",
     email: "",
+    no_hp: "",
     password: "",
     password_confirmation: "",
-    no_hp: "",
-    tanggal_lahir: "",
+    agreement: false,
   });
   const [error, setError] = useState("");
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Clear specific error when field is edited
-    if (errors[name]) {
-      setErrors((prev) => {
-        const updated = { ...prev };
-        delete updated[name];
-        return updated;
-      });
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setErrors({});
+
+    if (!formData.agreement) {
+      setError("You must agree to the terms and conditions");
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Get CSRF token first
+      // First, get the CSRF cookie
       await getCsrfToken();
 
-      // Submit registration request
+      // Then make the registration request
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/register`,
-        formData
+        {
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+          no_hp: formData.no_hp,
+          password: formData.password,
+          password_confirmation: formData.password_confirmation,
+        }
       );
 
-      console.log("Registration success:", response.data);
-      setSuccess(true);
-
-      // Redirect to login page after successful registration with a small delay
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+      // On success, redirect to login page
+      if (response.data.status === "success") {
+        router.push("/login?registered=true");
+      }
     } catch (err: any) {
       console.error("Registration error:", err);
-
-      // Handle validation errors
-      if (err.response?.data?.errors) {
-        setErrors(err.response.data.errors);
-      }
-
       setError(
-        err.response?.data?.message || "Registration failed. Please try again."
+        err.response?.data?.message ||
+          (err.response?.data?.errors
+            ? Object.values(err.response.data.errors).flat()[0]
+            : "Failed to connect to server")
       );
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Create Account
-          </h2>
-          <p className="text-gray-600 mb-8">Register to join our platform</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100 p-4">
+      <div className="max-w-md w-full">
+        <Card className="shadow-xl border-gray-200">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center text-gray-900">
+              Create an account
+            </CardTitle>
+            <CardDescription className="text-center text-gray-600">
+              Enter your details to register
+            </CardDescription>
+          </CardHeader>
 
-        {error && (
-          <div className="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
-            <p className="font-medium">Error</p>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded">
-            <p className="font-medium">Success!</p>
-            <p>Registration successful. Redirecting to login...</p>
-          </div>
-        )}
-
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          {/* Username */}
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Username
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaIdCard className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="johndoe"
-              />
-            </div>
-            {errors.username && (
-              <p className="mt-1 text-xs text-red-600">{errors.username}</p>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-6 bg-gray-100 border-gray-800 text-gray-800">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-          </div>
 
-          {/* Full Name */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Full Name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaUser className="h-5 w-5 text-gray-400" />
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name" className="text-gray-700">Full Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="Enter your full name"
+                    autoCapitalize="words"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="username" className="text-gray-700">Username</Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    placeholder="Choose a username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="email" className="text-gray-700">Email address</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="no_hp" className="text-gray-700">Phone Number</Label>
+                  <Input
+                    id="no_hp"
+                    name="no_hp"
+                    placeholder="Enter your phone number"
+                    value={formData.no_hp}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="password" className="text-gray-700">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="password_confirmation" className="text-gray-700">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="password_confirmation"
+                    name="password_confirmation"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={formData.password_confirmation}
+                    onChange={handleInputChange}
+                    required
+                    className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="agreement"
+                    name="agreement"
+                    checked={formData.agreement}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        agreement: checked === true,
+                      }))
+                    }
+                    className="text-black focus:ring-gray-500"
+                  />
+                  <Label htmlFor="agreement" className="text-sm text-gray-700">
+                    I agree to the Terms of Service and Privacy Policy
+                  </Label>
+                </div>
+
+                <Button 
+                  className="w-full bg-black hover:bg-gray-800 text-white" 
+                  type="submit" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create account"
+                  )}
+                </Button>
               </div>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="John Doe"
-              />
+            </form>
+          </CardContent>
+
+          <CardFooter>
+            <div className="text-center text-sm w-full text-gray-600">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-medium text-gray-700 hover:text-gray-900"
+              >
+                Sign in
+              </Link>
             </div>
-            {errors.name && (
-              <p className="mt-1 text-xs text-red-600">{errors.name}</p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email address
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaEnvelope className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="your@email.com"
-              />
-            </div>
-            {errors.email && (
-              <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaLock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="••••••••"
-              />
-            </div>
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password}</p>
-            )}
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label
-              htmlFor="password_confirmation"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Confirm Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaLock className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="password_confirmation"
-                name="password_confirmation"
-                type="password"
-                required
-                value={formData.password_confirmation}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          {/* Phone Number */}
-          <div>
-            <label
-              htmlFor="no_hp"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Phone Number
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaPhone className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="no_hp"
-                name="no_hp"
-                type="text"
-                required
-                value={formData.no_hp}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="08xxxxxxxxxx"
-              />
-            </div>
-            {errors.no_hp && (
-              <p className="mt-1 text-xs text-red-600">{errors.no_hp}</p>
-            )}
-          </div>
-
-          {/* Date of Birth */}
-          <div>
-            <label
-              htmlFor="tanggal_lahir"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Date of Birth
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaCalendar className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                id="tanggal_lahir"
-                name="tanggal_lahir"
-                type="date"
-                required
-                value={formData.tanggal_lahir}
-                onChange={handleChange}
-                className="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            {errors.tanggal_lahir && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.tanggal_lahir}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-6">
-            <button
-              type="submit"
-              disabled={loading || success}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition duration-150"
-            >
-              {loading
-                ? "Registering..."
-                : success
-                ? "Registered!"
-                : "Register"}
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

@@ -3,6 +3,17 @@
 import React, { useEffect, useState } from "react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import axios from "axios";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface UserData {
   id_user?: number;
@@ -74,92 +85,109 @@ const AdminPage = () => {
     fetchUserData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                User Dashboard
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Welcome to your user dashboard
-              </p>
-              {error && (
-                <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
+      <div className="max-w-3xl mx-auto">
+        <Card className="shadow-lg border-gray-200">
+          <CardHeader className="border-b border-gray-100">
+            <CardTitle className="text-2xl text-gray-900">
+              Admin Dashboard
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Welcome to your admin dashboard
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {error && (
+              <Alert
+                variant="destructive"
+                className="mb-6 bg-gray-100 border-gray-800"
+              >
+                <AlertCircle className="h-4 w-4 text-gray-800" />
+                <AlertTitle className="text-gray-900">Error</AlertTitle>
+                <AlertDescription className="text-gray-700">
                   {error}
-                </div>
-              )}
-            </div>
-            <div className="border-t border-gray-200">
-              <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {loading ? (
+              <div className="space-y-4">
+                {Array(5)
+                  .fill(0)
+                  .map((_, i) => (
+                    <div key={i} className="flex py-2">
+                      <Skeleton className="h-6 w-1/4 mr-8 bg-gray-200" />
+                      <Skeleton className="h-6 w-3/4 bg-gray-200" />
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 items-center py-2 border-b border-gray-200">
+                  <div className="font-medium text-sm text-gray-500">
                     Username
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-800">
                     {userData.username || "Not available"}
-                  </dd>
+                  </div>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
+
+                <div className="grid grid-cols-3 gap-4 items-center py-2 border-b border-gray-200">
+                  <div className="font-medium text-sm text-gray-500">
                     Full Name
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-800">
                     {userData.name || "Not available"}
-                  </dd>
+                  </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+
+                <div className="grid grid-cols-3 gap-4 items-center py-2 border-b border-gray-200">
+                  <div className="font-medium text-sm text-gray-500">Email</div>
+                  <div className="col-span-2 text-sm text-gray-800">
                     {userData.email || "Not available"}
-                  </dd>
+                  </div>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
+
+                <div className="grid grid-cols-3 gap-4 items-center py-2 border-b border-gray-200">
+                  <div className="font-medium text-sm text-gray-500">
                     Phone Number
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-800">
                     {userData.no_hp || "Not available"}
-                  </dd>
+                  </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
+
+                <div className="grid grid-cols-3 gap-4 items-center py-2 border-b border-gray-200">
+                  <div className="font-medium text-sm text-gray-500">
                     User Role
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-800">
                     {userData.role_name || "Not available"}
-                  </dd>
+                  </div>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
+
+                <div className="grid grid-cols-3 gap-4 items-center py-2">
+                  <div className="font-medium text-sm text-gray-500">
                     Account Status
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-800">
                     {userData.is_active === true
                       ? "Active"
                       : userData.is_active === false
                       ? "Inactive"
                       : "Unknown"}
-                  </dd>
+                  </div>
                 </div>
-              </dl>
-            </div>
+              </div>
+            )}
+          </CardContent>
 
-            <div className="px-4 py-5 sm:px-6 flex justify-end">
-              <LogoutButton />
-            </div>
-          </div>
-        </div>
+          <CardFooter className="flex justify-end border-t border-gray-100 pt-4">
+            <LogoutButton />
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

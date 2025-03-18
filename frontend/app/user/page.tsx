@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface UserData {
   id_user?: number;
@@ -22,6 +24,7 @@ const UserPage = () => {
   const [userData, setUserData] = useState<UserData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -74,6 +77,10 @@ const UserPage = () => {
     fetchUserData();
   }, []);
 
+  const handleAddressClick = () => {
+    router.push("/user/alamat/create");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -87,19 +94,26 @@ const UserPage = () => {
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                User Dashboard
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Welcome to your user dashboard
-              </p>
-              {error && (
-                <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
-                  {error}
-                </div>
-              )}
+            <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  User Dashboard
+                </h3>
+                <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                  Welcome to your user dashboard
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={handleAddressClick}>
+                  Manage Addresses
+                </Button>
+              </div>
             </div>
+            {error && (
+              <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
+                {error}
+              </div>
+            )}
             <div className="border-t border-gray-200">
               <dl>
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
