@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\BarangManagementController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\User\AlamatUserController;
+use App\Http\Controllers\User\AlamatTokoController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -93,9 +94,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/addresses/{id}', [AlamatUserController::class, 'update']);
     Route::delete('/user/addresses/{id}', [AlamatUserController::class, 'destroy']);
     Route::put('/user/addresses/{id}/primary', [AlamatUserController::class, 'setPrimary']);
+    
+    // Store Address Management
+    Route::get('/toko/addresses', [AlamatTokoController::class, 'index']);
+    Route::get('/toko/addresses/{id}', [AlamatTokoController::class, 'show']);
+    Route::post('/toko/addresses', [AlamatTokoController::class, 'store']);
+    Route::put('/toko/addresses/{id}', [AlamatTokoController::class, 'update']);
+    Route::delete('/toko/addresses/{id}', [AlamatTokoController::class, 'destroy']);
+    Route::patch('/toko/addresses/{id}/primary', [AlamatTokoController::class, 'setPrimary']);
 
     // Admin routes
-    Route::middleware('role:admin,superadmin')->group(function() {  // Fixed typo from jmiddleware to middleware
+    Route::middleware('role:admin,superadmin')->group(function() {  
         // User management (admin only)
         Route::prefix('users')->group(function() {
             Route::get('/', [UserManagementController::class, 'index']);
@@ -126,7 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Admin product management
         Route::prefix('admin/barang')->group(function() {
             Route::get('/', [BarangManagementController::class, 'index']);
-            Route::get('/filter', [BarangManagementController::class, 'filter']);  // Add separate filter endpoint
+            Route::get('/filter', [BarangManagementController::class, 'filter']);
             Route::get('/categories', [BarangManagementController::class, 'getCategories']);
             Route::get('/{id}', [BarangManagementController::class, 'show'])->where('id', '[0-9]+');
             Route::get('/slug/{slug}', [BarangManagementController::class, 'showBySlug']);

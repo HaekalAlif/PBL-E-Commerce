@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import axiosInstance, { getCsrfToken } from "@/lib/axios"; // Import custom axios instance and CSRF helper
+import axiosInstance, { getCsrfToken } from "@/lib/axios";
 import {
   Card,
   CardContent,
@@ -49,7 +49,7 @@ interface Village {
 }
 
 interface FormData {
-  nama_penerima: string;
+  nama_pengirim: string;
   no_telepon: string;
   alamat_lengkap: string;
   provinsi: string;
@@ -59,15 +59,23 @@ interface FormData {
   is_primary: boolean;
 }
 
-const AddressForm = () => {
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+const EditStoreAddressForm = ({ params }: PageProps) => {
   const router = useRouter();
+  const { id } = params;
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form data state
   const [formData, setFormData] = useState<FormData>({
-    nama_penerima: "",
+    nama_pengirim: "",
     no_telepon: "",
     alamat_lengkap: "",
     provinsi: "",
@@ -90,6 +98,41 @@ const AddressForm = () => {
   const [loadingVillages, setLoadingVillages] = useState(false);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+  // Fetch address data
+  useEffect(() => {
+    const fetchAddress = async () => {
+      try {
+        setLoadingData(true);
+        const response = await axiosInstance.get(`/api/toko/addresses/${id}`, {
+          withCredentials: true,
+        });
+
+        if (response.data.status === "success") {
+          const addressData = response.data.data;
+          setFormData({
+            nama_pengirim: addressData.nama_pengirim,
+            no_telepon: addressData.no_telepon,
+            alamat_lengkap: addressData.alamat_lengkap,
+            provinsi: addressData.provinsi,
+            kota: addressData.kota,
+            kecamatan: addressData.kecamatan,
+            kode_pos: addressData.kode_pos,
+            is_primary: addressData.is_primary,
+          });
+        } else {
+          throw new Error("Failed to fetch address data");
+        }
+      } catch (err) {
+        console.error("Error fetching address:", err);
+        setError("Failed to load address data. Please try again.");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchAddress();
+  }, [id]);
 
   // Fetch provinces on component mount
   useEffect(() => {
@@ -119,16 +162,15 @@ const AddressForm = () => {
   // Fetch regencies when province changes
   useEffect(() => {
     if (!formData.provinsi) {
-      setRegencies([]);
       return;
     }
 
     const fetchRegencies = async () => {
       try {
         setLoadingRegencies(true);
-        setFormData((prev) => ({ ...prev, kota: "", kecamatan: "" }));
-        setDistricts([]);
-        setVillages([]);
+
+        // Don't reset kota and kecamatan when editing
+        // We only want to reset them when user changes province
 
         const response = await axiosInstance.get(
           `${apiUrl}/provinces/${formData.provinsi}/regencies`,
@@ -154,15 +196,14 @@ const AddressForm = () => {
   // Fetch districts when regency changes
   useEffect(() => {
     if (!formData.kota) {
-      setDistricts([]);
       return;
     }
 
     const fetchDistricts = async () => {
       try {
         setLoadingDistricts(true);
-        setFormData((prev) => ({ ...prev, kecamatan: "" }));
-        setVillages([]);
+
+        // Don't reset kecamatan when editing
 
         const response = await axiosInstance.get(
           `${apiUrl}/regencies/${formData.kota}/districts`,
@@ -188,7 +229,6 @@ const AddressForm = () => {
   // Fetch villages when district changes
   useEffect(() => {
     if (!formData.kecamatan) {
-      setVillages([]);
       return;
     }
 
@@ -236,7 +276,18 @@ const AddressForm = () => {
 
   // Handle select changes
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      // If province changes, reset city and district
+      if (name === "provinsi" && prev.provinsi !== value) {
+        return { ...prev, [name]: value, kota: "", kecamatan: "" };
+      }
+      // If city changes, reset district
+      else if (name === "kota" && prev.kota !== value) {
+        return { ...prev, [name]: value, kecamatan: "" };
+      }
+      // Otherwise just update the value
+      return { ...prev, [name]: value };
+    });
   };
 
   // Handle checkbox change
@@ -254,7 +305,7 @@ const AddressForm = () => {
     try {
       // Validate form
       if (
-        !formData.nama_penerima ||
+        !formData.nama_pengirim ||
         !formData.no_telepon ||
         !formData.alamat_lengkap ||
         !formData.provinsi ||
@@ -266,8 +317,8 @@ const AddressForm = () => {
       }
 
       // Use the custom axios instance which includes CSRF token handling
-      const response = await axiosInstance.post(
-        `/api/user/addresses`,
+      const response = await axiosInstance.put(
+        `/api/toko/addresses/${id}`,
         formData,
         {
           headers: {
@@ -279,70 +330,93 @@ const AddressForm = () => {
       );
 
       if (response.data.status === "success") {
-        setSuccess("Address added successfully!");
+        setSuccess("Store address updated successfully!");
         // Wait a moment before redirecting
         setTimeout(() => {
-          router.push("/user/alamat");
+          router.push("/user/toko/alamat");
         }, 1500);
       } else {
-        throw new Error(response.data.message || "Failed to add address");
+        throw new Error(
+          response.data.message || "Failed to update store address"
+        );
       }
     } catch (err: any) {
-      console.error("Error adding address:", err);
+      console.error("Error updating store address:", err);
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Failed to add address. Please try again."
+          "Failed to update store address. Please try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  if (loadingData) {
+    return (
+      <div className="container mx-auto py-10 px-4 flex justify-center items-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading address data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-10 px-4">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Add New Address</CardTitle>
-          <CardDescription>
-            Add a new shipping address to your account
+      <Card className="max-w-2xl mx-auto border-gray-200">
+        <CardHeader className="border-b border-gray-100">
+          <CardTitle className="text-gray-900">Edit Store Address</CardTitle>
+          <CardDescription className="text-gray-600">
+            Update your store shipping address details
           </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+              <Alert
+                variant="destructive"
+                className="mb-4 bg-gray-100 border-gray-800"
+              >
+                <AlertCircle className="h-4 w-4 text-gray-800" />
+                <AlertTitle className="text-gray-900">Error</AlertTitle>
+                <AlertDescription className="text-gray-700">
+                  {error}
+                </AlertDescription>
               </Alert>
             )}
 
             {success && (
-              <Alert className="mb-4 bg-green-50 border-green-200">
-                <Check className="h-4 w-4 text-green-500" />
-                <AlertTitle className="text-green-800">Success</AlertTitle>
-                <AlertDescription className="text-green-700">
+              <Alert className="mb-4 bg-gray-100 border-gray-400">
+                <Check className="h-4 w-4 text-gray-700" />
+                <AlertTitle className="text-gray-900">Success</AlertTitle>
+                <AlertDescription className="text-gray-700">
                   {success}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="nama_penerima">Recipient Name*</Label>
+              <Label htmlFor="nama_pengirim" className="text-gray-700">
+                Sender Name*
+              </Label>
               <Input
-                id="nama_penerima"
-                name="nama_penerima"
-                placeholder="Enter recipient name"
-                value={formData.nama_penerima}
+                id="nama_pengirim"
+                name="nama_pengirim"
+                placeholder="Enter sender name"
+                value={formData.nama_pengirim}
                 onChange={handleInputChange}
                 required
+                className="border-gray-300 focus:border-gray-600 focus:ring-gray-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="no_telepon">Phone Number*</Label>
+              <Label htmlFor="no_telepon" className="text-gray-700">
+                Phone Number*
+              </Label>
               <Input
                 id="no_telepon"
                 name="no_telepon"
@@ -350,11 +424,14 @@ const AddressForm = () => {
                 value={formData.no_telepon}
                 onChange={handleInputChange}
                 required
+                className="border-gray-300 focus:border-gray-600 focus:ring-gray-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="alamat_lengkap">Full Address*</Label>
+              <Label htmlFor="alamat_lengkap" className="text-gray-700">
+                Full Address*
+              </Label>
               <Textarea
                 id="alamat_lengkap"
                 name="alamat_lengkap"
@@ -362,30 +439,43 @@ const AddressForm = () => {
                 value={formData.alamat_lengkap}
                 onChange={handleInputChange}
                 required
+                className="border-gray-300 focus:border-gray-600 focus:ring-gray-500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="provinsi">Province*</Label>
+              <Label htmlFor="provinsi" className="text-gray-700">
+                Province*
+              </Label>
               <Select
                 value={formData.provinsi}
                 onValueChange={(value) => handleSelectChange("provinsi", value)}
                 disabled={loadingProvinces}
               >
-                <SelectTrigger id="provinsi" className="w-full">
+                <SelectTrigger
+                  id="provinsi"
+                  className="w-full border-gray-300 focus:ring-gray-500"
+                >
                   <SelectValue
                     placeholder={
                       loadingProvinces
                         ? "Loading provinces..."
                         : "Select province"
                     }
+                    className="text-gray-600"
                   />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectGroup>
-                    <SelectLabel>Provinces</SelectLabel>
+                    <SelectLabel className="text-gray-700">
+                      Provinces
+                    </SelectLabel>
                     {provinces.map((province) => (
-                      <SelectItem key={province.id} value={province.id}>
+                      <SelectItem
+                        key={province.id}
+                        value={province.id}
+                        className="text-gray-800"
+                      >
                         {province.name}
                       </SelectItem>
                     ))}
@@ -395,13 +485,18 @@ const AddressForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="kota">City/Regency*</Label>
+              <Label htmlFor="kota" className="text-gray-700">
+                City/Regency*
+              </Label>
               <Select
                 value={formData.kota}
                 onValueChange={(value) => handleSelectChange("kota", value)}
                 disabled={!formData.provinsi || loadingRegencies}
               >
-                <SelectTrigger id="kota" className="w-full">
+                <SelectTrigger
+                  id="kota"
+                  className="w-full border-gray-300 focus:ring-gray-500"
+                >
                   <SelectValue
                     placeholder={
                       !formData.provinsi
@@ -410,13 +505,20 @@ const AddressForm = () => {
                         ? "Loading cities..."
                         : "Select city/regency"
                     }
+                    className="text-gray-600"
                   />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectGroup>
-                    <SelectLabel>Cities/Regencies</SelectLabel>
+                    <SelectLabel className="text-gray-700">
+                      Cities/Regencies
+                    </SelectLabel>
                     {regencies.map((regency) => (
-                      <SelectItem key={regency.id} value={regency.id}>
+                      <SelectItem
+                        key={regency.id}
+                        value={regency.id}
+                        className="text-gray-800"
+                      >
                         {regency.name}
                       </SelectItem>
                     ))}
@@ -426,7 +528,9 @@ const AddressForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="kecamatan">District*</Label>
+              <Label htmlFor="kecamatan" className="text-gray-700">
+                District*
+              </Label>
               <Select
                 value={formData.kecamatan}
                 onValueChange={(value) =>
@@ -434,7 +538,10 @@ const AddressForm = () => {
                 }
                 disabled={!formData.kota || loadingDistricts}
               >
-                <SelectTrigger id="kecamatan" className="w-full">
+                <SelectTrigger
+                  id="kecamatan"
+                  className="w-full border-gray-300 focus:ring-gray-500"
+                >
                   <SelectValue
                     placeholder={
                       !formData.kota
@@ -443,13 +550,20 @@ const AddressForm = () => {
                         ? "Loading districts..."
                         : "Select district"
                     }
+                    className="text-gray-600"
                   />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectGroup>
-                    <SelectLabel>Districts</SelectLabel>
+                    <SelectLabel className="text-gray-700">
+                      Districts
+                    </SelectLabel>
                     {districts.map((district) => (
-                      <SelectItem key={district.id} value={district.id}>
+                      <SelectItem
+                        key={district.id}
+                        value={district.id}
+                        className="text-gray-800"
+                      >
                         {district.name}
                       </SelectItem>
                     ))}
@@ -459,7 +573,9 @@ const AddressForm = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="kode_pos">Postal Code*</Label>
+              <Label htmlFor="kode_pos" className="text-gray-700">
+                Postal Code*
+              </Label>
               <Input
                 id="kode_pos"
                 name="kode_pos"
@@ -467,35 +583,44 @@ const AddressForm = () => {
                 value={formData.kode_pos}
                 onChange={handleInputChange}
                 required
+                className="border-gray-300 focus:border-gray-600 focus:ring-gray-500"
               />
             </div>
 
-            <div className="flex items-center space-x-2 pt-2 pb-4">
+            <div className="flex items-center space-x-2 pt-2">
               <Checkbox
                 id="is_primary"
                 checked={formData.is_primary}
                 onCheckedChange={handleCheckboxChange}
+                className="text-black focus:ring-gray-500"
               />
-              <Label htmlFor="is_primary">Set as primary address</Label>
+              <Label htmlFor="is_primary" className="text-gray-700">
+                Set as primary address
+              </Label>
             </div>
           </CardContent>
 
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex justify-between border-t border-gray-100 pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.back()}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-black hover:bg-gray-800 text-white"
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  Updating...
                 </>
               ) : (
-                "Save Address"
+                "Update Address"
               )}
             </Button>
           </CardFooter>
@@ -505,4 +630,4 @@ const AddressForm = () => {
   );
 };
 
-export default AddressForm;
+export default EditStoreAddressForm;

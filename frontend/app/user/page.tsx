@@ -78,7 +78,7 @@ const UserPage = () => {
   }, []);
 
   const handleAddressClick = () => {
-    router.push("/user/alamat/create");
+    router.push("/user/alamat");
   };
 
   if (loading) {

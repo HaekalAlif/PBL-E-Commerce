@@ -24,6 +24,7 @@ import {
   Edit,
   Trash2,
   Link2,
+  PlusCircle,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -77,6 +78,33 @@ interface TokoData {
   updated_at: string;
 }
 
+interface StoreAddress {
+  id_alamat_toko: number;
+  id_toko: number;
+  nama_pengirim: string;
+  no_telepon: string;
+  alamat_lengkap: string;
+  provinsi: string;
+  kota: string;
+  kecamatan: string;
+  kode_pos: string;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+  province?: {
+    id: string;
+    name: string;
+  };
+  regency?: {
+    id: string;
+    name: string;
+  };
+  district?: {
+    id: string;
+    name: string;
+  };
+}
+
 const TokoPage = () => {
   const router = useRouter();
   const [tokoData, setTokoData] = useState<TokoData | null>(null);
@@ -84,15 +112,10 @@ const TokoPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
-  // Add edit form state
-  const [editFormOpen, setEditFormOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    nama_toko: "",
-    deskripsi: "",
-    alamat: "",
-    kontak: "",
-  });
-  const [updateLoading, setUpdateLoading] = useState(false);
+  // State for store addresses
+  const [storeAddresses, setStoreAddresses] = useState<StoreAddress[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTokoData = async () => {
@@ -115,6 +138,8 @@ const TokoPage = () => {
         // Update state based on response
         if (response.data.success) {
           setTokoData(response.data.data);
+          // If we have a store, fetch its addresses
+          fetchStoreAddresses();
         } else {
           setTokoData(null);
         }
@@ -139,63 +164,30 @@ const TokoPage = () => {
     fetchTokoData();
   }, [router]);
 
-  // Initialize edit form with current data
-  const openEditForm = () => {
-    if (!tokoData) return;
-
-    setEditForm({
-      nama_toko: tokoData.nama_toko,
-      deskripsi: tokoData.deskripsi,
-      alamat: tokoData.alamat,
-      kontak: tokoData.kontak,
-    });
-    setEditFormOpen(true);
-  };
-
-  // Handle form input changes
-  const handleEditFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Handle form submission
-  const handleUpdateToko = async () => {
+  // Function to fetch store addresses
+  const fetchStoreAddresses = async () => {
     try {
-      setUpdateLoading(true);
+      setLoadingAddresses(true);
+      setAddressError(null);
 
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-
-      const response = await axiosInstance.put("/api/toko", editForm);
-
-      if (response.data.success) {
-        // Update local state with the updated data
-        setTokoData(response.data.data);
-        // Close the dialog
-        setEditFormOpen(false);
-        // Show success toast
-        toast.success("Berhasil", {
-          description: "Toko berhasil diperbarui",
-        });
-      } else {
-        toast.error("Gagal", {
-          description: response.data.message || "Gagal memperbarui toko",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error updating store:", error);
-      toast.error("Error", {
-        description:
-          error.response?.data?.message ||
-          "Terjadi kesalahan saat memperbarui toko",
+      const response = await axiosInstance.get(`/api/toko/addresses`, {
+        withCredentials: true,
       });
+
+      if (response.data.status === "success") {
+        setStoreAddresses(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Failed to fetch addresses");
+      }
+    } catch (err: any) {
+      console.error("Error fetching store addresses:", err);
+      setAddressError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load store addresses"
+      );
     } finally {
-      setUpdateLoading(false);
+      setLoadingAddresses(false);
     }
   };
 
@@ -241,133 +233,7 @@ const TokoPage = () => {
   };
 
   // Separate component for the edit form to isolate state
-  const EditTokoDialog = ({
-    open,
-    onOpenChange,
-    initialData,
-    onSave,
-    isSaving,
-  }: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    initialData: TokoData | null;
-    onSave: (formData: any) => Promise<void>;
-    isSaving: boolean;
-  }) => {
-    // Local form state isolated from parent component
-    const [form, setForm] = useState({
-      nama_toko: initialData?.nama_toko || "",
-      deskripsi: initialData?.deskripsi || "",
-      alamat: initialData?.alamat || "",
-      kontak: initialData?.kontak || "",
-    });
 
-    // Update local form when initialData changes
-    useEffect(() => {
-      if (initialData && open) {
-        setForm({
-          nama_toko: initialData.nama_toko,
-          deskripsi: initialData.deskripsi,
-          alamat: initialData.alamat,
-          kontak: initialData.kontak,
-        });
-      }
-    }, [initialData, open]);
-
-    // Form change handler
-    const handleChange = (
-      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-      const { name, value } = e.target;
-      setForm((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    };
-
-    // Form submission handler - close dialog immediately
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      // Close dialog immediately
-      onOpenChange(false);
-      // Then save in background
-      onSave(form);
-    };
-
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>Edit Toko</DialogTitle>
-              <DialogDescription>
-                Perbarui informasi toko Anda disini.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nama_toko">Nama Toko</Label>
-                <Input
-                  id="nama_toko"
-                  name="nama_toko"
-                  value={form.nama_toko}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="deskripsi">Deskripsi</Label>
-                <Textarea
-                  id="deskripsi"
-                  name="deskripsi"
-                  rows={4}
-                  value={form.deskripsi}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="alamat">Alamat</Label>
-                <Input
-                  id="alamat"
-                  name="alamat"
-                  value={form.alamat}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="kontak">Kontak</Label>
-                <Input
-                  id="kontak"
-                  name="kontak"
-                  value={form.kontak}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSaving}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Handle save from dialog - optimistic UI update
@@ -407,6 +273,144 @@ const TokoPage = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  // Render the address section
+  const renderAddressSection = () => {
+    if (loadingAddresses) {
+      return (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-2">Alamat Pengiriman</h3>
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          </div>
+        </div>
+      );
+    }
+
+    if (addressError) {
+      return (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-2">Alamat Toko</h3>
+          <Alert variant="destructive" className="mb-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{addressError}</AlertDescription>
+          </Alert>
+          <Button
+            onClick={() => router.push("/user/toko/alamat/create")}
+            className="mt-2 bg-black hover:bg-gray-800 text-white"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Tambah Alamat Baru
+          </Button>
+        </div>
+      );
+    }
+
+    if (storeAddresses.length === 0) {
+      return (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-2">Alamat Toko</h3>
+          <Alert className="mb-4 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-800">Perhatian</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              Anda belum menambahkan alamat untuk toko ini. Tambahkan alamat
+              untuk memulai berjualan.
+            </AlertDescription>
+          </Alert>
+          <Button
+            onClick={() => router.push("/user/toko/alamat/create")}
+            className="bg-black hover:bg-gray-800 text-white"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Tambah Alamat Toko
+          </Button>
+        </div>
+      );
+    }
+
+    // Find primary address
+    const primaryAddress = storeAddresses.find((addr) => addr.is_primary);
+
+    return (
+      <div className="mt-6">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium">Alamat Pengiriman</h3>
+          <Button
+            onClick={() => router.push("/user/toko/alamat")}
+            variant="outline"
+            size="sm"
+            className="text-gray-700"
+          >
+            Kelola Alamat
+          </Button>
+        </div>
+
+        {primaryAddress ? (
+          <Card className="border-gray-200">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {primaryAddress.nama_pengirim}
+                  </div>
+                  <div className="text-gray-700">
+                    {primaryAddress.no_telepon}
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="bg-gray-50 border-gray-200 text-gray-700"
+                >
+                  Utama
+                </Badge>
+              </div>
+              <div className="mt-2 text-gray-700">
+                {primaryAddress.alamat_lengkap}
+              </div>
+              <div className="mt-1 text-sm text-gray-500">
+                {primaryAddress.province?.name || ""},{" "}
+                {primaryAddress.regency?.name || ""},{" "}
+                {primaryAddress.district?.name || ""}, {primaryAddress.kode_pos}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Alert className="mb-4 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-800">Perhatian</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              Anda memiliki {storeAddresses.length} alamat, tetapi belum
+              menetapkan alamat utama.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="mt-3 flex gap-2">
+          <Button
+            onClick={() => router.push("/user/toko/alamat")}
+            variant="outline"
+            size="sm"
+            className="text-gray-700"
+          >
+            Lihat Semua ({storeAddresses.length})
+          </Button>
+          <Button
+            onClick={() => router.push("/user/toko/alamat/create")}
+            variant="outline"
+            size="sm"
+            className="text-gray-700"
+          >
+            <PlusCircle className="h-3.5 w-3.5 mr-1" />
+            Tambah Baru
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   const renderTokoContent = () => {
@@ -498,16 +502,6 @@ const TokoPage = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              {/* Replace edit button to use the new state */}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEditDialogOpen(true)}
-                className="flex items-center gap-1"
-              >
-                <Edit className="h-4 w-4" /> Edit
-              </Button>
-
               {/* Replace delete button with AlertDialog */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -567,7 +561,10 @@ const TokoPage = () => {
             </div>
           </div>
 
-          <div className="bg-muted p-4 rounded-md">
+          {/* Add the address section here */}
+          {renderAddressSection()}
+
+          <div className="bg-muted p-4 rounded-md mt-4">
             <h3 className="text-sm font-medium mb-1">Info Tambahan</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <div className="flex justify-between">
@@ -626,15 +623,6 @@ const TokoPage = () => {
       )}
 
       {renderTokoContent()}
-
-      {/* Use the new isolated EditTokoDialog component */}
-      <EditTokoDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        initialData={tokoData}
-        onSave={handleSaveToko}
-        isSaving={isUpdating}
-      />
     </div>
   );
 };
