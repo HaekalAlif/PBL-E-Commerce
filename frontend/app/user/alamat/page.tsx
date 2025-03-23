@@ -64,7 +64,7 @@ const UserAddressesPage = () => {
     const fetchAddresses = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`/api/user/addresses`, {
+        const response = await axiosInstance.get(`api/user/addresses`, {
           withCredentials: true,
         });
 
@@ -75,7 +75,7 @@ const UserAddressesPage = () => {
               try {
                 // Get province name
                 const provinceResponse = await axiosInstance.get(
-                  `/api/provinces`,
+                  `/provinces`,
                   { withCredentials: true }
                 );
                 const province = provinceResponse.data.data.find(
@@ -84,7 +84,7 @@ const UserAddressesPage = () => {
 
                 // Get regency name
                 const regencyResponse = await axiosInstance.get(
-                  `/api/provinces/${address.provinsi}/regencies`,
+                  `provinces/${address.provinsi}/regencies`,
                   { withCredentials: true }
                 );
                 const regency = regencyResponse.data.data.find(
@@ -93,7 +93,7 @@ const UserAddressesPage = () => {
 
                 // Get district name
                 const districtResponse = await axiosInstance.get(
-                  `/api/regencies/${address.kota}/districts`,
+                  `regencies/${address.kota}/districts`,
                   { withCredentials: true }
                 );
                 const district = districtResponse.data.data.find(
@@ -138,7 +138,7 @@ const UserAddressesPage = () => {
       setIsSettingPrimary(true);
       // Use axiosInstance instead of axios to include CSRF token
       const response = await axiosInstance.put(
-        `/api/user/addresses/${id}/primary`,
+        `user/addresses/${id}/primary`,
         {},
         {
           headers: {
@@ -176,7 +176,7 @@ const UserAddressesPage = () => {
       setIsDeleting(true);
       // Use axiosInstance instead of axios to include CSRF token
       const response = await axiosInstance.delete(
-        `/api/user/addresses/${deleteId}`
+        `/user/addresses/${deleteId}`
       );
 
       if (response.data.status === "success") {

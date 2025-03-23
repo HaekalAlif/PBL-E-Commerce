@@ -37,10 +37,6 @@ const tokoFormSchema = z.object({
     .min(3, { message: "Nama toko minimal 3 karakter" })
     .max(255, { message: "Nama toko maksimal 255 karakter" }),
   deskripsi: z.string().min(20, { message: "Deskripsi minimal 20 karakter" }),
-  alamat: z
-    .string()
-    .min(10, { message: "Alamat minimal 10 karakter" })
-    .max(255, { message: "Alamat maksimal 255 karakter" }),
   kontak: z
     .string()
     .min(8, { message: "Kontak minimal 8 karakter" })
@@ -59,7 +55,6 @@ const CreateTokoPage = () => {
     defaultValues: {
       nama_toko: "",
       deskripsi: "",
-      alamat: "",
       kontak: "",
     },
   });
@@ -174,24 +169,6 @@ const CreateTokoPage = () => {
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="alamat"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Alamat</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Masukkan alamat toko"
-                          className="min-h-[80px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="kontak"

@@ -267,7 +267,7 @@ const AddressForm = () => {
 
       // Use the custom axios instance which includes CSRF token handling
       const response = await axiosInstance.post(
-        `/api/user/addresses`,
+        `/user/addresses`,
         formData,
         {
           headers: {

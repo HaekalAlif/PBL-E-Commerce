@@ -50,7 +50,7 @@ class District extends Model
      */
     public function regency()
     {
-        return $this->belongsTo(Regency::class, 'regency_id');
+        return $this->belongsTo(Regency::class, 'regency_id', 'id');
     }
 
     /**
@@ -60,6 +60,16 @@ class District extends Model
      */
     public function villages()
     {
-        return $this->hasMany(Village::class, 'district_id');
+        return $this->hasMany(Village::class, 'district_id', 'id');
+    }
+
+    /**
+     * District has many alamatUser.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function alamatUser()
+    {
+        return $this->hasMany(AlamatUser::class, 'kecamatan', 'id');
     }
 }

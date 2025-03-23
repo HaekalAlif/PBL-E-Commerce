@@ -13,6 +13,10 @@ use App\Http\Controllers\Admin\BarangManagementController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\User\AlamatUserController;
 use App\Http\Controllers\User\AlamatTokoController;
+use App\Http\Controllers\User\PembelianController;
+use App\Http\Controllers\User\DetailPembelianController;
+use App\Http\Controllers\User\TagihanController;
+use App\Http\Controllers\User\KeranjangController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -39,11 +43,18 @@ Route::prefix('toko')->group(function() {
 // Add a public kategori endpoint for the frontend
 Route::get('/kategori', [KategoriController::class, 'index']);
 
+// Public product catalog routes
+Route::get('/products', [BarangController::class, 'getPublicProducts']);
+Route::get('/products/{slug}', [BarangController::class, 'getPublicProductBySlug']);
+
 // Region routes
 Route::get('/provinces', [RegionController::class, 'getProvinces']);
 Route::get('/provinces/{id}/regencies', [RegionController::class, 'getRegencies']);
 Route::get('/regencies/{id}/districts', [RegionController::class, 'getDistricts']);
 Route::get('/districts/{id}/villages', [RegionController::class, 'getVillages']);
+
+// Public Midtrans notification callback
+Route::post('/payments/callback', [TagihanController::class, 'callback']);
 
 // Protected routes - require authentication
 Route::middleware('auth:sanctum')->group(function () {
@@ -103,6 +114,41 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/toko/addresses/{id}', [AlamatTokoController::class, 'destroy']);
     Route::patch('/toko/addresses/{id}/primary', [AlamatTokoController::class, 'setPrimary']);
 
+    // Purchase Management
+    Route::prefix('purchases')->group(function() {
+        Route::get('/', [PembelianController::class, 'index']);
+        Route::post('/', [PembelianController::class, 'store']);
+        Route::get('/{kode}', [PembelianController::class, 'show']);
+        Route::post('/{kode}/checkout', [PembelianController::class, 'checkout']);
+        Route::put('/{kode}/cancel', [PembelianController::class, 'cancel']);
+        
+        // Purchase Details Management
+        Route::get('/{kode}/items', [DetailPembelianController::class, 'index']);
+        Route::post('/{kode}/items', [DetailPembelianController::class, 'store']);
+        Route::get('/{kode}/items/{id}', [DetailPembelianController::class, 'show']);
+        Route::put('/{kode}/items/{id}', [DetailPembelianController::class, 'update']);
+        Route::delete('/{kode}/items/{id}', [DetailPembelianController::class, 'destroy']);
+    });
+    
+    // Payment Management
+    Route::prefix('payments')->group(function() {
+        Route::get('/', [TagihanController::class, 'getAll']); // Add this new route for getting all payments
+        Route::get('/{kode}', [TagihanController::class, 'show']);
+        Route::post('/{kode}/process', [TagihanController::class, 'processPayment']);
+        Route::get('/{kode}/status', [TagihanController::class, 'checkStatus']);
+    });
+
+    // Cart Management
+    Route::prefix('cart')->group(function() {
+        Route::get('/', [KeranjangController::class, 'index']);
+        Route::post('/', [KeranjangController::class, 'store']);
+        Route::put('/{id}', [KeranjangController::class, 'update']);
+        Route::delete('/{id}', [KeranjangController::class, 'destroy']);
+        Route::post('/select-all', [KeranjangController::class, 'selectAll']);
+        Route::post('/checkout', [KeranjangController::class, 'checkout']);
+        Route::post('/buy-now', [KeranjangController::class, 'buyNow']);
+    });
+
     // Admin routes
     Route::middleware('role:admin,superadmin')->group(function() {  
         // User management (admin only)
@@ -143,6 +189,67 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}/soft-delete', [BarangManagementController::class, 'softDelete'])->where('id', '[0-9]+');
             Route::put('/{id}/restore', [BarangManagementController::class, 'restore'])->where('id', '[0-9]+');
             Route::delete('/{id}', [BarangManagementController::class, 'destroy'])->where('id', '[0-9]+');
+        });
+    });
+
+    // Debug endpoints
+    Route::middleware('auth:sanctum')->group(function() {
+        // Debug endpoint to check purchase details directly
+        Route::get('/debug/purchases/{kode}', function($kode) {
+            $user = auth()->user();
+            
+            // Check if purchase exists
+            $purchase = \App\Models\Pembelian::where('kode_pembelian', $kode)
+                ->where('id_pembeli', $user->id_user)
+                ->first();
+            
+            if (!$purchase) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Purchase not found'
+                ], 404);
+            }
+            
+            // Check if detail pembelian exists
+            $details = \App\Models\DetailPembelian::where('id_pembelian', $purchase->id_pembelian)
+                ->with(['barang.gambarBarang', 'toko'])
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'purchase' => $purchase,
+                'details_count' => $details->count(),
+                'details' => $details
+            ]);
+        });
+
+        // New debug endpoint to fetch purchase by ID
+        Route::get('/debug/purchases/by-id/{id}', function($id) {
+            $user = auth()->user();
+            
+            // Check if purchase exists
+            $purchase = \App\Models\Pembelian::where('id_pembelian', $id)
+                ->where('id_pembeli', $user->id_user)
+                ->first();
+            
+            if (!$purchase) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Purchase not found'
+                ], 404);
+            }
+            
+            // Check if detail pembelian exists
+            $details = \App\Models\DetailPembelian::where('id_pembelian', $purchase->id_pembelian)
+                ->with(['barang.gambarBarang', 'toko'])
+                ->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'purchase' => $purchase,
+                'details_count' => $details->count(),
+                'details' => $details
+            ]);
         });
     });
 });

@@ -119,7 +119,6 @@ class TokoController extends Controller
         $validator = Validator::make($request->all(), [
             'nama_toko' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'alamat' => 'required|string|max:255',
             'kontak' => 'required|string|max:255',
         ]);
 
@@ -145,7 +144,6 @@ class TokoController extends Controller
             'nama_toko' => $request->nama_toko,
             'slug' => $slug,
             'deskripsi' => $request->deskripsi,
-            'alamat' => $request->alamat,
             'kontak' => $request->kontak,
             'is_active' => true,
             'is_deleted' => false,
@@ -182,7 +180,6 @@ class TokoController extends Controller
         $validator = Validator::make($request->all(), [
             'nama_toko' => 'sometimes|string|max:255',
             'deskripsi' => 'sometimes|string',
-            'alamat' => 'sometimes|string|max:255',
             'kontak' => 'sometimes|string|max:255',
         ]);
 
@@ -210,7 +207,6 @@ class TokoController extends Controller
         $toko->fill($request->only([
             'nama_toko',
             'deskripsi',
-            'alamat',
             'kontak'
         ]));
         

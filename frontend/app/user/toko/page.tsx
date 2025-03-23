@@ -546,13 +546,6 @@ const TokoPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-2">
-              <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium mb-1">Alamat</h3>
-                <p className="text-gray-600">{tokoData.alamat}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
               <Phone className="h-5 w-5 text-gray-500 mt-0.5" />
               <div>
                 <h3 className="text-sm font-medium mb-1">Kontak</h3>

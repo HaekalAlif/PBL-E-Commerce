@@ -459,4 +459,71 @@ class BarangController extends Controller
             'message' => 'Produk berhasil dihapus'
         ]);
     }
+
+    /**
+     * Get all products for public catalog
+     */
+    public function getPublicProducts(Request $request)
+    {
+        // Get query parameters
+        $search = $request->input('search');
+        $category = $request->input('category');
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
+        $perPage = $request->input('per_page', 12);
+        
+        // Start building the query
+        $query = Barang::where('is_deleted', false)
+                      ->where('status_barang', 'Tersedia')
+                      ->with(['kategori', 'toko', 'gambarBarang' => function($query) {
+                          $query->where('is_primary', true)->orderBy('urutan', 'asc');
+                      }]);
+        
+        // Apply search filter if provided
+        if ($search) {
+            $query->where('nama_barang', 'like', "%{$search}%")
+                  ->orWhere('deskripsi_barang', 'like', "%{$search}%");
+        }
+        
+        // Apply category filter if provided
+        if ($category) {
+            $query->where('id_kategori', $category);
+        }
+        
+        // Apply sorting
+        $query->orderBy($sortBy, $sortOrder);
+        
+        // Get paginated results
+        $products = $query->paginate($perPage);
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $products
+        ]);
+    }
+
+    /**
+     * Get a specific product by slug for public display
+     */
+    public function getPublicProductBySlug($slug)
+    {
+        $barang = Barang::where('slug', $slug)
+                        ->where('is_deleted', false)
+                        ->with(['kategori', 'toko', 'gambarBarang' => function($query) {
+                            $query->orderBy('is_primary', 'desc')->orderBy('urutan', 'asc');
+                        }])
+                        ->first();
+                        
+        if (!$barang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk tidak ditemukan'
+            ], 404);
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $barang
+        ]);
+    }
 }

@@ -48,7 +48,7 @@ class Regency extends Model
      */
     public function province()
     {
-        return $this->belongsTo(Province::class, 'province_id');
+        return $this->belongsTo(Province::class, 'province_id', 'id');
     }
 
     /**
@@ -58,6 +58,16 @@ class Regency extends Model
      */
     public function districts()
     {
-        return $this->hasMany(District::class, 'regency_id');
+        return $this->hasMany(District::class, 'regency_id', 'id');
+    }
+
+    /**
+     * Regency has many alamatUser.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function alamatUser()
+    {
+        return $this->hasMany(AlamatUser::class, 'kota', 'id');
     }
 }

@@ -50,6 +50,16 @@ class Village extends Model
      */
     public function district()
     {
-        return $this->belongsTo(District::class, 'district_id');
+        return $this->belongsTo(District::class, 'district_id', 'id');
+    }
+
+    /**
+     * Village has many AlamatUser.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function alamatUser()
+    {
+        return $this->hasMany(AlamatUser::class, 'kelurahan', 'id');
     }
 }
