@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Builder;
 
 class Pembelian extends Model
 {
@@ -14,6 +15,7 @@ class Pembelian extends Model
     protected $primaryKey = 'id_pembelian';
     public $timestamps = true;
     
+    // Update fillable array to match the actual database columns
     protected $fillable = [
         'id_pembeli',
         'id_alamat',
@@ -22,11 +24,27 @@ class Pembelian extends Model
         'catatan_pembeli',
         'is_deleted',
         'created_by',
-        'updated_by',
+        'updated_by'
     ];
+    
+    // Add a global scope to filter out deleted purchases by default
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::addGlobalScope('notDeleted', function (Builder $builder) {
+            $builder->where('is_deleted', false);
+        });
+    }
     
     // Define the relationship with the buyer (user)
     public function pembeli()
+    {
+        return $this->belongsTo(User::class, 'id_pembeli', 'id_user');
+    }
+    
+    // Add an alias relationship for 'user' that points to 'pembeli'
+    public function user()
     {
         return $this->belongsTo(User::class, 'id_pembeli', 'id_user');
     }
@@ -98,5 +116,52 @@ class Pembelian extends Model
         }
         
         return $code;
+    }
+
+    /**
+     * Calculate the total order amount from detail items
+     * This can be used when the tagihan is not available
+     */
+    public function getCalculatedTotalAttribute()
+    {
+        // If we have a tagihan with total_tagihan, use that
+        if ($this->tagihan && $this->tagihan->total_tagihan) {
+            return $this->tagihan->total_tagihan;
+        }
+        
+        // Otherwise calculate from detail items
+        return $this->detailPembelian->sum('subtotal') ?? 0;
+    }
+
+    /**
+     * Append calculated_total to the model when converting to array/JSON
+     */
+    protected $appends = ['calculated_total'];
+
+    // Add a utility method to force fetch even deleted purchases
+    public static function withDeleted()
+    {
+        return static::withoutGlobalScope('notDeleted');
+    }
+    
+    // Check if the purchase contains items from multiple stores
+    public function hasMultipleStores()
+    {
+        $storeIds = $this->detailPembelian()
+            ->select('id_toko')
+            ->distinct()
+            ->pluck('id_toko');
+            
+        return $storeIds->count() > 1;
+    }
+    
+    // Get store ids in this purchase
+    public function getStoreIdsAttribute()
+    {
+        return $this->detailPembelian()
+            ->select('id_toko')
+            ->distinct()
+            ->pluck('id_toko')
+            ->toArray();
     }
 }

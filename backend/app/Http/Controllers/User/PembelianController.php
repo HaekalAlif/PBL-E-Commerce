@@ -138,6 +138,7 @@ class PembelianController extends Controller
     
     /**
      * Create a new purchase (direct buy)
+     * Fixed to prevent creating empty orders
      */
     public function store(Request $request)
     {
@@ -247,6 +248,19 @@ class PembelianController extends Controller
             \Log::info('Purchase detail created', [
                 'detail_id' => $detail->id_detail_pembelian
             ]);
+            
+            // Double-check that purchase details were created successfully
+            $detailCount = DetailPembelian::where('id_pembelian', $pembelian->id_pembelian)->count();
+            
+            if ($detailCount === 0) {
+                // If no details were created, roll back the transaction
+                \Log::error('No purchase details were created for purchase ID: ' . $pembelian->id_pembelian);
+                DB::rollback();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Failed to create purchase details'
+                ], 500);
+            }
             
             DB::commit();
             
@@ -380,6 +394,234 @@ class PembelianController extends Controller
             
         } catch (\Exception $e) {
             DB::rollback();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat checkout: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Process checkout for multiple stores in single purchase
+     * Uses existing Tagihan model instead of MultiTagihan
+     * Fixed to prevent creating empty orders
+     */
+    public function multiCheckout(Request $request, $kode)
+    {
+        $user = Auth::user();
+        
+        $pembelian = Pembelian::where('kode_pembelian', $kode)
+                           ->where('id_pembeli', $user->id_user)
+                           ->where('status_pembelian', 'Draft')
+                           ->with(['detailPembelian.barang', 'detailPembelian.toko'])
+                           ->first();
+        
+        if (!$pembelian) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pembelian tidak ditemukan atau sudah diproses'
+            ], 404);
+        }
+        
+        // Verify the original purchase has detail items
+        if ($pembelian->detailPembelian->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Purchase has no items'
+            ], 400);
+        }
+        
+        // Validate checkout data
+        $validator = Validator::make($request->all(), [
+            'stores' => 'required|array',
+            'stores.*.id_toko' => 'required|exists:toko,id_toko',
+            'stores.*.id_alamat' => 'required|exists:alamat_user,id_alamat',
+            'stores.*.opsi_pengiriman' => 'required|string',
+            'stores.*.biaya_kirim' => 'required|numeric|min:0',
+            'stores.*.catatan_pembeli' => 'nullable|string',
+            'metode_pembayaran' => 'required|string'
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        // Group details by store
+        $detailsByStore = collect($pembelian->detailPembelian)->groupBy('id_toko');
+        
+        // Check if all stores from the purchase are included in the request
+        $requestStoreIds = collect($request->stores)->pluck('id_toko')->toArray();
+        $purchaseStoreIds = $detailsByStore->keys()->toArray();
+        
+        $missingStores = array_diff($purchaseStoreIds, $requestStoreIds);
+        if (!empty($missingStores)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Not all stores from the purchase are included in checkout configuration'
+            ], 400);
+        }
+        
+        // Check if products are still available and have enough stock
+        foreach ($pembelian->detailPembelian as $detail) {
+            $barang = $detail->barang;
+            
+            // Check if product is still available
+            if ($barang->status_barang != 'Tersedia' || $barang->is_deleted) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Produk ' . $barang->nama_barang . ' tidak tersedia lagi'
+                ], 400);
+            }
+            
+            // Check if there's enough stock
+            if ($barang->stok < $detail->jumlah) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Stok produk ' . $barang->nama_barang . ' tidak mencukupi. Tersedia: ' . $barang->stok
+                ], 400);
+            }
+        }
+        
+        DB::beginTransaction();
+        try {
+            // Set admin fee (you can adjust this as needed)
+            $biayaAdmin = 1000; // Fixed admin fee of Rp 1.000
+            
+            // Split the original purchase by store
+            $storePurchases = [];
+            $invoices = [];
+            $totalAllPurchases = 0;
+            $firstTagihan = null;
+            
+            // Generate a group ID to identify related orders
+            $groupId = 'GRP' . time() . rand(1000, 9999);
+            
+            // Create a counter to track successfully created store purchases
+            $successfulPurchases = 0;
+            
+            // Process each store
+            foreach ($request->stores as $storeConfig) {
+                $storeId = $storeConfig['id_toko'];
+                
+                // Get details for this store
+                $storeDetails = $detailsByStore->get($storeId);
+                
+                if (!$storeDetails || $storeDetails->isEmpty()) {
+                    \Log::warning('No details found for store ID: ' . $storeId);
+                    continue; // Skip if no details for this store
+                }
+                
+                // Create a new purchase for this store
+                $storePurchase = new Pembelian();
+                $storePurchase->id_pembeli = $user->id_user;
+                $storePurchase->id_alamat = $storeConfig['id_alamat'];
+                $storePurchase->kode_pembelian = Pembelian::generateKodePembelian();
+                $storePurchase->status_pembelian = 'Menunggu Pembayaran';
+                $storePurchase->catatan_pembeli = $storeConfig['catatan_pembeli'] ?? null;
+                $storePurchase->is_deleted = false;
+                $storePurchase->created_by = $user->id_user;
+                $storePurchase->save();
+                
+                // Calculate store totals
+                $storeTotalHarga = 0;
+                $detailsCreated = 0;
+                
+                // Copy details to the new purchase
+                foreach ($storeDetails as $detail) {
+                    $newDetail = new DetailPembelian();
+                    $newDetail->id_pembelian = $storePurchase->id_pembelian;
+                    $newDetail->id_barang = $detail->id_barang;
+                    $newDetail->id_toko = $detail->id_toko;
+                    $newDetail->harga_satuan = $detail->harga_satuan;
+                    $newDetail->jumlah = $detail->jumlah;
+                    $newDetail->subtotal = $detail->subtotal;
+                    $newDetail->save();
+                    
+                    $detailsCreated++;
+                    $storeTotalHarga += $detail->subtotal;
+                }
+                
+                // Verify details were actually created
+                if ($detailsCreated === 0) {
+                    \Log::error('No details created for purchase ID: ' . $storePurchase->id_pembelian);
+                    // Delete the empty purchase
+                    $storePurchase->delete();
+                    continue; // Skip to the next store
+                }
+                
+                // Create invoice for this store
+                $tagihan = new Tagihan();
+                $tagihan->id_pembelian = $storePurchase->id_pembelian;
+                $tagihan->kode_tagihan = Tagihan::generateKodeTagihan();
+                $tagihan->total_harga = $storeTotalHarga;
+                $tagihan->biaya_kirim = $storeConfig['biaya_kirim'];
+                $tagihan->opsi_pengiriman = $storeConfig['opsi_pengiriman'];
+                
+                // Add admin fee to first invoice only
+                if (empty($invoices)) {
+                    $tagihan->biaya_admin = $biayaAdmin;
+                    $tagihan->total_tagihan = $storeTotalHarga + $storeConfig['biaya_kirim'] + $biayaAdmin;
+                    $firstTagihan = $tagihan;
+                } else {
+                    $tagihan->biaya_admin = 0;
+                    $tagihan->total_tagihan = $storeTotalHarga + $storeConfig['biaya_kirim'];
+                }
+                
+                $tagihan->metode_pembayaran = $request->metode_pembayaran;
+                $tagihan->status_pembayaran = 'Menunggu';
+                $tagihan->group_id = $groupId; // Set the group ID for related orders
+                $tagihan->setPaymentDeadline(24); // Set 24 hours payment deadline
+                $tagihan->save();
+                
+                $successfulPurchases++;
+                $storePurchases[] = $storePurchase;
+                $invoices[] = $tagihan;
+                $totalAllPurchases += $tagihan->total_tagihan;
+            }
+            
+            // If no successful purchases were created, rollback and return error
+            if ($successfulPurchases === 0) {
+                DB::rollback();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No valid store purchases could be created'
+                ], 400);
+            }
+            
+            // IMPORTANT: Instead of setting original purchase to "Diproses", mark it as "Dibatalkan"
+            // and is_deleted to true so it doesn't show up in the order list
+            $pembelian->status_pembelian = 'Dibatalkan';
+            $pembelian->is_deleted = true;  // Set is_deleted to true to hide it completely
+            $pembelian->updated_by = $user->id_user;
+            $pembelian->save();
+            
+            DB::commit();
+            
+            // We'll use the first invoice for payment processing
+            // but the payment will apply to all invoices in the group
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Multi-store checkout berhasil',
+                'data' => [
+                    'kode_tagihan' => $firstTagihan->kode_tagihan,
+                    'group_id' => $groupId,
+                    'total_tagihan' => $totalAllPurchases,
+                    'deadline_pembayaran' => $firstTagihan->deadline_pembayaran,
+                    'store_count' => count($storePurchases)
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error during multi-store checkout: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
             
             return response()->json([
                 'status' => 'error',

@@ -12,8 +12,8 @@ class Tagihan extends Model
 
     protected $table = 'tagihan';
     protected $primaryKey = 'id_tagihan';
-    public $timestamps = true;
-    
+    protected $guarded = [];
+
     protected $fillable = [
         'id_pembelian',
         'kode_tagihan',
@@ -31,56 +31,125 @@ class Tagihan extends Model
         'tanggal_pembayaran',
         'snap_token',
         'payment_url',
+        'group_id',
     ];
     
     protected $dates = [
         'deadline_pembayaran',
         'tanggal_pembayaran',
     ];
-    
-    // Define the relationship with the purchase
+
+    /**
+     * Get the purchase associated with this invoice
+     */
     public function pembelian()
     {
         return $this->belongsTo(Pembelian::class, 'id_pembelian', 'id_pembelian');
     }
-    
-    // Generate a unique invoice code
+
+    /**
+     * Generate unique invoice code
+     */
     public static function generateKodeTagihan()
     {
-        $prefix = 'INV-';
-        $date = now()->format('Ymd');
+        $prefix = 'INV';
+        $year = date('Y');
+        $month = date('m');
+        $day = date('d');
         $random = mt_rand(1000, 9999);
-        $uniqueCode = $prefix . $date . $random;
         
-        // Ensure uniqueness
-        while (self::where('kode_tagihan', $uniqueCode)->exists()) {
-            $random = mt_rand(1000, 9999);
-            $uniqueCode = $prefix . $date . $random;
-        }
-        
-        return $uniqueCode;
+        return "{$prefix}{$year}{$month}{$day}{$random}";
     }
     
-    // Check if payment is still valid (not expired)
-    public function isValid()
+    /**
+     * Set payment deadline based on hours
+     */
+    public function setPaymentDeadline($hours = 24)
     {
-        if ($this->status_pembayaran == 'Dibayar') {
+        $this->deadline_pembayaran = Carbon::now()->addHours($hours);
+        return $this;
+    }
+    
+    /**
+     * Check if the invoice is expired
+     */
+    public function isExpired()
+    {
+        return Carbon::now()->isAfter($this->deadline_pembayaran);
+    }
+    
+    /**
+     * Check and update status if expired
+     */
+    public function checkExpiry()
+    {
+        if ($this->status_pembayaran === 'Menunggu' && $this->isExpired()) {
+            $this->status_pembayaran = 'Expired';
+            $this->save();
+            
+            // If this is part of a group, update all related invoices
+            if ($this->group_id) {
+                self::where('group_id', $this->group_id)
+                    ->where('id_tagihan', '!=', $this->id_tagihan)
+                    ->where('status_pembayaran', 'Menunggu')
+                    ->update(['status_pembayaran' => 'Expired']);
+            }
+            
             return true;
         }
         
-        if ($this->status_pembayaran == 'Expired' || $this->status_pembayaran == 'Gagal') {
-            return false;
+        return false;
+    }
+    
+    /**
+     * Find all invoices in the same group
+     */
+    public function getGroupInvoices()
+    {
+        if (!$this->group_id) {
+            return collect([$this]);
         }
         
-        // If status is "Menunggu", check deadline
-        if ($this->deadline_pembayaran && Carbon::now()->gt($this->deadline_pembayaran)) {
-            // Auto-update status to Expired if deadline has passed
-            $this->status_pembayaran = 'Expired';
-            $this->save();
+        return self::where('group_id', $this->group_id)->get();
+    }
+    
+    /**
+     * Check if payment is valid (not expired)
+     */
+    public function isValid()
+    {
+        if ($this->checkExpiry()) {
             return false;
         }
         
         return true;
+    }
+    
+    /**
+     * Handle payment success for all invoices in a group
+     */
+    public function markGroupAsPaid()
+    {
+        if (!$this->group_id) {
+            return;
+        }
+        
+        // Update all invoices in the group
+        self::where('group_id', $this->group_id)
+            ->where('status_pembayaran', 'Menunggu')
+            ->update([
+                'status_pembayaran' => 'Dibayar',
+                'tanggal_pembayaran' => now()
+            ]);
+            
+        // Update all related purchases to paid status
+        $invoices = self::where('group_id', $this->group_id)->get();
+        foreach ($invoices as $invoice) {
+            if ($invoice->pembelian) {
+                $invoice->pembelian->status_pembelian = 'Dibayar';
+                $invoice->pembelian->save();
+            }
+        }
     }
     
     // Check if payment is already completed
@@ -118,12 +187,5 @@ class Tagihan extends Model
         }
         
         return $this->save();
-    }
-    
-    // Set payment deadline (default: 24 hours from now)
-    public function setPaymentDeadline($hours = 24)
-    {
-        $this->deadline_pembayaran = Carbon::now()->addHours($hours);
-        return $this;
     }
 }

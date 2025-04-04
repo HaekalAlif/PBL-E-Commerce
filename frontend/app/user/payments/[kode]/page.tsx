@@ -313,16 +313,24 @@ export default function Payment() {
       if (response.data.status === "success") {
         const { snap_token, redirect_url } = response.data.data;
 
+        // Log received data for debugging
+        console.log("Payment token received:", {
+          snap_token,
+          redirect_url,
+        });
+
         // Open Midtrans Snap payment page
         if (window.snap && snap_token) {
           window.snap.pay(snap_token, {
             onSuccess: function (result: any) {
+              console.log("Payment success", result);
               setPaymentProcessed(true);
               setPaymentStatus("Dibayar");
               toast.success("Payment completed successfully!");
               checkPaymentStatus(); // Refresh status from server
             },
             onPending: function (result: any) {
+              console.log("Payment pending", result);
               toast.info("Waiting for your payment");
               checkPaymentStatus(); // Refresh status from server
             },
@@ -332,6 +340,7 @@ export default function Payment() {
               checkPaymentStatus(); // Refresh status from server
             },
             onClose: function () {
+              console.log("Payment window closed");
               toast.info("Payment window closed, you can try again");
               // Don't set payment as processed since user may want to retry
               checkPaymentStatus(); // Refresh status from server
@@ -339,16 +348,28 @@ export default function Payment() {
           });
         } else if (redirect_url) {
           // Fallback to redirect URL if Snap.js is not loaded
+          console.log("Redirecting to payment URL:", redirect_url);
           window.location.href = redirect_url;
+        } else {
+          setError("Payment method not available. Please try again later.");
+          toast.error("Payment method not available");
+          console.error("Neither snap.js nor redirect_url is available");
         }
       }
     } catch (error: any) {
       console.error("Error processing payment:", error);
 
-      // Display a more helpful error message
+      // Display a more helpful error message with details if available
       const errorMessage =
         error.response?.data?.message ||
+        error.message ||
         "Payment processing failed. Please try again.";
+
+      // Show additional debug info if available
+      if (error.response?.data?.debug_info) {
+        console.log("Debug info:", error.response.data.debug_info);
+      }
+
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

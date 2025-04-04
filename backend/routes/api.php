@@ -120,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [PembelianController::class, 'store']);
         Route::get('/{kode}', [PembelianController::class, 'show']);
         Route::post('/{kode}/checkout', [PembelianController::class, 'checkout']);
+        Route::post('/{kode}/multi-checkout', [PembelianController::class, 'multiCheckout']); // Add multi-checkout route here
         Route::put('/{kode}/cancel', [PembelianController::class, 'cancel']);
         
         // Purchase Details Management
@@ -251,5 +252,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 'details' => $details
             ]);
         });
+
+        // Debug routes for payment
+        Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
     });
 });

@@ -127,7 +127,7 @@ class TagihanController extends Controller
             \Log::info('Processing payment', [
                 'invoice_code' => $tagihan->kode_tagihan,
                 'total' => $tagihan->total_tagihan,
-                'buyer' => $pembeli->nama,
+                'buyer' => $pembeli->name,
                 'items_count' => count($pembelian->detailPembelian)
             ]);
             
@@ -169,15 +169,15 @@ class TagihanController extends Controller
             ];
             
             // Make sure we have phone number data or use a placeholder
-            $phone = $pembeli->no_telp ?: '08123456789';
+            $phone = $pembeli->no_hp ?: '08123456789';
             
             // Prepare customer details for Midtrans
             $customerDetails = [
-                'first_name' => $pembeli->nama,
+                'first_name' => $pembeli->name,
                 'email' => $pembeli->email,
                 'phone' => $phone,
                 'billing_address' => [
-                    'first_name' => $alamat->nama_penerima ?: $pembeli->nama,
+                    'first_name' => $alamat->nama_penerima ?: $pembeli->name,
                     'phone' => $alamat->no_telp ?: $phone,
                     'address' => $alamat->alamat_lengkap,
                     'city' => $alamat->regency->name ?? 'Unknown',
@@ -692,5 +692,31 @@ class TagihanController extends Controller
             'status' => 'success',
             'data' => $tagihan
         ]);
+    }
+    
+    /**
+     * Debug endpoint to check Midtrans configuration
+     */
+    public function debugMidtransConfig()
+    {
+        try {
+            $config = [
+                'server_key_exists' => !empty(config('services.midtrans.server_key')),
+                'client_key_exists' => !empty(config('services.midtrans.client_key')),
+                'is_production' => config('services.midtrans.is_production', false),
+                'api_url' => config('services.midtrans.is_production', false) ? 
+                    'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com'
+            ];
+            
+            return response()->json([
+                'status' => 'success',
+                'data' => $config
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error checking Midtrans configuration: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

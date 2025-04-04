@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-// Replace standard axios with your custom instance
 import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Store } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
 
 interface CheckoutProduct {
@@ -38,7 +37,9 @@ interface CheckoutProduct {
     url_gambar: string;
   }[];
   toko: {
+    id_toko: number;
     nama_toko: string;
+    slug?: string;
   };
 }
 
@@ -74,33 +75,42 @@ interface ShippingOption {
   etd: string;
 }
 
+// New interface to group products by store
+interface StoreCheckout {
+  id_toko: number;
+  nama_toko: string;
+  products: CheckoutProduct[];
+  subtotal: number;
+  selectedAddressId: number | null;
+  shippingOptions: ShippingOption[];
+  selectedShipping: string | null;
+  shippingCost: number;
+  notes: string;
+  isLoadingShipping: boolean;
+}
+
 export default function Checkout() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Remove the useToast hook
-  // const { toast } = useToast();
 
   // States for checkout data
   const [purchaseCode, setPurchaseCode] = useState<string>("");
-  const [products, setProducts] = useState<CheckoutProduct[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
-    null
-  );
-  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
-  const [selectedShipping, setSelectedShipping] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string>("");
+  const [storeCheckouts, setStoreCheckouts] = useState<StoreCheckout[]>([]);
+  const [defaultAddressId, setDefaultAddressId] = useState<number | null>(null);
 
   // Loading states
   const [loading, setLoading] = useState(true);
-  const [loadingShipping, setLoadingShipping] = useState(false);
   const [processingCheckout, setProcessingCheckout] = useState(false);
 
   // Price calculations
   const [subtotal, setSubtotal] = useState(0);
-  const [shippingCost, setShippingCost] = useState(0);
+  const [totalShipping, setTotalShipping] = useState(0);
   const [adminFee] = useState(1000); // Fixed admin fee
   const [total, setTotal] = useState(0);
+
+  // Add flag to track if this is a multi-store checkout
+  const [isMultiStoreCheckout, setIsMultiStoreCheckout] = useState(false);
 
   useEffect(() => {
     // Get product slug and quantity from URL query params (for direct purchase)
@@ -109,6 +119,10 @@ export default function Checkout() {
 
     // Get purchase code from URL query params (for cart checkout)
     const code = searchParams.get("code");
+
+    // Get multi-store flag from URL query params
+    const multiStore = searchParams.get("multi_store") === "true";
+    setIsMultiStoreCheckout(multiStore);
 
     if (code) {
       // Load existing purchase data
@@ -130,31 +144,27 @@ export default function Checkout() {
   useEffect(() => {
     // Calculate totals when relevant data changes
     calculateTotals();
-  }, [products, shippingCost]);
+  }, [storeCheckouts]);
 
   // Fetch existing purchase details with custom axios instance
   const fetchPurchaseDetails = async (code: string) => {
     setLoading(true);
     try {
-      // Use the NEXT_PUBLIC_API_URL consistently
       const response = await axiosInstance.get(
         `${process.env.NEXT_PUBLIC_API_URL}/purchases/${code}`
       );
 
       if (response.data.status === "success") {
         const purchaseData = response.data.data;
-
-        // Add debug logging to see what data we're getting
         console.log("Purchase data received:", purchaseData);
 
-        // Check if we have purchase data at all
         if (!purchaseData) {
           console.error("No purchase data received from the server");
           toast.error("Failed to load purchase details");
           return;
         }
 
-        // Specifically check for detailPembelian
+        // Handle missing detailPembelian
         if (!purchaseData.detailPembelian) {
           console.error(
             "Purchase data missing detailPembelian field:",
@@ -172,29 +182,23 @@ export default function Checkout() {
               Array.isArray(detailsResponse.data.data) &&
               detailsResponse.data.data.length > 0
             ) {
-              console.log(
-                "Retrieved purchase details via fallback:",
-                detailsResponse.data.data
-              );
-
-              // Transform the data to expected format
-              const transformedProducts = detailsResponse.data.data.map(
-                (detail: any) => ({
-                  id_barang: detail.barang.id_barang,
-                  nama_barang: detail.barang.nama_barang,
-                  harga: detail.harga_satuan,
-                  jumlah: detail.jumlah,
-                  subtotal: detail.subtotal,
-                  gambar_barang: detail.barang.gambar_barang || [],
-                  toko: detail.toko || { nama_toko: "Unknown Shop" },
-                })
-              );
-
-              setProducts(transformedProducts);
+              processProductsIntoStores(detailsResponse.data.data);
 
               // If purchase already has an address selected
               if (purchaseData.id_alamat) {
-                setSelectedAddressId(purchaseData.id_alamat);
+                setDefaultAddressId(purchaseData.id_alamat);
+              }
+
+              // Check if this is a multi-store checkout from metadata
+              if (purchaseData.catatan_pembeli) {
+                try {
+                  const metadata = JSON.parse(purchaseData.catatan_pembeli);
+                  if (metadata && metadata.is_multi_store) {
+                    setIsMultiStoreCheckout(true);
+                  }
+                } catch (e) {
+                  // Not valid JSON, ignore
+                }
               }
               return;
             }
@@ -210,61 +214,33 @@ export default function Checkout() {
           return;
         }
 
-        // Check if detailPembelian exists and is an array
-        if (Array.isArray(purchaseData.detailPembelian)) {
-          // Handle empty array case
-          if (purchaseData.detailPembelian.length === 0) {
-            console.error("Purchase has empty detailPembelian array");
-            toast.error("Purchase has no products");
-            router.push("/user/katalog");
-            return;
+        // Process the purchase details
+        if (
+          Array.isArray(purchaseData.detailPembelian) &&
+          purchaseData.detailPembelian.length > 0
+        ) {
+          processProductsIntoStores(purchaseData.detailPembelian);
+
+          // If purchase already has an address selected
+          if (purchaseData.id_alamat) {
+            setDefaultAddressId(purchaseData.id_alamat);
           }
 
-          // Transform the purchase data into the expected format
-          const transformedProducts = purchaseData.detailPembelian
-            .map((detail: any) => {
-              // Verify we have the barang (product) object
-              if (!detail.barang) {
-                console.error("Detail missing barang information:", detail);
-                return null;
+          // Check if this is a multi-store checkout from metadata
+          if (purchaseData.catatan_pembeli) {
+            try {
+              const metadata = JSON.parse(purchaseData.catatan_pembeli);
+              if (metadata && metadata.is_multi_store) {
+                setIsMultiStoreCheckout(true);
               }
-
-              // Get product images from either gambar_barang or the nested structure
-              const productImages = detail.barang.gambar_barang || [];
-
-              return {
-                id_barang: detail.barang.id_barang,
-                nama_barang: detail.barang.nama_barang,
-                harga: detail.harga_satuan,
-                jumlah: detail.jumlah,
-                subtotal: detail.subtotal,
-                gambar_barang: productImages,
-                toko: detail.toko || { nama_toko: "Unknown Shop" },
-              };
-            })
-            .filter(Boolean); // Remove any null entries
-
-          if (transformedProducts.length === 0) {
-            console.error("No valid products after transformation");
-            toast.error("No valid products in checkout");
-            router.push("/user/katalog");
-            return;
+            } catch (e) {
+              // Not valid JSON, ignore
+            }
           }
-
-          setProducts(transformedProducts);
-          console.log("Transformed products:", transformedProducts);
         } else {
-          // Handle the case where detailPembelian is missing or empty
-          console.error(
-            "Purchase data does not contain detailPembelian array:",
-            purchaseData
-          );
-          toast.error("Purchase has no products");
-        }
-
-        // If purchase already has an address selected
-        if (purchaseData.id_alamat) {
-          setSelectedAddressId(purchaseData.id_alamat);
+          console.error("Purchase has empty or invalid detailPembelian");
+          toast.error("Purchase has no valid products");
+          router.push("/user/katalog");
         }
       } else {
         console.error("Server returned error status:", response.data);
@@ -278,89 +254,63 @@ export default function Checkout() {
     }
   };
 
-  // Create new purchase with direct product
-  const createNewPurchase = async (productId: number, quantity: number) => {
-    setLoading(true);
-    try {
-      console.log(
-        "Creating purchase for product:",
-        productId,
-        "quantity:",
-        quantity
-      );
+  // Group products by store and create store checkout objects
+  const processProductsIntoStores = (detailItems: any[]) => {
+    const storeMap = new Map<number, StoreCheckout>();
 
-      // First fetch user addresses to get the primary address using axiosInstance
-      const addressesResponse = await axiosInstance.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/user/addresses`
-      );
-
-      if (addressesResponse.data.status === "success") {
-        const addressList = addressesResponse.data.data;
-        console.log("Addresses loaded:", addressList.length);
-
-        // Find primary address
-        const primaryAddress = addressList.find(
-          (addr: Address) => addr.is_primary
-        );
-
-        if (!primaryAddress && addressList.length === 0) {
-          toast.error("Please add a shipping address first");
-          router.push("/user/alamat");
-          return;
-        }
-
-        const addressId = primaryAddress
-          ? primaryAddress.id_alamat
-          : addressList[0].id_alamat;
-
-        console.log("Using address ID:", addressId);
-
-        // Create purchase with axiosInstance and correct path
-        const response = await axiosInstance.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/purchases`,
-          {
-            id_barang: productId,
-            jumlah: quantity,
-            id_alamat: addressId,
-          }
-        );
-
-        console.log("Purchase creation response:", response.data);
-
-        if (response.data.status === "success") {
-          const { kode_pembelian } = response.data.data;
-          setPurchaseCode(kode_pembelian);
-
-          // Add a small delay before fetching purchase details to ensure server processing
-          setTimeout(() => {
-            fetchPurchaseDetails(kode_pembelian);
-          }, 500);
-
-          setSelectedAddressId(addressId);
-        }
-      }
-    } catch (error: any) {
-      console.error("Error creating purchase:", error);
-
-      // Show more detailed error message
-      if (error.response) {
-        console.error("Response data:", error.response.data);
-        toast.error(
-          `Failed to create purchase: ${
-            error.response.data.message || "Unknown error"
-          }`
-        );
-      } else {
-        toast.error("Failed to create purchase: Network error");
+    detailItems.forEach((detail) => {
+      // Skip items without product info
+      if (!detail.barang) {
+        console.error("Detail missing barang information:", detail);
+        return;
       }
 
-      router.push("/user/katalog");
-    } finally {
-      setLoading(false);
-    }
+      const toko = detail.toko ||
+        detail.barang.toko || { id_toko: 0, nama_toko: "Unknown Shop" };
+      const tokoId = toko.id_toko;
+
+      // Create or get the store group
+      if (!storeMap.has(tokoId)) {
+        storeMap.set(tokoId, {
+          id_toko: tokoId,
+          nama_toko: toko.nama_toko,
+          products: [],
+          subtotal: 0,
+          selectedAddressId: defaultAddressId,
+          shippingOptions: [],
+          selectedShipping: null,
+          shippingCost: 0,
+          notes: "",
+          isLoadingShipping: false,
+        });
+      }
+
+      const storeGroup = storeMap.get(tokoId)!;
+
+      // Get product data
+      const productImages = detail.barang.gambar_barang || [];
+
+      // Create product object
+      const product: CheckoutProduct = {
+        id_barang: detail.barang.id_barang,
+        nama_barang: detail.barang.nama_barang,
+        harga: detail.harga_satuan,
+        jumlah: detail.jumlah,
+        subtotal: detail.subtotal,
+        gambar_barang: productImages,
+        toko: toko,
+      };
+
+      // Add product to store group
+      storeGroup.products.push(product);
+      storeGroup.subtotal += detail.subtotal;
+    });
+
+    // Convert map to array
+    setStoreCheckouts(Array.from(storeMap.values()));
   };
 
-  // Create new purchase with direct product using slug - improved error handling
+  // Create new purchase with direct product
   const createNewPurchaseFromSlug = async (
     productSlug: string,
     quantity: number
@@ -374,7 +324,7 @@ export default function Checkout() {
         quantity
       );
 
-      // First fetch user addresses to get the primary address using axiosInstance
+      // First fetch user addresses to get the primary address
       const addressesResponse = await axiosInstance.get(
         `${process.env.NEXT_PUBLIC_API_URL}/user/addresses`
       );
@@ -399,12 +349,13 @@ export default function Checkout() {
           : addressList[0].id_alamat;
 
         console.log("Using address ID:", addressId);
+        setDefaultAddressId(addressId);
 
         // Create purchase with axiosInstance and correct path, using slug
         const response = await axiosInstance.post(
           `${process.env.NEXT_PUBLIC_API_URL}/purchases`,
           {
-            product_slug: productSlug, // Use slug instead of ID
+            product_slug: productSlug,
             jumlah: quantity,
             id_alamat: addressId,
           }
@@ -418,12 +369,10 @@ export default function Checkout() {
 
           toast.success("Purchase created, loading details...");
 
-          // Add a larger delay before fetching purchase details
+          // Add a delay before fetching purchase details
           setTimeout(() => {
             fetchPurchaseDetails(kode_pembelian);
-          }, 1500); // Increased delay to allow server processing
-
-          setSelectedAddressId(addressId);
+          }, 1500);
         } else {
           toast.error(response.data.message || "Failed to create purchase");
           router.push("/user/katalog");
@@ -453,7 +402,6 @@ export default function Checkout() {
   // Fetch user addresses
   const fetchUserAddresses = async () => {
     try {
-      // Use the correct endpoint path with NEXT_PUBLIC_API_URL
       const response = await axiosInstance.get(
         `${process.env.NEXT_PUBLIC_API_URL}/user/addresses`
       );
@@ -462,14 +410,22 @@ export default function Checkout() {
         setAddresses(response.data.data);
 
         // Select primary address by default if no address is selected yet
-        if (!selectedAddressId && response.data.data.length > 0) {
+        if (!defaultAddressId && response.data.data.length > 0) {
           const primaryAddress = response.data.data.find(
             (addr: Address) => addr.is_primary
           );
-          setSelectedAddressId(
-            primaryAddress
-              ? primaryAddress.id_alamat
-              : response.data.data[0].id_alamat
+          const addressId = primaryAddress
+            ? primaryAddress.id_alamat
+            : response.data.data[0].id_alamat;
+
+          setDefaultAddressId(addressId);
+
+          // Apply to all stores
+          setStoreCheckouts((prevStores) =>
+            prevStores.map((store) => ({
+              ...store,
+              selectedAddressId: addressId,
+            }))
           );
         }
       }
@@ -479,67 +435,91 @@ export default function Checkout() {
     }
   };
 
-  // Calculate shipping options using dummy data - fix the error handling
-  const calculateShipping = async () => {
-    if (!selectedAddressId) {
-      toast.info("Please select a shipping address");
+  // Calculate shipping options for a specific store
+  const calculateShipping = async (storeIndex: number) => {
+    const store = storeCheckouts[storeIndex];
+
+    if (!store.selectedAddressId) {
+      toast.info("Please select a shipping address for this store");
       return;
     }
 
-    setLoadingShipping(true);
-    setShippingOptions([]);
-    setSelectedShipping(null);
+    // Update loading state for this store
+    setStoreCheckouts((prevStores) => {
+      const newStores = [...prevStores];
+      newStores[storeIndex] = {
+        ...newStores[storeIndex],
+        isLoadingShipping: true,
+        shippingOptions: [],
+        selectedShipping: null,
+        shippingCost: 0,
+      };
+      return newStores;
+    });
 
     try {
-      // Get selected address details - with better error handling
+      // Get selected address details
       const selectedAddress = addresses.find(
-        (addr) => addr.id_alamat === selectedAddressId
+        (addr) => addr.id_alamat === store.selectedAddressId
       );
 
       if (!selectedAddress) {
         toast.error("Please select a valid shipping address");
-        setLoadingShipping(false);
+        // Update loading state
+        setStoreCheckouts((prevStores) => {
+          const newStores = [...prevStores];
+          newStores[storeIndex] = {
+            ...newStores[storeIndex],
+            isLoadingShipping: false,
+          };
+          return newStores;
+        });
         return;
       }
 
-      // No need to validate regency - just use dummy data directly
-      // We'll skip the API call to RajaOngkir and simulate the response
-
       // Simulate a short loading time
       setTimeout(() => {
-        // Dummy shipping options
+        // Generate dummy options with different prices for each store
+        const basePrice = 10000 + storeIndex * 2000;
         const sampleOptions = [
           {
             service: "REG",
             description: "Layanan Regular",
-            cost: 15000,
+            cost: basePrice + 5000,
             etd: "2-3",
           },
           {
             service: "OKE",
             description: "Layanan Ekonomis",
-            cost: 10000,
+            cost: basePrice,
             etd: "3-6",
           },
           {
             service: "YES",
             description: "Yakin Esok Sampai",
-            cost: 25000,
+            cost: basePrice + 15000,
             etd: "1",
           },
         ];
 
-        setShippingOptions(sampleOptions);
-
-        // Select the cheapest option by default
+        // Find the cheapest option
         const cheapestOption = sampleOptions.reduce(
           (prev, curr) => (prev.cost < curr.cost ? prev : curr),
           sampleOptions[0]
         );
-        setSelectedShipping(cheapestOption.service);
-        setShippingCost(cheapestOption.cost);
 
-        setLoadingShipping(false);
+        // Update the store with shipping options
+        setStoreCheckouts((prevStores) => {
+          const newStores = [...prevStores];
+          newStores[storeIndex] = {
+            ...newStores[storeIndex],
+            shippingOptions: sampleOptions,
+            selectedShipping: cheapestOption.service,
+            shippingCost: cheapestOption.cost,
+            isLoadingShipping: false,
+          };
+          return newStores;
+        });
       }, 1000);
     } catch (error) {
       console.error("Error calculating shipping:", error);
@@ -547,71 +527,133 @@ export default function Checkout() {
         "Failed to calculate shipping costs. Using default options instead."
       );
 
-      // Use default shipping options even if calculation fails
+      // Set default shipping options
+      const basePrice = 10000 + storeIndex * 2000;
       const defaultOptions = [
         {
           service: "REG",
           description: "Layanan Regular",
-          cost: 15000,
+          cost: basePrice + 5000,
           etd: "2-3",
         },
         {
           service: "OKE",
           description: "Layanan Ekonomis",
-          cost: 10000,
+          cost: basePrice,
           etd: "3-6",
         },
       ];
 
-      setShippingOptions(defaultOptions);
-      setSelectedShipping("OKE");
-      setShippingCost(10000);
-      setLoadingShipping(false);
+      setStoreCheckouts((prevStores) => {
+        const newStores = [...prevStores];
+        newStores[storeIndex] = {
+          ...newStores[storeIndex],
+          shippingOptions: defaultOptions,
+          selectedShipping: "OKE",
+          shippingCost: basePrice,
+          isLoadingShipping: false,
+        };
+        return newStores;
+      });
     }
   };
 
   // Calculate order totals
   const calculateTotals = () => {
-    const productsSubtotal = products.reduce(
-      (total, product) => total + product.subtotal,
-      0
-    );
+    let productsSubtotal = 0;
+    let shippingTotal = 0;
+
+    storeCheckouts.forEach((store) => {
+      productsSubtotal += store.subtotal;
+      shippingTotal += store.shippingCost;
+    });
+
     setSubtotal(productsSubtotal);
-    setTotal(productsSubtotal + shippingCost + adminFee);
+    setTotalShipping(shippingTotal);
+    setTotal(productsSubtotal + shippingTotal + adminFee);
   };
 
-  // Update shipping cost when option changes
-  const handleShippingChange = (value: string) => {
-    setSelectedShipping(value);
-    const option = shippingOptions.find((opt) => opt.service === value);
+  // Update shipping option for a specific store
+  const handleShippingChange = (storeIndex: number, value: string) => {
+    const store = storeCheckouts[storeIndex];
+    const option = store.shippingOptions.find((opt) => opt.service === value);
+
     if (option) {
-      setShippingCost(option.cost);
+      setStoreCheckouts((prevStores) => {
+        const newStores = [...prevStores];
+        newStores[storeIndex] = {
+          ...newStores[storeIndex],
+          selectedShipping: value,
+          shippingCost: option.cost,
+        };
+        return newStores;
+      });
     }
   };
 
-  // Process the checkout - always use midtrans
-  const handleCheckout = async () => {
-    if (!selectedAddressId) {
-      toast.info("Please select a shipping address");
-      return;
-    }
+  // Update address for a specific store
+  const handleAddressChange = (storeIndex: number, addressId: number) => {
+    setStoreCheckouts((prevStores) => {
+      const newStores = [...prevStores];
+      newStores[storeIndex] = {
+        ...newStores[storeIndex],
+        selectedAddressId: addressId,
+        // Reset shipping when address changes
+        shippingOptions: [],
+        selectedShipping: null,
+        shippingCost: 0,
+      };
+      return newStores;
+    });
+  };
 
-    if (!selectedShipping) {
-      toast.info("Please select a shipping method");
+  // Update notes for a specific store
+  const handleNotesChange = (storeIndex: number, notes: string) => {
+    setStoreCheckouts((prevStores) => {
+      const newStores = [...prevStores];
+      newStores[storeIndex] = {
+        ...newStores[storeIndex],
+        notes: notes,
+      };
+      return newStores;
+    });
+  };
+
+  // Check if all stores have shipping selected
+  const allStoresReadyForCheckout = () => {
+    return storeCheckouts.every(
+      (store) =>
+        store.selectedAddressId &&
+        store.selectedShipping &&
+        !store.isLoadingShipping
+    );
+  };
+
+  // Process the checkout for all stores
+  const handleCheckout = async () => {
+    if (!allStoresReadyForCheckout()) {
+      toast.info("Please select shipping method for all stores");
       return;
     }
 
     setProcessingCheckout(true);
 
     try {
-      // Proceed with checkout using axiosInstance - use correct path with NEXT_PUBLIC_API_URL
+      // Create an array of store checkout configurations
+      const storeConfigs = storeCheckouts.map((store) => ({
+        id_toko: store.id_toko,
+        id_alamat: store.selectedAddressId,
+        opsi_pengiriman: `JNE ${store.selectedShipping}`,
+        biaya_kirim: store.shippingCost,
+        catatan_pembeli: store.notes,
+      }));
+
+      // Process multi-store checkout
       const response = await axiosInstance.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/purchases/${purchaseCode}/checkout`,
+        `${process.env.NEXT_PUBLIC_API_URL}/purchases/${purchaseCode}/multi-checkout`,
         {
-          opsi_pengiriman: `JNE ${selectedShipping}`,
-          biaya_kirim: shippingCost,
+          stores: storeConfigs,
           metode_pembayaran: "midtrans", // Always use midtrans
-          catatan_pembeli: notes,
         }
       );
 
@@ -645,204 +687,210 @@ export default function Checkout() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main checkout column */}
         <div className="md:col-span-2 space-y-6">
-          {/* Product details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Products</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {products.length > 0 ? (
-                products.map((product, index) => (
-                  <div key={index} className="flex gap-4 py-2">
-                    <div className="w-16 h-16 bg-gray-100 relative overflow-hidden rounded-md">
-                      {product.gambar_barang &&
-                      product.gambar_barang.length > 0 ? (
-                        <img
-                          src={product.gambar_barang[0]?.url_gambar}
-                          alt={product.nama_barang}
-                          className="object-cover w-full h-full"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "/placeholder-product.png";
-                          }}
-                        />
-                      ) : product.gambar_barang &&
+          {/* Store checkouts */}
+          {storeCheckouts.map((store, storeIndex) => (
+            <div key={store.id_toko} className="space-y-6">
+              {/* Store header */}
+              <Card>
+                <CardHeader className="bg-gray-50">
+                  <CardTitle className="flex items-center">
+                    <Store className="h-5 w-5 mr-2" />
+                    {store.nama_toko}
+                  </CardTitle>
+                </CardHeader>
+
+                {/* Products for this store */}
+                <CardContent className="space-y-4">
+                  {store.products.map((product, productIndex) => (
+                    <div key={productIndex} className="flex gap-4 py-2">
+                      <div className="w-16 h-16 bg-gray-100 relative overflow-hidden rounded-md">
+                        {product.gambar_barang &&
                         product.gambar_barang.length > 0 ? (
-                        <img
-                          src={product.gambar_barang[0]?.url_gambar}
-                          alt={product.nama_barang}
-                          className="object-cover w-full h-full"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "/placeholder-product.png";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                          No image
+                          <img
+                            src={product.gambar_barang[0]?.url_gambar}
+                            alt={product.nama_barang}
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "/placeholder-product.png";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium">{product.nama_barang}</h3>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-sm">
+                            {formatRupiah(product.harga)} x {product.jumlah}
+                          </span>
+                          <span className="font-medium">
+                            {formatRupiah(product.subtotal)}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium">{product.nama_barang}</h3>
-                      <p className="text-sm text-gray-500">
-                        {product.toko.nama_toko}
-                      </p>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-sm">
-                          {formatRupiah(product.harga)} x {product.jumlah}
-                        </span>
-                        <span className="font-medium">
-                          {formatRupiah(product.subtotal)}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500">No products in checkout</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Shipping address */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Shipping Address</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {addresses.length > 0 ? (
-                <RadioGroup
-                  value={selectedAddressId?.toString() || ""}
-                  onValueChange={(value) =>
-                    setSelectedAddressId(parseInt(value))
-                  }
-                  className="space-y-4"
-                >
-                  {addresses.map((address) => (
-                    <div
-                      key={address.id_alamat}
-                      className="flex items-start space-x-2 border rounded-lg p-3 hover:border-black transition-colors"
-                    >
-                      <RadioGroupItem
-                        value={address.id_alamat.toString()}
-                        id={`address-${address.id_alamat}`}
-                        className="mt-1"
-                      />
-                      <Label
-                        htmlFor={`address-${address.id_alamat}`}
-                        className="flex-1 cursor-pointer"
-                      >
-                        <div className="font-medium flex justify-between">
-                          <span>{address.nama_penerima}</span>
-                          {address.is_primary && (
-                            <span className="text-xs border border-black px-2 py-0.5 rounded-full">
-                              Primary
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {address.no_telp}
-                        </div>
-                        <div className="text-sm mt-1">
-                          {address.alamat_lengkap}, {address.district?.name},{" "}
-                          {address.regency?.name}, {address.province?.name},{" "}
-                          {address.kode_pos}
-                        </div>
-                      </Label>
-                    </div>
                   ))}
-                </RadioGroup>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-500 mb-2">
-                    You don't have any saved addresses
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push("/user/alamat")}
-                  >
-                    Add New Address
-                  </Button>
-                </div>
-              )}
+                </CardContent>
+              </Card>
 
-              {selectedAddressId && !shippingOptions.length && (
-                <Button
-                  variant="outline"
-                  onClick={calculateShipping}
-                  disabled={loadingShipping}
-                  className="w-full"
-                >
-                  {loadingShipping && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {/* Shipping address for this store */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Shipping Address for {store.nama_toko}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {addresses.length > 0 ? (
+                    <RadioGroup
+                      value={store.selectedAddressId?.toString() || ""}
+                      onValueChange={(value) =>
+                        handleAddressChange(storeIndex, parseInt(value))
+                      }
+                      className="space-y-4"
+                    >
+                      {addresses.map((address) => (
+                        <div
+                          key={address.id_alamat}
+                          className="flex items-start space-x-2 border rounded-lg p-3 hover:border-black transition-colors"
+                        >
+                          <RadioGroupItem
+                            value={address.id_alamat.toString()}
+                            id={`address-${storeIndex}-${address.id_alamat}`}
+                            className="mt-1"
+                          />
+                          <Label
+                            htmlFor={`address-${storeIndex}-${address.id_alamat}`}
+                            className="flex-1 cursor-pointer"
+                          >
+                            <div className="font-medium flex justify-between">
+                              <span>{address.nama_penerima}</span>
+                              {address.is_primary && (
+                                <span className="text-xs border border-black px-2 py-0.5 rounded-full">
+                                  Primary
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {address.no_telp}
+                            </div>
+                            <div className="text-sm mt-1">
+                              {address.alamat_lengkap}, {address.district?.name}
+                              , {address.regency?.name},{" "}
+                              {address.province?.name}, {address.kode_pos}
+                            </div>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500 mb-2">
+                        You don't have any saved addresses
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push("/user/alamat")}
+                      >
+                        Add New Address
+                      </Button>
+                    </div>
                   )}
-                  Calculate Shipping
-                </Button>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Shipping options */}
-          {shippingOptions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Shipping Method</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <RadioGroup
-                  value={selectedShipping || ""}
-                  onValueChange={handleShippingChange}
-                  className="space-y-3"
-                >
-                  {shippingOptions.map((option) => (
-                    <div
-                      key={option.service}
-                      className="flex items-start space-x-2 border rounded-lg p-3 hover:border-black transition-colors"
+                  {store.selectedAddressId && !store.shippingOptions.length && (
+                    <Button
+                      variant="outline"
+                      onClick={() => calculateShipping(storeIndex)}
+                      disabled={store.isLoadingShipping}
+                      className="w-full"
                     >
-                      <RadioGroupItem
-                        value={option.service}
-                        id={`shipping-${option.service}`}
-                        className="mt-1"
-                      />
-                      <Label
-                        htmlFor={`shipping-${option.service}`}
-                        className="flex-1 cursor-pointer"
-                      >
-                        <div className="font-medium">
-                          JNE {option.service} - {option.description}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Estimated delivery: {option.etd} days
-                        </div>
-                        <div className="text-sm font-semibold mt-1">
-                          {formatRupiah(option.cost)}
-                        </div>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </CardContent>
-            </Card>
-          )}
+                      {store.isLoadingShipping && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Calculate Shipping
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Add notes for this order"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="resize-none"
-                rows={3}
-              />
-            </CardContent>
-          </Card>
+              {/* Shipping options for this store */}
+              {store.shippingOptions.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Shipping Method for {store.nama_toko}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <RadioGroup
+                      value={store.selectedShipping || ""}
+                      onValueChange={(value) =>
+                        handleShippingChange(storeIndex, value)
+                      }
+                      className="space-y-3"
+                    >
+                      {store.shippingOptions.map((option) => (
+                        <div
+                          key={option.service}
+                          className="flex items-start space-x-2 border rounded-lg p-3 hover:border-black transition-colors"
+                        >
+                          <RadioGroupItem
+                            value={option.service}
+                            id={`shipping-${storeIndex}-${option.service}`}
+                            className="mt-1"
+                          />
+                          <Label
+                            htmlFor={`shipping-${storeIndex}-${option.service}`}
+                            className="flex-1 cursor-pointer"
+                          >
+                            <div className="font-medium">
+                              JNE {option.service} - {option.description}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Estimated delivery: {option.etd} days
+                            </div>
+                            <div className="text-sm font-semibold mt-1">
+                              {formatRupiah(option.cost)}
+                            </div>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Notes for this store */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notes for {store.nama_toko} (Optional)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    placeholder={`Add notes for your order from ${store.nama_toko}`}
+                    value={store.notes}
+                    onChange={(e) =>
+                      handleNotesChange(storeIndex, e.target.value)
+                    }
+                    className="resize-none"
+                    rows={3}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Store subtotal */}
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Store Subtotal:</span>
+                    <span className="font-bold">
+                      {formatRupiah(store.subtotal + store.shippingCost)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
         </div>
 
         {/* Order summary column */}
@@ -854,12 +902,12 @@ export default function Checkout() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Subtotal</span>
+                  <span className="text-gray-500">Products Subtotal</span>
                   <span>{formatRupiah(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Shipping</span>
-                  <span>{formatRupiah(shippingCost)}</span>
+                  <span className="text-gray-500">Total Shipping</span>
+                  <span>{formatRupiah(totalShipping)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Admin Fee</span>
@@ -885,10 +933,9 @@ export default function Checkout() {
               <Button
                 className="w-full"
                 disabled={
-                  !selectedAddressId ||
-                  !selectedShipping ||
                   processingCheckout ||
-                  products.length === 0
+                  storeCheckouts.length === 0 ||
+                  !allStoresReadyForCheckout()
                 }
                 onClick={handleCheckout}
               >
