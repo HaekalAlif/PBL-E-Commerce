@@ -10,7 +10,7 @@ class DetailPembelian extends Model
     use HasFactory;
     
     protected $table = 'detail_pembelian';
-    protected $primaryKey = 'id_detail_pembelian';
+    protected $primaryKey = 'id_detail';
     
     protected $fillable = [
         'id_pembelian',
@@ -43,5 +43,13 @@ class DetailPembelian extends Model
     public function toko()
     {
         return $this->belongsTo(Toko::class, 'id_toko', 'id_toko');
+    }
+
+    /**
+     * Get the shipping information record associated with this purchase detail
+     */
+    public function pengirimanPembelian()
+    {
+        return $this->hasOne(PengirimanPembelian::class, 'id_detail_pembelian', 'id_detail');
     }
 }

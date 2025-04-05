@@ -110,27 +110,32 @@ export default function OrdersPage() {
       const response = await axiosInstance.get(
         `${process.env.NEXT_PUBLIC_API_URL}/purchases`
       );
-      
+
       console.log("API Response:", response.data); // Debug log to see the actual response
-      
+
       if (response.data.status === "success") {
         // Check if data exists and is an array
         if (Array.isArray(response.data.data)) {
           // Filter out drafts
-          const nonDraftOrders = response.data.data.filter((order: OrderItem) => 
-            order.status_pembelian !== "Draft"
+          const nonDraftOrders = response.data.data.filter(
+            (order: OrderItem) => order.status_pembelian !== "Draft"
           );
-          
+
           // Sort by newest first
-          nonDraftOrders.sort((a: OrderItem, b: OrderItem) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          nonDraftOrders.sort(
+            (a: OrderItem, b: OrderItem) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
           );
-          
+
           setOrders(nonDraftOrders);
           setFilteredOrders(nonDraftOrders);
         } else {
           // Handle the case where data is not an array
-          console.error("API response data is not an array:", response.data.data);
+          console.error(
+            "API response data is not an array:",
+            response.data.data
+          );
           setOrders([]);
           setFilteredOrders([]);
           setError("Invalid data format received from server");
@@ -157,10 +162,28 @@ export default function OrdersPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "Draft":
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">
+            Draft
+          </Badge>
+        );
+      case "Menunggu Pembayaran":
+        return (
+          <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+            Awaiting Payment
+          </Badge>
+        );
       case "Dibayar":
         return (
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
             Paid
+          </Badge>
+        );
+      case "Diproses":
+        return (
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+            Processing
           </Badge>
         );
       case "Dikirim":
@@ -181,15 +204,6 @@ export default function OrdersPage() {
             Cancelled
           </Badge>
         );
-      case "Menunggu Pembayaran":
-        return (
-          <Badge
-            variant="outline"
-            className="border-yellow-500 text-yellow-600"
-          >
-            Awaiting Payment
-          </Badge>
-        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -197,16 +211,20 @@ export default function OrdersPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case "Draft":
+        return <Package className="h-5 w-5 text-gray-500" />;
+      case "Menunggu Pembayaran":
+        return <Clock className="h-5 w-5 text-yellow-600" />;
       case "Dibayar":
         return <CheckCircle className="h-5 w-5 text-blue-600" />;
+      case "Diproses":
+        return <Package className="h-5 w-5 text-purple-600" />;
       case "Dikirim":
         return <Truck className="h-5 w-5 text-orange-600" />;
       case "Selesai":
         return <CircleCheck className="h-5 w-5 text-green-600" />;
       case "Dibatalkan":
         return <Ban className="h-5 w-5 text-gray-500" />;
-      case "Menunggu Pembayaran":
-        return <Clock className="h-5 w-5 text-yellow-600" />;
       default:
         return <Package className="h-5 w-5 text-gray-600" />;
     }
@@ -311,8 +329,9 @@ export default function OrdersPage() {
         <TabsList className="mb-2">
           <TabsTrigger value="all">All Orders</TabsTrigger>
           <TabsTrigger value="Menunggu Pembayaran">To Pay</TabsTrigger>
-          <TabsTrigger value="Dibayar">Processing</TabsTrigger>
-          <TabsTrigger value="Dikirim">To Receive</TabsTrigger>
+          <TabsTrigger value="Dibayar">Paid</TabsTrigger>
+          <TabsTrigger value="Diproses">Processing</TabsTrigger>
+          <TabsTrigger value="Dikirim">Shipped</TabsTrigger>
           <TabsTrigger value="Selesai">Completed</TabsTrigger>
           <TabsTrigger value="Dibatalkan">Cancelled</TabsTrigger>
         </TabsList>

@@ -36,6 +36,26 @@ import {
 } from "lucide-react";
 import { formatRupiah } from "@/lib/utils";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 interface OrderDetail {
   id_pembelian: number;
   kode_pembelian: string;
@@ -122,6 +142,9 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isConfirmDeliveryOpen, setIsConfirmDeliveryOpen] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchOrderDetail();
@@ -133,6 +156,9 @@ export default function OrderDetail() {
       let step = 0;
 
       switch (order.status_pembelian) {
+        case "Draft":
+          step = 0; // Order Created
+          break;
         case "Menunggu Pembayaran":
           step = 0; // Order Placed
           break;
@@ -144,9 +170,6 @@ export default function OrderDetail() {
           break;
         case "Dikirim":
           step = 3; // Shipped
-          break;
-        case "Diterima":
-          step = 4; // Delivered
           break;
         case "Selesai":
           step = 5; // Completed
@@ -244,6 +267,12 @@ export default function OrderDetail() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "Draft":
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">
+            Draft
+          </Badge>
+        );
       case "Dibayar":
         return (
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
@@ -296,6 +325,8 @@ export default function OrderDetail() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case "Draft":
+        return <Package className="h-5 w-5 text-gray-500" />;  
       case "Dibayar":
         return <CheckCircle className="h-5 w-5 text-blue-600" />;
       case "Diproses":
@@ -330,7 +361,40 @@ export default function OrderDetail() {
   };
 
   const handleConfirmDelivery = () => {
-    toast.info("This feature is coming soon");
+    setIsConfirmDeliveryOpen(true);
+  };
+  
+  const submitDeliveryConfirmation = async () => {
+    if (!order) return;
+    
+    setIsConfirming(true);
+    try {
+      const response = await axiosInstance.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/purchases/${order.kode_pembelian}/confirm-delivery`
+      );
+
+      if (response.data.status === "success") {
+        toast.success("Delivery confirmed successfully!");
+        // Update the local order state
+        setOrder({
+          ...order,
+          status_pembelian: "Selesai"
+        });
+        setCurrentStep(5); // Set to completed step
+      } else {
+        toast.error("Failed to confirm delivery");
+      }
+    } catch (error: any) {
+      console.error("Error confirming delivery:", error);
+      toast.error(error.response?.data?.message || "Error confirming delivery");
+    } finally {
+      setIsConfirming(false);
+      setIsConfirmDeliveryOpen(false);
+    }
+  };
+  
+  const handleComplaint = () => {
+    setIsComplaintDialogOpen(true);
   };
 
   if (loading) {
@@ -712,12 +776,23 @@ export default function OrderDetail() {
                 )}
 
               {order.status_pembelian === "Dikirim" && (
-                <Button className="w-full" onClick={handleConfirmDelivery}>
-                  Confirm Delivery
-                </Button>
+                <>
+                  <Button className="w-full" onClick={handleConfirmDelivery}>
+                    <CheckCircle className="h-4 w-4 mr-2" /> 
+                    Confirm Delivery
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={handleComplaint}
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Report Issue
+                  </Button>
+                </>
               )}
 
-              {order.status_pembelian === "Diterima" && (
+              {order.status_pembelian === "Selesai" && (
                 <Button className="w-full" variant="outline">
                   Give Review
                 </Button>
@@ -760,6 +835,68 @@ export default function OrderDetail() {
           </Card>
         </div>
       </div>
+
+      {/* Confirm Delivery Alert Dialog */}
+      <AlertDialog open={isConfirmDeliveryOpen} onOpenChange={setIsConfirmDeliveryOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delivery</AlertDialogTitle>
+            <AlertDialogDescription>
+              By confirming, you verify that you have received your order and the products match the seller's description.
+              <p className="mt-2 font-medium">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={submitDeliveryConfirmation}
+              disabled={isConfirming}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isConfirming ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Confirming...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Yes, I've Received My Order
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Complaint Feature Dialog - Feature in development */}
+      <Dialog open={isComplaintDialogOpen} onOpenChange={setIsComplaintDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report an Issue</DialogTitle>
+            <DialogDescription>
+              This feature is currently under development.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center">
+              <div className="p-4 bg-orange-50 text-orange-700 rounded-lg border border-orange-200 text-center">
+                <AlertCircle className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                <h3 className="font-medium text-lg">Coming Soon</h3>
+                <p className="text-sm mt-2">
+                  Our complaint system is currently being developed. 
+                  If you have issues with your order, please contact customer support.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button>Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -687,4 +687,52 @@ class PembelianController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Confirm delivery of an order
+     */
+    public function confirmDelivery($kode)
+    {
+        $user = Auth::user();
+        
+        $pembelian = Pembelian::where('kode_pembelian', $kode)
+                           ->where('id_pembeli', $user->id_user)
+                           ->where('status_pembelian', 'Dikirim')
+                           ->first();
+        
+        if (!$pembelian) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pembelian tidak ditemukan atau tidak dapat dikonfirmasi'
+            ], 404);
+        }
+        
+        DB::beginTransaction();
+        try {
+            // Update purchase status to 'Selesai'
+            $pembelian->status_pembelian = 'Selesai';
+            $pembelian->updated_by = $user->id_user;
+            $pembelian->save();
+            
+            // You could add more logic here like triggering seller notification, etc.
+            
+            DB::commit();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Pengiriman berhasil dikonfirmasi',
+                'data' => [
+                    'status_pembelian' => $pembelian->status_pembelian
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengonfirmasi pengiriman: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

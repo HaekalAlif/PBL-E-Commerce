@@ -164,4 +164,37 @@ class Pembelian extends Model
             ->pluck('id_toko')
             ->toArray();
     }
+
+    /**
+     * Check if order status can be updated to the given status
+     * based on the current status
+     */
+    public function canUpdateStatusTo($newStatus)
+    {
+        $validTransitions = [
+            'Draft' => ['Menunggu Pembayaran', 'Dibatalkan'],
+            'Menunggu Pembayaran' => ['Dibayar', 'Dibatalkan'],
+            'Dibayar' => ['Diproses', 'Dibatalkan'],
+            'Diproses' => ['Dikirim'],
+            'Dikirim' => ['Diterima'],
+            'Diterima' => ['Selesai']
+        ];
+        
+        $currentStatus = $this->status_pembelian;
+        
+        return isset($validTransitions[$currentStatus]) && 
+               in_array($newStatus, $validTransitions[$currentStatus]);
+    }
+    
+    /**
+     * Get all orders for a specific shop by shop ID
+     */
+    public static function getOrdersForShop($shopId)
+    {
+        return self::whereHas('detailPembelian', function ($query) use ($shopId) {
+                $query->where('id_toko', $shopId);
+            })
+            ->where('is_deleted', false)
+            ->orderBy('updated_at', 'desc');
+    }
 }

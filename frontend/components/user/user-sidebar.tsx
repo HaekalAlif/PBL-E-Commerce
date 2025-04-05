@@ -19,6 +19,8 @@ import {
   MapPin,
   ShoppingCart,
   ShoppingBag,
+  ClipboardList,
+  Box,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -59,7 +61,13 @@ const menuGroups = [
     label: "Store Management",
     items: [
       { title: "My Store", url: "/user/toko", icon: Store, badge: "" },
-      { title: "Products", url: "/user/toko/barang", icon: Package, badge: "" },
+      { title: "Products", url: "/user/toko/barang", icon: Box, badge: "" },
+      {
+        title: "Orders",
+        url: "/user/toko/orders",
+        icon: ClipboardList,
+        badge: "",
+      },
     ],
   },
 ];

@@ -17,6 +17,7 @@ use App\Http\Controllers\User\PembelianController;
 use App\Http\Controllers\User\DetailPembelianController;
 use App\Http\Controllers\User\TagihanController;
 use App\Http\Controllers\User\KeranjangController;
+use App\Http\Controllers\User\PesananTokoController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -122,6 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{kode}/checkout', [PembelianController::class, 'checkout']);
         Route::post('/{kode}/multi-checkout', [PembelianController::class, 'multiCheckout']); // Add multi-checkout route here
         Route::put('/{kode}/cancel', [PembelianController::class, 'cancel']);
+        Route::put('/{kode}/confirm-delivery', [PembelianController::class, 'confirmDelivery']); // Add this new route
         
         // Purchase Details Management
         Route::get('/{kode}/items', [DetailPembelianController::class, 'index']);
@@ -148,6 +150,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/select-all', [KeranjangController::class, 'selectAll']);
         Route::post('/checkout', [KeranjangController::class, 'checkout']);
         Route::post('/buy-now', [KeranjangController::class, 'buyNow']);
+    });
+
+    // Seller Order Management Routes
+    Route::middleware(['auth:sanctum', 'verified'])->prefix('seller')->group(function () {
+        // List all orders for seller's shop
+        Route::get('/orders', [PesananTokoController::class, 'index']);
+        
+        // Get order statistics
+        Route::get('/orders/stats', [PesananTokoController::class, 'getOrderStats']);
+        
+        // Get individual order details
+        Route::get('/orders/{kode}', [PesananTokoController::class, 'show']);
+        
+        // Confirm receipt of the order and move to 'Diproses' status
+        Route::post('/orders/{kode}/confirm', [PesananTokoController::class, 'confirmOrder']);
+        
+        // Ship an order and add shipping information
+        Route::post('/orders/{kode}/ship', [PesananTokoController::class, 'shipOrder']);
     });
 
     // Admin routes
