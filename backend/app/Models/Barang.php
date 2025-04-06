@@ -92,10 +92,18 @@ class Barang extends Model
     }
 
     /**
-     * Get the gambar barang for the barang.
+     * Get all images for this product
+     */
+    public function gambar_barang()
+    {
+        return $this->hasMany(GambarBarang::class, 'id_barang', 'id_barang');
+    }
+
+    /**
+     * Get all images for this product (camelCase alias for compatibility)
      */
     public function gambarBarang()
     {
-        return $this->hasMany(GambarBarang::class, 'id_barang', 'id_barang');
+        return $this->gambar_barang();
     }
 }

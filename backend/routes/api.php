@@ -18,6 +18,7 @@ use App\Http\Controllers\User\DetailPembelianController;
 use App\Http\Controllers\User\TagihanController;
 use App\Http\Controllers\User\KeranjangController;
 use App\Http\Controllers\User\PesananTokoController;
+use App\Http\Controllers\Admin\PesananManagementController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -210,6 +211,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}/soft-delete', [BarangManagementController::class, 'softDelete'])->where('id', '[0-9]+');
             Route::put('/{id}/restore', [BarangManagementController::class, 'restore'])->where('id', '[0-9]+');
             Route::delete('/{id}', [BarangManagementController::class, 'destroy'])->where('id', '[0-9]+');
+        });
+
+        // Admin order management
+        Route::prefix('admin/pesanan')->group(function() {
+            Route::get('/', [PesananManagementController::class, 'index']);
+            Route::get('/stats', [PesananManagementController::class, 'getOrderStats']);
+            Route::get('/{kode}', [PesananManagementController::class, 'show']);
+            Route::put('/{kode}/status', [PesananManagementController::class, 'updateStatus']);
+            Route::post('/{kode}/comment', [PesananManagementController::class, 'addComment']);
         });
     });
 

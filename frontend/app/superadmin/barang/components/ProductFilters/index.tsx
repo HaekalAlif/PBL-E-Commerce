@@ -85,14 +85,14 @@ export default function ProductFilters({
     priceSort !== null;
 
   return (
-    <div className="border-b pb-4 mb-4">
+    <div className="border-b pb-4 mb-4 overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div className="relative flex-1">
+        <div className="relative flex-1 w-full">
           <Input
             placeholder="Search products by name, description or slug..."
             value={debouncedSearchTerm}
             onChange={(e) => setDebouncedSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         </div>
@@ -100,12 +100,21 @@ export default function ProductFilters({
           {/* Category filter dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex gap-2">
-                <Filter className="h-4 w-4" />
-                Category
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex gap-2 items-center max-w-[200px] overflow-hidden"
+              >
+                <Filter className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Category</span>
                 {categoryFilter !== null && (
-                  <Badge variant="secondary" className="ml-1">
-                    {getCategoryName(categoryFilter)}
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 max-w-[100px] truncate"
+                  >
+                    <span className="truncate">
+                      {getCategoryName(categoryFilter)}
+                    </span>
                   </Badge>
                 )}
               </Button>
@@ -134,12 +143,21 @@ export default function ProductFilters({
           {/* Status filter dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex gap-2">
-                <Filter className="h-4 w-4" />
-                Status
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex gap-2 items-center max-w-[200px] overflow-hidden"
+              >
+                <Filter className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Status</span>
                 {statusFilter !== null && (
-                  <Badge variant="secondary" className="ml-1">
-                    {formatStatus(statusFilter)}
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 max-w-[100px] truncate"
+                  >
+                    <span className="truncate">
+                      {formatStatus(statusFilter)}
+                    </span>
                   </Badge>
                 )}
               </Button>
@@ -206,7 +224,12 @@ export default function ProductFilters({
 
           {/* Clear filters button */}
           {showClearButton && (
-            <Button variant="ghost" size="sm" onClick={onClearFilters}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearFilters}
+              className="whitespace-nowrap"
+            >
               Clear Filters
             </Button>
           )}
@@ -215,29 +238,49 @@ export default function ProductFilters({
 
       {/* Filter badge indicators */}
       {showClearButton && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          <div className="text-sm text-muted-foreground">
-            Filters applied:
-            {searchTerm && (
-              <Badge variant="outline" className="ml-2">
-                Search: {searchTerm}
-              </Badge>
-            )}
-            {categoryFilter !== null && (
-              <Badge variant="outline" className="ml-2">
-                Category: {getCategoryName(categoryFilter)}
-              </Badge>
-            )}
-            {statusFilter !== null && (
-              <Badge variant="outline" className="ml-2">
-                Status: {formatStatus(statusFilter)}
-              </Badge>
-            )}
-            {priceSort !== null && (
-              <Badge variant="outline" className="ml-2">
-                Price: {formatPriceSort(priceSort)}
-              </Badge>
-            )}
+        <div className="flex flex-wrap gap-2 mt-2 overflow-hidden">
+          <div className="text-sm text-muted-foreground w-full">
+            <span className="mr-2">Filters applied:</span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {searchTerm && (
+                <Badge
+                  variant="outline"
+                  className="max-w-[150px] overflow-hidden"
+                >
+                  <span className="truncate">Search: {searchTerm}</span>
+                </Badge>
+              )}
+              {categoryFilter !== null && (
+                <Badge
+                  variant="outline"
+                  className="max-w-[150px] overflow-hidden"
+                >
+                  <span className="truncate">
+                    Category: {getCategoryName(categoryFilter)}
+                  </span>
+                </Badge>
+              )}
+              {statusFilter !== null && (
+                <Badge
+                  variant="outline"
+                  className="max-w-[150px] overflow-hidden"
+                >
+                  <span className="truncate">
+                    Status: {formatStatus(statusFilter)}
+                  </span>
+                </Badge>
+              )}
+              {priceSort !== null && (
+                <Badge
+                  variant="outline"
+                  className="max-w-[150px] overflow-hidden"
+                >
+                  <span className="truncate">
+                    Price: {formatPriceSort(priceSort)}
+                  </span>
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       )}

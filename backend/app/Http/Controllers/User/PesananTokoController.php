@@ -348,16 +348,32 @@ class PesananTokoController extends Controller
             
             DB::beginTransaction();
             
-            // Handle image upload
+            // Handle image upload - IMPROVED VERSION
             $buktiPath = null;
             if ($request->hasFile('bukti_pengiriman')) {
                 $file = $request->file('bukti_pengiriman');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $file->storeAs('public/pengiriman', $fileName);
+                
+                // Make sure the directory exists
+                if (!file_exists(public_path('storage/pengiriman'))) {
+                    mkdir(public_path('storage/pengiriman'), 0755, true);
+                }
+                
+                // Store the file directly in the public storage
+                $file->move(public_path('storage/pengiriman'), $fileName);
+                
+                // Set the relative path for database storage (accessible from web)
                 $buktiPath = 'storage/pengiriman/' . $fileName;
+                
+                // Log successful upload
+                Log::info('Shipping proof image saved', [
+                    'file_name' => $fileName,
+                    'path' => $buktiPath,
+                    'full_url' => asset($buktiPath)
+                ]);
             }
             
-            // Create shipping record - update to use the correct column name and remove kurir field
+            // Create shipping record - ensure we use id_detail as the foreign key
             $pengiriman = new PengirimanPembelian();
             $pengiriman->id_detail_pembelian = $pembelian->detailPembelian->first()->id_detail;
             $pengiriman->nomor_resi = $request->nomor_resi;
@@ -366,6 +382,15 @@ class PesananTokoController extends Controller
             $pengiriman->tanggal_pengiriman = Carbon::now();
             $pengiriman->save();
             
+            // Log the newly created shipping record for debugging
+            Log::info('Created shipping record', [
+                'pengiriman_id' => $pengiriman->id_pengiriman,
+                'detail_id' => $pembelian->detailPembelian->first()->id_detail,
+                'resi' => $request->nomor_resi,
+                'bukti_path' => $buktiPath,
+                'bukti_url' => asset($buktiPath) // Full URL for easier debugging
+            ]);
+            
             // Update purchase status
             $pembelian->status_pembelian = 'Dikirim';
             $pembelian->updated_by = $user->id_user;
@@ -373,12 +398,16 @@ class PesananTokoController extends Controller
             
             DB::commit();
             
+            // Include full image URL in response for frontend
+            $pengirimanData = $pengiriman->toArray();
+            $pengirimanData['bukti_pengiriman_url'] = asset($buktiPath);
+            
             return response()->json([
                 'status' => 'success',
                 'message' => 'Pesanan berhasil dikirim',
                 'data' => [
                     'status_pembelian' => $pembelian->status_pembelian,
-                    'pengiriman' => $pengiriman
+                    'pengiriman' => $pengirimanData
                 ]
             ]);
             

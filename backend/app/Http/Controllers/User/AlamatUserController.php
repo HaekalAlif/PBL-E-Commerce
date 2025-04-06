@@ -3,31 +3,39 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\AlamatUser;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\District;
 use App\Models\Village;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class AlamatUserController extends Controller
 {
     /**
-     * Get addresses for authenticated user
-     * 
-     * @return \Illuminate\Http\Response
+     * Display a listing of user addresses with region information
      */
     public function index()
     {
-        $userId = Auth::user()->id_user;
-        $addresses = AlamatUser::where('id_user', $userId)->get();
-        
-        return response()->json([
-            'status' => 'success',
-            'data' => $addresses
-        ]);
+        try {
+            $user = Auth::user();
+            $addresses = AlamatUser::where('id_user', $user->id_user)
+                ->with(['province', 'regency', 'district', 'village'])
+                ->get();
+            
+            // Return response with properly structured data
+            return response()->json([
+                'status' => 'success',
+                'data' => $addresses
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch addresses: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -57,13 +65,11 @@ class AlamatUserController extends Controller
     }
 
     /**
-     * Create a new address
-     * 
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * Store a newly created address
      */
     public function store(Request $request)
     {
+        // Validate request
         $validator = Validator::make($request->all(), [
             'nama_penerima' => 'required|string|max:255',
             'no_telepon' => 'required|string|max:20',
@@ -78,37 +84,52 @@ class AlamatUserController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Validation error',
+                'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
-        
-        $userId = Auth::user()->id_user;
-        
-        // If is_primary is true, unset any existing primary address
-        if ($request->input('is_primary', false)) {
-            AlamatUser::where('id_user', $userId)
-                ->where('is_primary', true)
-                ->update(['is_primary' => false]);
+
+        try {
+            $user = Auth::user();
+            
+            // If this is the first address or is set as primary, unset other primary addresses
+            if ($request->input('is_primary', false)) {
+                AlamatUser::where('id_user', $user->id_user)
+                    ->where('is_primary', true)
+                    ->update(['is_primary' => false]);
+            }
+            
+            // Create new address
+            $address = new AlamatUser();
+            $address->id_user = $user->id_user;
+            $address->nama_penerima = $request->nama_penerima;
+            $address->no_telepon = $request->no_telepon;
+            $address->alamat_lengkap = $request->alamat_lengkap;
+            $address->provinsi = $request->provinsi;
+            $address->kota = $request->kota;
+            $address->kecamatan = $request->kecamatan;
+            $address->kode_pos = $request->kode_pos;
+            
+            // If this is the first address, always set it as primary
+            $addressCount = AlamatUser::where('id_user', $user->id_user)->count();
+            $address->is_primary = $addressCount === 0 ? true : $request->input('is_primary', false);
+            
+            $address->save();
+            
+            // Load region data for the response
+            $address->load(['province', 'regency', 'district', 'village']);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Address added successfully',
+                'data' => $address
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to add address: ' . $e->getMessage()
+            ], 500);
         }
-        
-        $address = new AlamatUser();
-        $address->id_user = $userId;
-        $address->nama_penerima = $request->nama_penerima;
-        $address->no_telepon = $request->no_telepon;
-        $address->alamat_lengkap = $request->alamat_lengkap;
-        $address->provinsi = $request->provinsi;
-        $address->kota = $request->kota;
-        $address->kecamatan = $request->kecamatan;
-        $address->kode_pos = $request->kode_pos;
-        $address->is_primary = $request->input('is_primary', false);
-        $address->save();
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Address created successfully',
-            'data' => $address
-        ], 201);
     }
 
     /**

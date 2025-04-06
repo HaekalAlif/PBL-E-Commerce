@@ -45,9 +45,11 @@ interface Address {
   kecamatan: string;
   kode_pos: string;
   is_primary: boolean;
-  province_name?: string;
-  regency_name?: string;
-  district_name?: string;
+  // Add proper relationship types
+  province: { id: string; name: string };
+  regency: { id: string; name: string };
+  district: { id: string; name: string };
+  village?: { id: string; name: string };
 }
 
 const UserAddressesPage = () => {
@@ -64,61 +66,13 @@ const UserAddressesPage = () => {
     const fetchAddresses = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`api/user/addresses`, {
+        const response = await axiosInstance.get(`/api/user/addresses`, {
           withCredentials: true,
         });
 
         if (response.data.status === "success") {
-          // Fetch additional region details for each address
-          const addressesWithDetails = await Promise.all(
-            response.data.data.map(async (address: Address) => {
-              try {
-                // Get province name
-                const provinceResponse = await axiosInstance.get(
-                  `/provinces`,
-                  { withCredentials: true }
-                );
-                const province = provinceResponse.data.data.find(
-                  (p: any) => p.id === address.provinsi
-                );
-
-                // Get regency name
-                const regencyResponse = await axiosInstance.get(
-                  `provinces/${address.provinsi}/regencies`,
-                  { withCredentials: true }
-                );
-                const regency = regencyResponse.data.data.find(
-                  (r: any) => r.id === address.kota
-                );
-
-                // Get district name
-                const districtResponse = await axiosInstance.get(
-                  `regencies/${address.kota}/districts`,
-                  { withCredentials: true }
-                );
-                const district = districtResponse.data.data.find(
-                  (d: any) => d.id === address.kecamatan
-                );
-
-                return {
-                  ...address,
-                  province_name: province?.name || "Unknown",
-                  regency_name: regency?.name || "Unknown",
-                  district_name: district?.name || "Unknown",
-                };
-              } catch (err) {
-                console.error("Error fetching region details:", err);
-                return {
-                  ...address,
-                  province_name: "Unknown",
-                  regency_name: "Unknown",
-                  district_name: "Unknown",
-                };
-              }
-            })
-          );
-
-          setAddresses(addressesWithDetails);
+          // No need to fetch additional region details - use what's already in the response
+          setAddresses(response.data.data);
         } else {
           throw new Error(response.data.message || "Failed to fetch addresses");
         }
@@ -136,15 +90,17 @@ const UserAddressesPage = () => {
   const handleSetPrimaryAddress = async (id: number) => {
     try {
       setIsSettingPrimary(true);
-      // Use axiosInstance instead of axios to include CSRF token
+      // Add /api prefix to the URL
       const response = await axiosInstance.put(
-        `user/addresses/${id}/primary`,
+        `/api/user/addresses/${id}/primary`,
         {},
         {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
+            "X-XSRF-TOKEN": getCsrfToken() || "", // Explicitly add the CSRF token
           },
+          withCredentials: true, // Ensure credentials are sent
         }
       );
 
@@ -174,9 +130,9 @@ const UserAddressesPage = () => {
 
     try {
       setIsDeleting(true);
-      // Use axiosInstance instead of axios to include CSRF token
+      // Add /api prefix to the URL
       const response = await axiosInstance.delete(
-        `/user/addresses/${deleteId}`
+        `/api/user/addresses/${deleteId}`
       );
 
       if (response.data.status === "success") {
@@ -270,10 +226,11 @@ const UserAddressesPage = () => {
                 <div className="space-y-2 text-sm">
                   <p className="text-gray-700">{address.alamat_lengkap}</p>
                   <p className="text-gray-600">
-                    {address.district_name}, {address.regency_name}
+                    {address.district?.name || address.kecamatan}, 
+                    {address.regency?.name || address.kota}
                   </p>
                   <p className="text-gray-600">
-                    {address.province_name}, {address.kode_pos}
+                    {address.province?.name || address.provinsi}, {address.kode_pos}
                   </p>
                 </div>
               </CardContent>

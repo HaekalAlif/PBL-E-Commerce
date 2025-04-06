@@ -67,7 +67,7 @@ const menuGroups = [
     items: [
       {
         title: "Orders",
-        url: "/superadmin/pembelian",
+        url: "/superadmin/pesanan",
         icon: ClipboardList,
         badge: "",
       },

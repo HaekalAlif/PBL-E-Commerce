@@ -10,7 +10,7 @@ class DetailPembelian extends Model
     use HasFactory;
     
     protected $table = 'detail_pembelian';
-    protected $primaryKey = 'id_detail';
+    protected $primaryKey = 'id_detail'; // This is the actual column name in DB
     
     protected $fillable = [
         'id_pembelian',
@@ -48,8 +48,14 @@ class DetailPembelian extends Model
     /**
      * Get the shipping information record associated with this purchase detail
      */
-    public function pengirimanPembelian()
+    public function pengiriman_pembelian()
     {
         return $this->hasOne(PengirimanPembelian::class, 'id_detail_pembelian', 'id_detail');
+    }
+
+    // Keep the camelCase relationship for backwards compatibility
+    public function pengirimanPembelian()
+    {
+        return $this->pengiriman_pembelian();
     }
 }

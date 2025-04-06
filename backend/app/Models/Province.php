@@ -38,4 +38,10 @@ class Province extends Model
     {
         return $this->hasMany(AlamatUser::class, 'provinsi', 'id');
     }
+
+    // Hide timestamps in JSON responses
+    protected $hidden = [
+        'created_at', 
+        'updated_at'
+    ];
 }

@@ -21,7 +21,7 @@ class PengirimanPembelian extends Model
         'catatan_pengiriman'
     ];
     
-    // Relationship with DetailPembelian - use the correct key
+    // Relationship with DetailPembelian - using id_detail as the foreign key to match DB schema
     public function detailPembelian()
     {
         return $this->belongsTo(DetailPembelian::class, 'id_detail_pembelian', 'id_detail');

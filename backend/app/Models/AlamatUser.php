@@ -20,7 +20,6 @@ class AlamatUser extends Model
         'provinsi',
         'kota',
         'kecamatan',
-        'kelurahan',
         'kode_pos',
         'is_primary'
     ];
@@ -53,6 +52,6 @@ class AlamatUser extends Model
     
     public function village()
     {
-        return $this->belongsTo(Village::class, 'kelurahan', 'id');
+        return $this->belongsTo(Village::class, 'desa', 'id');
     }
 }
