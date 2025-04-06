@@ -100,7 +100,7 @@ export function AppSidebar() {
     // Find which group contains the current path and open it
     const currentGroups = menuGroups
       .filter((group) =>
-        group.items.some((item) => pathname.startsWith(item.url))
+        group.items.some((item) => (pathname || "").startsWith(item.url))
       )
       .map((group) => group.label);
 
@@ -152,7 +152,6 @@ export function AppSidebar() {
               <CollapsibleContent className="relative space-y-1 px-2 pt-2">
                 {/* Vertical line connector */}
                 <div className="absolute left-[17px] top-0 h-full w-px bg-border/50" />
-
                 {group.items.map((item) => (
                   <Link
                     key={item.title}
@@ -160,7 +159,7 @@ export function AppSidebar() {
                     className={cn(
                       "relative flex items-center justify-between rounded-md px-3 py-2 text-sm transition-all duration-200",
                       pathname === item.url ||
-                        pathname.startsWith(item.url + "/")
+                        (pathname || "").startsWith(item.url + "/")
                         ? "bg-accent font-medium text-accent-foreground"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground hover:translate-x-1"
                     )}
@@ -170,7 +169,7 @@ export function AppSidebar() {
                         className={cn(
                           "h-4 w-4 transition-colors",
                           pathname === item.url ||
-                            pathname.startsWith(item.url + "/")
+                            (pathname || "").startsWith(item.url + "/")
                             ? "text-foreground"
                             : "text-muted-foreground"
                         )}
