@@ -5,5 +5,6 @@ export interface RegisterFormData {
   no_hp: string;
   password: string;
   password_confirmation: string;
+  tanggal_lahir: string;
   agreement: boolean;
 }

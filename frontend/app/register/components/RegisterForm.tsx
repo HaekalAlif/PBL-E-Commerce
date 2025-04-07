@@ -55,10 +55,7 @@ export function RegisterForm({
 
       <CardContent>
         {error && (
-          <Alert
-            variant="destructive"
-            className="mb-6 bg-gray-100 border-gray-800 text-gray-800"
-          >
+          <Alert variant="destructive" className="mb-6 bg-gray-100 border-gray-800 text-gray-800">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
@@ -68,9 +65,7 @@ export function RegisterForm({
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="name" className="text-gray-700">
-                Full Name
-              </Label>
+              <Label htmlFor="name" className="text-gray-700">Full Name</Label>
               <Input
                 id="name"
                 name="name"
@@ -84,9 +79,7 @@ export function RegisterForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="username" className="text-gray-700">
-                Username
-              </Label>
+              <Label htmlFor="username" className="text-gray-700">Username</Label>
               <Input
                 id="username"
                 name="username"
@@ -99,9 +92,7 @@ export function RegisterForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="email" className="text-gray-700">
-                Email address
-              </Label>
+              <Label htmlFor="email" className="text-gray-700">Email address</Label>
               <Input
                 id="email"
                 name="email"
@@ -115,9 +106,7 @@ export function RegisterForm({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="no_hp" className="text-gray-700">
-                Phone Number
-              </Label>
+              <Label htmlFor="no_hp" className="text-gray-700">Phone Number</Label>
               <Input
                 id="no_hp"
                 name="no_hp"
@@ -129,10 +118,22 @@ export function RegisterForm({
               />
             </div>
 
+            {/* Added Date of Birth field */}
             <div className="grid gap-2">
-              <Label htmlFor="password" className="text-gray-700">
-                Password
-              </Label>
+              <Label htmlFor="tanggal_lahir" className="text-gray-700">Date of Birth</Label>
+              <Input
+                id="tanggal_lahir"
+                name="tanggal_lahir"
+                type="date"
+                value={formData.tanggal_lahir}
+                onChange={handleInputChange}
+                required
+                className="border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-gray-700">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -180,9 +181,7 @@ export function RegisterForm({
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={toggleConfirmPasswordVisibility}
                   tabIndex={-1}
-                  aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
-                  }
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-500 hover:text-gray-700" />
@@ -206,9 +205,9 @@ export function RegisterForm({
               </Label>
             </div>
 
-            <Button
-              className="w-full bg-black hover:bg-gray-800 text-white"
-              type="submit"
+            <Button 
+              className="w-full bg-black hover:bg-gray-800 text-white" 
+              type="submit" 
               disabled={loading}
             >
               {loading ? (

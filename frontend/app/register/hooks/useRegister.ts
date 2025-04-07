@@ -14,14 +14,14 @@ export function useRegister() {
     no_hp: "",
     password: "",
     password_confirmation: "",
+    tanggal_lahir: "", 
     agreement: false,
   });
-
+  
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -49,8 +49,8 @@ export function useRegister() {
 
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
-
-    if (loading) return; // Prevent double submission
+    
+    if (loading) return;
     setLoading(true);
     setError("");
 
@@ -74,9 +74,10 @@ export function useRegister() {
           no_hp: formData.no_hp,
           password: formData.password,
           password_confirmation: formData.password_confirmation,
+          tanggal_lahir: formData.tanggal_lahir, 
         },
         {
-          withCredentials: true, // Ensure cookies are sent with the request
+          withCredentials: true, 
         }
       );
 
