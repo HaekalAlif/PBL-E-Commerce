@@ -81,7 +81,10 @@ declare global {
 export default function Payment() {
   const router = useRouter();
   const params = useParams();
-  const kode = params.kode as string;
+  const kode = params?.kode as string | undefined;
+  if (!kode) {
+    throw new Error("Invalid or missing 'kode' parameter.");
+  }
 
   const [invoice, setInvoice] = useState<InvoiceDetails | null>(null);
   const [loading, setLoading] = useState(true);

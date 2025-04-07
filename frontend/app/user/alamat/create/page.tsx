@@ -265,11 +265,6 @@ const AddressForm = () => {
         throw new Error("Please fill in all required fields");
       }
 
-      // Ensure we have the CSRF token before making the request
-      await axiosInstance.get(`${apiUrl}/csrf-cookie`, {
-        withCredentials: true,
-      });
-
       // Use the correct API endpoint with /api/ prefix
       const response = await axiosInstance.post(
         `${apiUrl}/user/addresses`, // Make sure to use the full API URL
@@ -278,7 +273,7 @@ const AddressForm = () => {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            "X-XSRF-TOKEN": getCsrfToken() || "", // Explicitly add the CSRF token
+            "X-XSRF-TOKEN": (await getCsrfToken()) ?? "", // Ensure a valid string or fallback to an empty string
           },
           withCredentials: true, // Ensure credentials are sent
         }
