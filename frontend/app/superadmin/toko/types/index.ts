@@ -1,42 +1,40 @@
 // Store types.ts
 
-export type User = {
+export interface Owner {
   id_user: number;
   name: string;
   email: string;
   username: string;
-};
+}
 
-export type Store = {
+export interface Store {
   id_toko: number;
-  id_user: number;
+  id_pemilik: number;
   nama_toko: string;
   slug: string;
   deskripsi: string;
-  alamat: string;
-  kontak: string;
-  is_active: boolean;
+  logo: string | null;
+  banner: string | null;
   is_deleted: boolean;
+  is_verified: boolean; // Add this property to fix the error
   created_at: string;
   updated_at: string;
-  created_by: number | null;
-  updated_by: number | null;
-  user?: User;
-};
+  pemilik?: Owner;
+}
 
 export const ITEMS_PER_PAGE = 10;
 
-export type StoreFormData = {
+export interface StoreFormData {
   nama_toko: string;
   deskripsi: string;
-  alamat: string;
-  kontak: string;
-  is_active: boolean;
-};
+  logo?: File | null;
+  banner?: File | null;
+  id_pemilik?: number;
+}
 
-export type StoreFilterParams = {
+export interface StoreFilterParams {
   page?: number;
   per_page?: number;
   search?: string;
   is_active?: boolean;
-};
+}

@@ -11,6 +11,14 @@ const axios = Axios.create({
   withCredentials: true, // Always include credentials (cookies)
 });
 
+// Helper to extract CSRF token from cookies - moved to top level and exported
+export function getCsrfTokenFromCookie(): string | null {
+  const match = document.cookie.match(
+    new RegExp("(^|;\\s*)(XSRF-TOKEN)=([^;]*)")
+  );
+  return match ? match[3] : null;
+}
+
 // Track if we're already fetching a CSRF token to prevent duplicates
 let csrfTokenPromise: Promise<void> | null = null;
 
@@ -20,7 +28,7 @@ export const getCsrfToken = async (): Promise<void> => {
   if (csrfTokenPromise) {
     return csrfTokenPromise;
   }
-  
+
   // Create a new request and store it
   csrfTokenPromise = axios
     .get("/sanctum/csrf-cookie")
@@ -35,7 +43,7 @@ export const getCsrfToken = async (): Promise<void> => {
       csrfTokenPromise = null;
       throw error;
     });
-  
+
   return csrfTokenPromise;
 };
 
@@ -43,18 +51,38 @@ export const getCsrfToken = async (): Promise<void> => {
 axios.interceptors.request.use(
   async (config) => {
     // Don't add CSRF token to csrf-cookie endpoint to avoid loops
-    if (config.url?.includes('/sanctum/csrf-cookie')) {
+    if (config.url?.includes("/sanctum/csrf-cookie")) {
       return config;
     }
 
     // For write operations (non-GET), ensure CSRF token
-    if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
+    if (
+      ["post", "put", "patch", "delete"].includes(
+        config.method?.toLowerCase() || ""
+      )
+    ) {
+      // Add special handling for payment management endpoints which require strict CSRF protection
+      if (
+        config.url?.includes("/admin/payments/") &&
+        !config.url?.includes("/stats")
+      ) {
+        try {
+          // Always get a fresh token for sensitive payment operations
+          await getCsrfToken();
+        } catch (e) {
+          console.error(
+            "Failed to refresh CSRF token for payment operation:",
+            e
+          );
+        }
+      }
+
       const token = getCsrfTokenFromCookie();
       if (token) {
-        config.headers['X-XSRF-TOKEN'] = decodeURIComponent(token);
+        config.headers["X-XSRF-TOKEN"] = decodeURIComponent(token);
       }
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -64,37 +92,33 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-    
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
     // Only retry once to prevent infinite loops
     if (
       error.response?.status === 419 &&
       !originalRequest._retry &&
-      originalRequest.method !== 'get'
+      originalRequest.method !== "get"
     ) {
       originalRequest._retry = true;
-      
+
       // Get a fresh CSRF token
       await getCsrfToken();
-      
+
       // Update the token in the original request
       const token = getCsrfTokenFromCookie();
       if (originalRequest.headers && token) {
-        originalRequest.headers['X-XSRF-TOKEN'] = decodeURIComponent(token);
+        originalRequest.headers["X-XSRF-TOKEN"] = decodeURIComponent(token);
       }
-      
+
       // Retry the request
       return axios(originalRequest);
     }
-    
+
     return Promise.reject(error);
   }
 );
-
-// Helper to extract CSRF token from cookies
-function getCsrfTokenFromCookie(): string | null {
-  const match = document.cookie.match(new RegExp('(^|;\\s*)(XSRF-TOKEN)=([^;]*)'));
-  return match ? match[3] : null;
-}
 
 export default axios;

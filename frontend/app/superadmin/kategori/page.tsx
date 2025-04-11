@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import KategoriFilters from "./components/KategoriFilters";
 import KategoriTable from "./components/KategoriTable";
 import KategoriFormDialog from "./components/KategoriFormDialog";
 import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
+import CategoryStats from "./components/CategoryStats";
 
 // Import custom hooks
 import { useKategoriManagement } from "./hooks/useKategoriManagement";
@@ -49,6 +50,14 @@ export default function KategoriPage() {
     paginatedKategori,
     clearFilters,
   } = useKategoriFilters(kategori);
+
+  // Calculate category statistics - simplified to just total and active
+  const categoryStats = useMemo(() => {
+    return {
+      totalCategories: kategori.length,
+      activeCategories: kategori.filter((cat) => !cat.is_deleted).length,
+    };
+  }, [kategori]);
 
   // Load kategori on initial render
   useEffect(() => {
@@ -118,6 +127,9 @@ export default function KategoriPage() {
         </CardHeader>
 
         <CardContent>
+          {/* Stats section */}
+          <CategoryStats stats={categoryStats} />
+
           {/* Search and filter section */}
           <KategoriFilters
             searchTerm={searchTerm}

@@ -87,17 +87,20 @@ export const useProductManagement = () => {
 
   // Get product details
   const getProductDetails = useCallback(async (id: number) => {
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await axios.get(`${API_URL}/admin/barang/${id}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
         withCredentials: true,
       });
 
-      console.log("Product details response:", response.data);
+      if (response.data && response.data.data) {
+        // Ensure gambar_barang is always an array
+        const product = response.data.data;
+        product.gambar_barang = product.gambar_barang || [];
+
+        setSelectedProduct(product);
+        return product;
+      }
 
       if (response.data.status === "success") {
         return response.data.data;

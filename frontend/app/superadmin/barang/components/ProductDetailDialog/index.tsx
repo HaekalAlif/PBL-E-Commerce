@@ -1,6 +1,6 @@
 "use client";
 
-// Remove Next.js Image import
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil } from "lucide-react";
@@ -14,6 +14,7 @@ import {
 import { Product, PRODUCT_STATUS } from "../../types";
 import { formatRupiah } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ImageModal from "../ImageModal";
 
 interface ProductDetailDialogProps {
   isOpen: boolean;
@@ -28,7 +29,34 @@ export default function ProductDetailDialog({
   onClose,
   onEdit,
 }: ProductDetailDialogProps) {
+  // Add state for image modal
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
+
+  // Ensure product.gambar_barang is always defined
+  useEffect(() => {
+    if (product && !Array.isArray(product.gambar_barang)) {
+      (product as any).gambar_barang = [];
+    }
+  }, [product]);
+
   if (!product) return null;
+
+  // Ensure gambar_barang is always an array before accessing
+  const productImages = Array.isArray(product.gambar_barang) ? product.gambar_barang : [];
+
+  // Function to handle image click
+  const handleImageClick = (imageUrl: string) => {
+    if (!imageUrl) return;
+    setSelectedImage(imageUrl);
+    setImageModalOpen(true);
+  };
+
+  // Safely check if there are images
+  const hasImages = productImages.length > 0;
+  
+  // Safely get the first image URL if available
+  const firstImageUrl = hasImages ? productImages[0].url_gambar : "";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -84,14 +112,17 @@ export default function ProductDetailDialog({
               </div>
 
               <div>
-                {product.gambar_barang && product.gambar_barang[0] ? (
-                  <div className="relative w-full h-[200px] rounded-lg overflow-hidden">
+                {hasImages && firstImageUrl ? (
+                  <div
+                    className="relative w-full h-[200px] rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => handleImageClick(firstImageUrl)}
+                  >
                     <img
-                      src={product.gambar_barang[0].url_gambar}
+                      src={firstImageUrl}
                       alt={product.nama_barang}
                       className="w-full h-full object-cover rounded-lg"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
+                        (e.currentTarget as HTMLImageElement).src =
                           "/placeholder-product.png";
                       }}
                     />
@@ -147,18 +178,19 @@ export default function ProductDetailDialog({
 
           <TabsContent value="images">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 my-4">
-              {product.gambar_barang && product.gambar_barang.length > 0 ? (
-                product.gambar_barang.map((image) => (
+              {hasImages ? (
+                productImages.map((image) => (
                   <div
                     key={image.id_gambar}
-                    className="relative aspect-square rounded-lg overflow-hidden border"
+                    className="relative aspect-square rounded-lg overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => handleImageClick(image.url_gambar)}
                   >
                     <img
                       src={image.url_gambar}
                       alt={`${product.nama_barang} - Image ${image.urutan}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
+                        (e.currentTarget as HTMLImageElement).src =
                           "/placeholder-product.png";
                       }}
                     />
@@ -188,6 +220,14 @@ export default function ProductDetailDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Add the image modal */}
+      <ImageModal
+        isOpen={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        imageUrl={selectedImage}
+        title={product.nama_barang}
+      />
     </Dialog>
   );
 }

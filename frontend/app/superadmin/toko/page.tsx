@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import StoreTable from "./components/StoreTable";
 import StoreFilters from "./components/StoreFilters";
 import StoreFormDialog from "./components/StoreFormDialog";
 import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
+import StoreStats from "./components/StoreStats";
 
 export default function StoreManagementPage() {
   const {
@@ -42,6 +43,18 @@ export default function StoreManagementPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Calculate store statistics
+  const storeStats = useMemo(() => {
+    return {
+      totalStores: stores.length,
+      activeStores: stores.filter((store) => !store.is_deleted).length,
+      pendingStores: stores.filter(
+        (store) => !store.is_verified && !store.is_deleted
+      ).length,
+      deletedStores: stores.filter((store) => store.is_deleted).length,
+    };
+  }, [stores]);
 
   // Fetch stores on component mount
   useEffect(() => {
@@ -97,6 +110,9 @@ export default function StoreManagementPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Stats section */}
+          <StoreStats stats={storeStats} />
+
           <StoreFilters
             searchTerm={searchTerm}
             statusFilter={statusFilter}
@@ -105,7 +121,6 @@ export default function StoreManagementPage() {
             onClearFilters={clearFilters}
           />
 
-          {/* This is the proper way to use StoreTable - directly, not nested inside another table */}
           <StoreTable
             stores={paginatedStores}
             totalStores={totalStores}

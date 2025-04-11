@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOrderManagement } from "./hooks/useOrderManagement";
 import { useOrderFilters } from "./hooks/useOrderFilters";
 import {
@@ -19,6 +19,7 @@ import OrderTable from "./components/OrderTable";
 import OrderDetailsDialog from "./components/OrderDetailsDialog";
 import StatusUpdateDialog from "./components/StatusUpdateDialog";
 import CommentDialog from "./components/CommentDialog";
+import OrderStats from "./components/OrderStats";
 
 const OrderManagementPage = () => {
   const {
@@ -29,6 +30,8 @@ const OrderManagementPage = () => {
     getOrderDetails,
     updateOrderStatus,
     addComment,
+    fetchStats,
+    stats,
   } = useOrderManagement();
 
   const { 
@@ -46,6 +49,11 @@ const OrderManagementPage = () => {
   const [adminNotes, setAdminNotes] = useState("");
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [comment, setComment] = useState("");
+
+  // Fetch stats when page loads
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Handle status update
   const handleUpdateStatus = async () => {
@@ -99,6 +107,9 @@ const OrderManagementPage = () => {
           </Button>
         </CardHeader>
         <CardContent>
+          {/* Order stats component */}
+          {stats && <OrderStats stats={stats} />}
+
           {/* Order filters component */}
           <OrderFilters
             filters={filters}

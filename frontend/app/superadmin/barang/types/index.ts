@@ -19,7 +19,7 @@ export interface Product {
   updated_by?: number;
   kategori?: Category;
   toko?: Store;
-  gambar_barang?: ProductImage[];
+  gambar_barang: ProductImage[]; // Remove optional marker (?) to ensure it's always at least an empty array
 }
 
 export interface Category {

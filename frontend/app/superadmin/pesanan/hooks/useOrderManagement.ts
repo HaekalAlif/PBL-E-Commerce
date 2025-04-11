@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { getCsrfToken } from "@/lib/axios";
-import { Order } from "../types";
+import { Order, OrderStats } from "../types";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -15,41 +15,44 @@ export const useOrderManagement = () => {
   const [totalOrders, setTotalOrders] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<OrderStats | null>(null);
 
   // Fetch orders with filters
-  const fetchOrders = useCallback(async (filters: any = {}) => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`${API_URL}/admin/pesanan`, {
-        params: filters,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        withCredentials: true,
-      });
+  const fetchOrders = useCallback(
+    async (filters: any = {}) => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`${API_URL}/admin/pesanan`, {
+          params: filters,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          withCredentials: true,
+        });
 
-      if (response.data.status === "success") {
-        setOrders(response.data.data.data || []);
-        setTotalPages(response.data.data.last_page || 1);
-        setTotalOrders(response.data.data.total || 0);
-      } else {
-        toast.error(response.data.message || "Failed to fetch orders");
-        setOrders([]);
-      }
-    } catch (error: any) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to load orders. Please try again later.");
+        if (response.data.status === "success") {
+          setOrders(response.data.data.data || []);
+          setTotalPages(response.data.data.last_page || 1);
+          setTotalOrders(response.data.data.total || 0);
+        } else {
+          toast.error(response.data.message || "Failed to fetch orders");
+          setOrders([]);
+        }
+      } catch (error: any) {
+        console.error("Error fetching orders:", error);
+        toast.error("Failed to load orders. Please try again later.");
 
-      // Handle unauthorized access
-      if (error.response?.status === 401) {
-        router.push("/login");
+        // Handle unauthorized access
+        if (error.response?.status === 401) {
+          router.push("/login");
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   // Fetch order stats
   const fetchStats = useCallback(async () => {

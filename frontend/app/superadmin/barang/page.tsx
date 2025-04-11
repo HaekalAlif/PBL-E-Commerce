@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { RefreshCw, Archive, Inbox } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Import components
 import ProductFilters from "./components/ProductFilters";
 import ProductTable from "./components/ProductTable";
 import ProductFormDialog from "./components/ProductFormDialog";
 import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
 import ProductDetailDialog from "./components/ProductDetailDialog";
+import ProductStats from "./components/ProductStats";
+
+// Import hooks
 import { useProductManagement } from "./hooks/useProductManagement";
 import { useProductFilters } from "./hooks/useProductFilters";
 
@@ -55,6 +60,16 @@ export default function ProductManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isHardDelete, setIsHardDelete] = useState(false);
+
+  // Calculate product statistics
+  const productStats = useMemo(() => {
+    return {
+      totalProducts: products.length,
+      activeProducts: products.filter((product) => !product.is_deleted).length,
+      deletedProducts: products.filter((product) => product.is_deleted).length,
+      totalCategories: categories.length,
+    };
+  }, [products, categories]);
 
   // Load initial data
   useEffect(() => {
@@ -151,6 +166,9 @@ export default function ProductManagementPage() {
         </CardHeader>
 
         <CardContent>
+          {/* Stats section */}
+          <ProductStats stats={productStats} />
+
           {/* Search and filter section */}
           <ProductFilters
             searchTerm={searchTerm}
@@ -198,15 +216,17 @@ export default function ProductManagementPage() {
       />
 
       {/* Product Detail Dialog */}
-      <ProductDetailDialog
-        isOpen={isDetailDialogOpen}
-        product={selectedProduct}
-        onClose={() => setIsDetailDialogOpen(false)}
-        onEdit={() => {
-          setIsDetailDialogOpen(false);
-          setIsFormDialogOpen(true);
-        }}
-      />
+      {isDetailDialogOpen && (
+        <ProductDetailDialog
+          isOpen={isDetailDialogOpen}
+          product={selectedProduct}
+          onClose={() => setIsDetailDialogOpen(false)}
+          onEdit={() => {
+            setIsDetailDialogOpen(false);
+            setIsFormDialogOpen(true);
+          }}
+        />
+      )}
 
       {/* Delete confirmation dialog */}
       <DeleteConfirmDialog

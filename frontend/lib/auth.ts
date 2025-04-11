@@ -1,74 +1,48 @@
+import Cookies from "js-cookie";
 import axios from "./axios";
-import { clearAllCookies } from "./cookies";
-import { getCsrfToken } from "./axios";
 
+/**
+ * Logout the user by clearing cookies and making a logout request
+ */
 export const logout = async () => {
   try {
-    console.log("Executing complete logout process");
-
-    // Clear browser storage first
-    localStorage.clear();
-    sessionStorage.clear();
-
-    // Get a fresh CSRF token and wait for it
-    await getCsrfToken();
-
-    // Get the token manually to ensure it's available
-    const tokenCookie = document.cookie
-      .split(";")
-      .find((cookie) => cookie.trim().startsWith("XSRF-TOKEN="));
-
-    const csrfToken = tokenCookie
-      ? decodeURIComponent(tokenCookie.split("=")[1])
-      : "";
-
-    console.log(
-      "CSRF Token for logout:",
-      csrfToken ? `${csrfToken.substring(0, 10)}...` : "none"
+    // Make a logout request to the server to invalidate the session
+    await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/logout`,
+      {},
+      {
+        withCredentials: true,
+      }
     );
-
-    // Call the logout endpoint with explicit headers
-    try {
-      const response = await axios.post(
-        "/api/logout",
-        {},
-        {
-          withCredentials: true,
-          headers: {
-            "X-XSRF-TOKEN": csrfToken,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("Logout response:", response.status, response.data);
-
-      // Clear all cookies after successful logout
-      clearAllCookies();
-    } catch (logoutError: any) {
-      console.error(
-        "Logout API error:",
-        logoutError?.response?.status,
-        logoutError?.response?.data || logoutError
-      );
-      // Still clear cookies even on error
-      clearAllCookies();
-    }
   } catch (error) {
-    console.error("Error during logout process:", error);
-    // Clear cookies as a last resort
-    clearAllCookies();
+    console.error("Error during logout:", error);
+  } finally {
+    // Clear all auth-related cookies regardless of server response
+    Cookies.remove("auth_session", { path: "/" });
+    Cookies.remove("user_role", { path: "/" });
+    Cookies.remove("role_name", { path: "/" });
+
+    // Also clear Laravel session cookies to prevent re-authentication issues
+    Cookies.remove("laravel_session", { path: "/" });
+    Cookies.remove("XSRF-TOKEN", { path: "/" });
+
+    // Redirect to login page
+    window.location.href = "/login";
   }
 };
 
 /**
- * Check if user is authenticated by checking for auth cookies
+ * Check if the user is authenticated
+ * @returns Whether the user is authenticated
  */
-export const isAuthenticated = () => {
-  const hasAuthToken = document.cookie.includes("auth_token");
-  const hasSession = document.cookie.includes("laravel_session");
-  const hasUserRole = document.cookie.includes("user_role");
+export const isAuthenticated = (): boolean => {
+  return !!Cookies.get("auth_session");
+};
 
-  return hasAuthToken && hasSession;
+/**
+ * Get the user's role
+ * @returns The user's role or null if not authenticated
+ */
+export const getUserRole = (): string | null => {
+  return Cookies.get("role_name") || null;
 };

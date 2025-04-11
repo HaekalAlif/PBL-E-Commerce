@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import UserFilters from "./components/UserFilters";
 import UserTable from "./components/UserTable";
 import UserFormDialog from "./components/UserFormDialog";
 import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
+import UserStats from "./components/UserStats";
 
 // Import custom hooks
 import { useUserManagement } from "./hooks/useUserManagement";
@@ -52,6 +53,18 @@ export default function UserManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(true);
 
+  // Calculate user statistics
+  const userStats = useMemo(() => {
+    return {
+      totalUsers: users.length,
+      activeUsers: users.filter((user) => !user.is_deleted).length,
+      adminCount: users.filter((user) =>
+        ["admin", "superadmin"].includes(user.role_name)
+      ).length,
+      sellerCount: users.filter((user) => user.has_store).length,
+    };
+  }, [users]);
+
   // Load users on initial render
   useEffect(() => {
     fetchUsers();
@@ -77,13 +90,14 @@ export default function UserManagementPage() {
 
   const handleFormSubmit = async (formData: UserFormData) => {
     let success = false;
-    
+
     if (isCreateMode) {
       success = await createUser(formData);
     } else if (selectedUser) {
+      // Make sure we have a valid email string
       success = await updateUser(selectedUser.id_user, formData);
     }
-    
+
     if (success) {
       setIsFormDialogOpen(false);
     }
@@ -98,7 +112,8 @@ export default function UserManagementPage() {
     }
   };
 
-  const hasActiveFilters = searchTerm !== "" || roleFilter !== null || statusFilter !== null;
+  const hasActiveFilters =
+    searchTerm !== "" || roleFilter !== null || statusFilter !== null;
 
   return (
     <div className="container mx-auto py-6">
@@ -118,8 +133,11 @@ export default function UserManagementPage() {
         </CardHeader>
 
         <CardContent>
+          {/* Stats section */}
+          <UserStats stats={userStats} />
+
           {/* Search and filter section */}
-          <UserFilters 
+          <UserFilters
             searchTerm={searchTerm}
             roleFilter={roleFilter}
             statusFilter={statusFilter}
@@ -130,7 +148,7 @@ export default function UserManagementPage() {
           />
 
           {/* User table with pagination */}
-          <UserTable 
+          <UserTable
             users={paginatedUsers}
             totalUsers={filteredUsers.length}
             currentPage={currentPage}
@@ -146,7 +164,7 @@ export default function UserManagementPage() {
       </Card>
 
       {/* Create/Edit User Dialog */}
-      <UserFormDialog 
+      <UserFormDialog
         isOpen={isFormDialogOpen}
         isCreateMode={isCreateMode}
         user={selectedUser}
@@ -155,7 +173,7 @@ export default function UserManagementPage() {
       />
 
       {/* Delete confirmation dialog */}
-      <DeleteConfirmDialog 
+      <DeleteConfirmDialog
         isOpen={isDeleteDialogOpen}
         user={selectedUser}
         onClose={() => setIsDeleteDialogOpen(false)}

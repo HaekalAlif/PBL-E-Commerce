@@ -1,28 +1,21 @@
 export interface User {
   id_user: number;
-  username: string;
   name: string;
   email: string;
-  no_hp: string | null;
-  tanggal_lahir: string | null;
-  foto_profil: string | null;
-  role: number;
-  is_verified: boolean;
-  is_active: boolean;
+  username: string;
+  role_name: "user" | "admin" | "superadmin";
   is_deleted: boolean;
-  role_name?: string;
+  has_store: boolean; // Add this property to fix the error
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserFormData {
-  username: string;
   name: string;
   email: string;
-  password?: string;
-  no_hp?: string;
-  tanggal_lahir?: string;
-  role: number;
-  is_verified: boolean;
-  is_active: boolean;
+  username: string;
+  password?: string; // Optional for updates
+  role_name: "user" | "admin" | "superadmin";
 }
 
 // Role mapping - constants used throughout the application

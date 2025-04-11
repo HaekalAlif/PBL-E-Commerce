@@ -19,6 +19,7 @@ use App\Http\Controllers\User\TagihanController;
 use App\Http\Controllers\User\KeranjangController;
 use App\Http\Controllers\User\PesananTokoController;
 use App\Http\Controllers\Admin\PesananManagementController;
+use App\Http\Controllers\Admin\PaymentManagementController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -136,7 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Payment Management
     Route::prefix('payments')->group(function() {
-        Route::get('/', [TagihanController::class, 'getAll']); // Add this new route for getting all payments
+        Route::get('/', [TagihanController::class, 'getAll']); 
         Route::get('/{kode}', [TagihanController::class, 'show']);
         Route::post('/{kode}/process', [TagihanController::class, 'processPayment']);
         Route::get('/{kode}/status', [TagihanController::class, 'checkStatus']);
@@ -220,6 +221,16 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{kode}', [PesananManagementController::class, 'show']);
             Route::put('/{kode}/status', [PesananManagementController::class, 'updateStatus']);
             Route::post('/{kode}/comment', [PesananManagementController::class, 'addComment']);
+        });
+
+        // Admin payment management
+        Route::prefix('admin/payments')->group(function() {
+            Route::get('/', [PaymentManagementController::class, 'index']);
+            Route::get('/stats', [PaymentManagementController::class, 'getPaymentStats']);
+            Route::get('/{kode}', [PaymentManagementController::class, 'show']);
+            Route::put('/{kode}/status', [PaymentManagementController::class, 'updateStatus']);
+            Route::post('/{kode}/refund', [PaymentManagementController::class, 'processRefund']);
+            Route::post('/{kode}/verify', [PaymentManagementController::class, 'verifyManually']);
         });
     });
 
