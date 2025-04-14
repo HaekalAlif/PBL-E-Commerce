@@ -82,16 +82,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('barang')->group(function() {
         Route::get('/', [BarangController::class, 'index']);
         Route::post('/', [BarangController::class, 'store']);
-        // Add route for slug-based access
         Route::get('/slug/{slug}', [BarangController::class, 'getBySlug']);
-        // Keep ID-based routes for backward compatibility
         Route::get('/{id}', [BarangController::class, 'show'])->where('id', '[0-9]+');
         Route::put('/slug/{slug}', [BarangController::class, 'updateBySlug']);
         Route::put('/{id}', [BarangController::class, 'update'])->where('id', '[0-9]+');
         Route::delete('/slug/{slug}', [BarangController::class, 'destroyBySlug']);
         Route::delete('/{id}', [BarangController::class, 'destroy'])->where('id', '[0-9]+');
-        
-        // Nested routes for GambarBarang (Product Images)
+            
         // Update to support both ID and slug-based parent routes
         Route::get('/{id_barang}/gambar', [GambarBarangController::class, 'index'])->where('id_barang', '[0-9]+');
         Route::get('/slug/{slug}/gambar', [GambarBarangController::class, 'indexByBarangSlug']);
@@ -201,7 +198,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [KategoriController::class, 'destroy']);
         });
 
-        // Admin product management
+        // Admin product management (admin only)
         Route::prefix('admin/barang')->group(function() {
             Route::get('/', [BarangManagementController::class, 'index']);
             Route::get('/filter', [BarangManagementController::class, 'filter']);
@@ -214,7 +211,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [BarangManagementController::class, 'destroy'])->where('id', '[0-9]+');
         });
 
-        // Admin order management
+        // Admin order management (admin only)
         Route::prefix('admin/pesanan')->group(function() {
             Route::get('/', [PesananManagementController::class, 'index']);
             Route::get('/stats', [PesananManagementController::class, 'getOrderStats']);
@@ -223,7 +220,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/{kode}/comment', [PesananManagementController::class, 'addComment']);
         });
 
-        // Admin payment management
+        // Admin payment management (admin only)
         Route::prefix('admin/payments')->group(function() {
             Route::get('/', [PaymentManagementController::class, 'index']);
             Route::get('/stats', [PaymentManagementController::class, 'getPaymentStats']);

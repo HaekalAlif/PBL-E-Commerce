@@ -90,7 +90,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except static files, api routes, etc.
-    "/((?!_next/static|_next/image|favicon.ico|images|api).*)",
+    // Match all paths except:
+    // - Next.js static files (_next/static, _next/image)
+    // - Standard static files (favicon.ico, images)
+    // - API routes (/api)
+    // - Image routes from backend or any path containing 'images' or 'img'
+    // - File extensions typically used for images (.jpg, .jpeg, .png, .gif, .svg, .webp)
+    "/((?!_next/static|_next/image|favicon.ico|images|img|api|\\.jpg|\\.jpeg|\\.png|\\.gif|\\.svg|\\.webp).*)",
   ],
 };

@@ -11,10 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, ChevronDown, Shield } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 interface UserInfo {
   username: string;
@@ -102,11 +103,6 @@ const ProfileCard = () => {
       .slice(0, 2);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.push("/login");
-  };
-
   const handleProfileClick = () => {
     router.push("#");
   };
@@ -114,55 +110,76 @@ const ProfileCard = () => {
   if (!mounted) return null;
 
   return (
-    <div className="p-2.5 border-b">
-      <div className="rounded-lg">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full px-2 hover:bg-accent">
-              <div className="flex items-center space-x-3">
-                <Avatar>
-                  <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+    <div className="transition-all duration-200 group">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="w-full relative justify-between p-3 hover:bg-accent/40 rounded-lg transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Avatar className="h-10 w-10 border-2 border-background shadow-sm transition-all">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold text-sm">
                     {loading ? "..." : getInitials(userInfo.username)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-sm truncate max-w-[150px]">
-                    {loading ? "Loading..." : userInfo.username}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[150px]">
-                    {loading ? "..." : userInfo.email}
-                  </p>
-                </div>
+                <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
               </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" side="right">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            {userInfo.role_name && (
-              <div className="px-2 py-1 text-xs text-muted-foreground">
-                Role: {userInfo.role_name}
+              <div className="flex flex-col items-start">
+                <p className="font-medium text-sm truncate max-w-[120px]">
+                  {loading ? "Loading..." : userInfo.username}
+                </p>
+                <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                  {loading ? "..." : userInfo.email}
+                </p>
               </div>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleProfileClick}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground opacity-70 group-hover:opacity-100 transition-opacity" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-64 p-2" align="end" side="right">
+          <div className="flex items-center gap-3 px-2 py-2">
+            <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold">
+                {loading ? "..." : getInitials(userInfo.username)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col space-y-0.5">
+              <p className="font-medium text-sm">
+                {loading ? "Loading..." : userInfo.username}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {loading ? "..." : userInfo.email}
+              </p>
+            </div>
+          </div>
+
+          {userInfo.role_name && (
+            <div className="mx-2 my-1.5 px-3 py-1.5 bg-accent/50 rounded-md flex items-center">
+              <Shield className="h-3.5 w-3.5 text-primary mr-2" />
+              <span className="text-xs font-medium">{userInfo.role_name}</span>
+            </div>
+          )}
+
+          <DropdownMenuSeparator className="my-1.5" />
+
+          <div className="px-1.5">
             <DropdownMenuItem
-              className="text-red-600 focus:text-red-600 focus:bg-red-50"
-              onClick={handleLogout}
+              onClick={handleProfileClick}
+              className="flex items-center cursor-pointer py-2 rounded-md transition-colors"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <User className="mr-2.5 h-4 w-4" />
+              <span>My Profile</span>
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+
+            <DropdownMenuItem className="flex items-center cursor-pointer py-2 rounded-md transition-colors">
+              <Settings className="mr-2.5 h-4 w-4" />
+              <span>Account Settings</span>
+            </DropdownMenuItem>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

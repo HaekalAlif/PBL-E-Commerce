@@ -24,12 +24,11 @@ interface OrderStatsProps {
 }
 
 export default function OrderStats({ stats }: OrderStatsProps) {
-  // Helper function to get total orders count
+  // Helper function to get total orders count (excluding Draft)
   const getTotalOrders = () => {
-    return Object.values(stats.order_statuses).reduce(
-      (acc, count) => acc + count,
-      0
-    );
+    return Object.entries(stats.order_statuses)
+      .filter(([status]) => status !== "Draft") // Exclude Draft status
+      .reduce((acc, [_, count]) => acc + count, 0);
   };
 
   // Process chart data for last 7 days
@@ -62,25 +61,25 @@ export default function OrderStats({ stats }: OrderStatsProps) {
 
   // Prepare chart data
   const chartData = processChartData();
-  const maxCount = Math.max(...chartData.map((item) => item.count), 1); // Avoid division by zero
+  const maxCount = Math.max(...chartData.map((item) => item.count), 1); 
 
   // Get appropriate icon for order status
   const getOrderStatusIcon = (status: string) => {
     switch (status) {
       case "Menunggu Pembayaran":
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+        return <Clock className="h-4 w-4 text-white" />;
       case "Dibayar":
-        return <ShoppingBag className="h-4 w-4 text-blue-600" />;
+        return <ShoppingBag className="h-4 w-4 text-white" />;
       case "Diproses":
-        return <ShoppingBag className="h-4 w-4 text-indigo-600" />;
+        return <ShoppingBag className="h-4 w-4 text-white" />;
       case "Dikirim":
-        return <Truck className="h-4 w-4 text-purple-600" />;
+        return <Truck className="h-4 w-4text-white" />;
       case "Selesai":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-white" />;
       case "Dibatalkan":
-        return <XCircle className="h-4 w-4 text-red-600" />;
+        return <XCircle className="h-4 w-4 text-white" />;
       default:
-        return <div className="h-4 w-4 rounded-full bg-blue-500" />;
+        return <div className="h-4 w-4 rounded-full text-white" />;
     }
   };
 
@@ -253,44 +252,53 @@ export default function OrderStats({ stats }: OrderStatsProps) {
           <div className="space-y-2.5 pt-6">
             {/* Distribution circles grid */}
             <div className="flex justify-between mb-3 gap-2">
-              {Object.entries(stats.order_statuses).map(([status, count]) => {
-                const percentage = ((count / getTotalOrders()) * 100).toFixed(
-                  1
-                );
-                return (
-                  <TooltipProvider key={status}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex flex-col items-center text-center">
-                          <div
-                            className={`rounded-full h-10 w-10 flex items-center justify-center ${getStatusColor(
-                              status
-                            ).replace("bg-", "bg-opacity-20 bg-")}`}
-                          >
-                            {getOrderStatusIcon(status)}
+              {Object.entries(stats.order_statuses)
+                .filter(([status]) => status !== "Draft") // Exclude Draft status
+                .map(([status, count]) => {
+                  const percentage = ((count / getTotalOrders()) * 100).toFixed(
+                    1
+                  );
+                  return (
+                    <TooltipProvider key={status}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex flex-col items-center text-center">
+                            <div
+                              className={`rounded-full h-10 w-10 flex items-center justify-center ${getStatusColor(
+                                status
+                              ).replace(
+                                "bg-",
+                                "bg-opacity-10 bg-"
+                              )} border border-${getStatusColor(status).replace(
+                                "bg-",
+                                ""
+                              )}`}
+                            >
+                              {getOrderStatusIcon(status)}
+                            </div>
+                            <span className="text-xs font-medium mt-1">
+                              {count}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {percentage}%
+                            </span>
                           </div>
-                          <span className="text-xs font-medium mt-1">
-                            {count}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {percentage}%
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>
-                          {status}: {count} orders ({percentage}%)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p>
+                            {status}: {count} orders ({percentage}%)
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
             </div>
 
             {/* Combined progress bar showing all statuses */}
             <div className="h-4 bg-muted rounded-full overflow-hidden flex">
               {Object.entries(stats.order_statuses)
+                .filter(([status]) => status !== "Draft") // Exclude Draft status
                 .sort((a, b) => {
                   // Sort by status priority for visual consistency
                   const order = [
@@ -318,16 +326,18 @@ export default function OrderStats({ stats }: OrderStatsProps) {
 
             {/* Legend for the combined progress bar */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs pt-1 justify-center">
-              {Object.entries(stats.order_statuses).map(([status, count]) => (
-                <div key={status} className="flex items-center">
-                  <div
-                    className={`h-2 w-2 rounded-full ${getStatusColor(
-                      status
-                    )} mr-1`}
-                  ></div>
-                  <span>{status.split(" ")[0]}</span>
-                </div>
-              ))}
+              {Object.entries(stats.order_statuses)
+                .filter(([status]) => status !== "Draft") // Exclude Draft status
+                .map(([status, count]) => (
+                  <div key={status} className="flex items-center">
+                    <div
+                      className={`h-2 w-2 rounded-full ${getStatusColor(
+                        status
+                      )} mr-1`}
+                    ></div>
+                    <span>{status.split(" ")[0]}</span>
+                  </div>
+                ))}
             </div>
           </div>
         </Card>

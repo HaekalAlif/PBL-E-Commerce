@@ -14,7 +14,7 @@ interface UserStatsProps {
 export default function UserStats({ stats }: UserStatsProps) {
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total Users */}
         <Card className="p-4">
           <div className="flex items-center h-full">
@@ -48,21 +48,8 @@ export default function UserStats({ stats }: UserStatsProps) {
               <Shield className="h-5 w-5 text-purple-700" />
             </div>
             <div className="ml-4">
-              <p className="text-sm text-muted-foreground">Admin Users</p>
+              <p className="text-sm text-muted-foreground">Admin</p>
               <h3 className="text-xl font-bold">{stats.adminCount}</h3>
-            </div>
-          </div>
-        </Card>
-
-        {/* Seller Users */}
-        <Card className="p-4">
-          <div className="flex items-center h-full">
-            <div className="p-2 bg-amber-100 rounded-full w-10 h-10 flex items-center justify-center">
-              <Store className="h-5 w-5 text-amber-700" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-muted-foreground">Sellers</p>
-              <h3 className="text-xl font-bold">{stats.sellerCount}</h3>
             </div>
           </div>
         </Card>
