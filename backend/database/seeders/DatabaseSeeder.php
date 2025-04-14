@@ -53,7 +53,7 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         // Create 10 random users
-        $timestamp = time(); // Add timestamp to make emails unique
+        $timestamp = time();
         for ($i = 1; $i <= 10; $i++) {
             User::factory()->create([
                 'username' => 'user'.$i.'_'.$timestamp,
