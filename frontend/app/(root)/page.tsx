@@ -1,12 +1,18 @@
-import React from "react";
 import Image from "next/image";
+import Hero from "@/components/landing/herolanding";
+import Feature from "@/components/landing/feature";
+import Kelebihan from "@/components/landing/kelebihan";
+import Rekomendasi from "@/components/landing/rekomendasiproduk";
 
-const page = () => {
+
+export default function Home() {
   return (
-    <div className="">
-      <Image src="/testing.jpg" alt="Deskripsi gambar" width={500} height={500} />
-    </div>
-  );
-};
+    <>
 
-export default page;
+      <Hero/>
+      <Feature/>
+      <Kelebihan/>
+      <Rekomendasi/>
+    </>
+  );
+}
