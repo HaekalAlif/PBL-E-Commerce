@@ -23,7 +23,7 @@ const SubscribeSection = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Masukkan email Anda..."
-            className="p-2 rounded-l-lg border focus:outline-none w-72"
+            className="p-2 rounded-l-lg border focus:outline-none w-72 bg-white"
           />
           <button
             type="submit"

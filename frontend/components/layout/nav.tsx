@@ -1,18 +1,8 @@
 'use client'
 import * as React from 'react'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import Searchbar from '../ui/searchbar'
 import { useRouter } from 'next/navigation'
-
-
+import ProfileCard from '../common/profile-card'
 
 
 const MenuIcon = () => (
@@ -85,8 +75,30 @@ const CartIcon = () => (
 )
 
 export function Navigation() {
+  const router = useRouter()
+  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean | null>(null) // null = loading
 
-  const router = useRouter() // Pindahkan useRouter ke dalam komponen
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/user', { credentials: 'include' }) // Pastikan cookies ikut dikirim
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.id) {
+            setIsLoggedIn(true)
+          } else {
+            setIsLoggedIn(false)
+          }
+        } else {
+          setIsLoggedIn(false)
+        }
+      } catch (error) {
+        setIsLoggedIn(false)
+      }
+    }
+
+    checkAuth()
+  }, [])
 
   const handleLogin = () => {
     router.push('/login')
@@ -96,72 +108,54 @@ export function Navigation() {
     router.push('/register')
   }
 
-  const [isSearchFocused, setIsSearchFocused] = React.useState(false)
-
   return (
-    <nav
-      className="w-full bg-white shadow-sm"
-      role="navigation"
-      aria-label="Main navigation"
-    >
+    <nav className="w-full bg-white shadow-sm" role="navigation" aria-label="Main navigation">
       <div className="flex gap-8 justify-between items-center px-12 py-3 mx-auto max-w-[1920px] max-sm:py-2">
-        {/* Masukkan Kodingan Logo Disini*/}
         <a href="/" className="font-bold">E Commerce</a>
 
         <div className="flex flex-1 gap-4 items-center max-sm:hidden">
-          <Select>
-            <SelectTrigger className="w-[180px] h-[40px] rounded-xl">
-              <SelectValue placeholder="Semua Kategori" className="text-white" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="apple">Pakaian</SelectItem>
-                <SelectItem value="banana">Motor</SelectItem>
-                <SelectItem value="blueberry">Mobil</SelectItem>
-                <SelectItem value="grapes">Elektronik</SelectItem>
-                <SelectItem value="pineapple">Olahraga</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          <div className="flex flex-1 h-14 rounded-md ">
-            <Searchbar/>
+          <div className="flex flex-1 h-14 rounded-md">
+            <Searchbar />
           </div>
         </div>
 
         <div className="flex gap-6 items-center max-sm:ml-auto">
-          <button
-            aria-label="Notifications"
-          >
-            <NotificationIcon />
-          </button>
+          {isLoggedIn === null && (
+            <div>Loading...</div> // loading state opsional
+          )}
 
-          <button
-            aria-label="Shopping cart"
-          >
-            <CartIcon />
-          </button>
+          {isLoggedIn === true && (
+            <>
+              <button aria-label="Notifications">
+                <NotificationIcon />
+              </button>
+              <button aria-label="Shopping cart">
+                <CartIcon />
+              </button>
+              <ProfileCard />
+            </>
+          )}
 
-          <button onClick={handleLogin}
-            className="h-14 text-sm font-semibold text-amber-400 rounded-md border-2 border-amber-500 w-[123px] cursor-pointer"
-            type="button"
-          >
-            Masuk
-          </button>
+          {isLoggedIn === false && (
+            <>
+              <button onClick={handleLogin}
+                className="h-14 text-sm font-semibold text-amber-400 rounded-md border-2 border-amber-500 w-[123px] cursor-pointer"
+                type="button"
+              >
+                Masuk
+              </button>
 
-          <button onClick={handleRegister}
-            className="h-14 text-sm font-semibold text-white rounded-md bg-[linear-gradient(180deg,#F3AC27_0%,#F5A71E_100%)] w-[123px] cursor-pointer"
-            type="button"
-          >
-            Daftar
-          </button>
+              <button onClick={handleRegister}
+                className="h-14 text-sm font-semibold text-white rounded-md bg-[linear-gradient(180deg,#F3AC27_0%,#F5A71E_100%)] w-[123px] cursor-pointer"
+                type="button"
+              >
+                Daftar
+              </button>
+            </>
+          )}
         </div>
 
-        <button
-          className="hidden max-sm:block"
-          aria-label="Toggle mobile menu"
-          aria-expanded="false"
-        >
+        <button className="hidden max-sm:block" aria-label="Toggle mobile menu" aria-expanded="false">
           <MenuIcon />
         </button>
       </div>

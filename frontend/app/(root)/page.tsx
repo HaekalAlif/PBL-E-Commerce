@@ -9,7 +9,6 @@ import Rekomendasi from "./components/landing/rekomendasiproduk";
 export default function Home() {
   return (
     <>
-
       <Hero/>
       <Kategori/>
       <ProdukUnggulan/>
