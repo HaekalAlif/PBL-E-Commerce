@@ -48,27 +48,6 @@ const MenuIcon = () => (
   </svg>
 )
 
-const ChevronDownIcon = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 18 18"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <path
-      d="M3.75 6.375L9 11.625L14.25 6.375"
-      stroke="white"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-)
-
-
-
 const NotificationIcon = () => (
   <svg
     width="27"
@@ -153,7 +132,6 @@ export function Navigation() {
         <div className="flex gap-6 items-center max-sm:ml-auto">
           <button
             aria-label="Notifications"
-            
           >
             <NotificationIcon />
           </button>
@@ -165,14 +143,14 @@ export function Navigation() {
           </button>
 
           <button onClick={handleLogin}
-            className="h-14 text-sm font-semibold text-amber-400 rounded-md border-2 border-amber-500 w-[123px]"
+            className="h-14 text-sm font-semibold text-amber-400 rounded-md border-2 border-amber-500 w-[123px] cursor-pointer"
             type="button"
           >
             Masuk
           </button>
 
           <button onClick={handleRegister}
-            className="h-14 text-sm font-semibold text-white rounded-md bg-[linear-gradient(180deg,#F3AC27_0%,#F5A71E_100%)] w-[123px]"
+            className="h-14 text-sm font-semibold text-white rounded-md bg-[linear-gradient(180deg,#F3AC27_0%,#F5A71E_100%)] w-[123px] cursor-pointer"
             type="button"
           >
             Daftar
