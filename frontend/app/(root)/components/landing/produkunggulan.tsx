@@ -2,17 +2,19 @@
 
 import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation'
 
 const products = [
-  { image: '/camera.png', name: 'Kamera HD', price: '1.200.000' },
-  { image: '/camera.png', name: 'Nama Barang', price: '2.500.000' },
-  { image: '/camera.png', name: 'Nama Barang', price: '3.800.000' },
-  { image: '/camera.png', name: 'Nama Barang', price: '4.100.000' },
-  { image: '/camera.png', name: 'Nama Barang', price: '5.000.000' },
+  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
+  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
+  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
+  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
+  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
 ];
 
 export default function ProdukUnggulan() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter() // tambahkan ini di dalam komponen
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -56,12 +58,17 @@ export default function ProdukUnggulan() {
                 />
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-start sm:items-center p-2">
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold">{product.name}</h3>
+                    <h3 className="text-base sm:text-lg font-bold">
+                      {product.name}
+                    </h3>
                     <p className="text-yellow-500 text-sm sm:text-base font-semibold">
                       Rp {product.price}
                     </p>
                   </div>
-                  <button className="mt-2 sm:mt-0 bg-[#F79E0E] text-white text-sm sm:text-base py-1 px-3 sm:px-4 rounded">
+                  <button
+                    className="mt-2 sm:mt-0 bg-[#F79E0E] text-white text-sm sm:text-base py-1 px-3 sm:px-4 rounded cursor-pointer"
+                    onClick={() => router.push('/detail')}
+                  >
                     Beli
                   </button>
                 </div>
@@ -79,5 +86,5 @@ export default function ProdukUnggulan() {
         </button>
       </div>
     </section>
-  );
+  )
 }

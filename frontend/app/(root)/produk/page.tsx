@@ -1,10 +1,10 @@
 import Image from "next/image";
-import DetailProduk from "../components/produkcomp/detailproduk";
+import Produk from "../components/produkcomp/produk";
 
 export default function Home() {
   return (
     <>
-        <DetailProduk/>
+        <Produk/>
     </>
   );
 }

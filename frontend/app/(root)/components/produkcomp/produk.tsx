@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Select,
   SelectContent,
@@ -29,14 +30,14 @@ const categories = [
 ]
 
 const products = Array(18).fill({
-  image: '/camera.png',
-  name: 'Nama Barang',
-  price: '100.000.00',
+  image: '/baju.png',
+  name: 'Kaos Polos',
+  price: '20.000.00',
 })
 
 const itemsPerPage = 16
 
-const DetailProduk = () => {
+const Produk = () => {
   const [currentPage, setCurrentPage] = useState(1)
 
   const totalPages = Math.ceil(products.length / itemsPerPage)
@@ -49,7 +50,7 @@ const DetailProduk = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
-
+  const router = useRouter() // tambahkan ini di dalam komponen
   return (
     <div className="bg-white min-h-screen mt-12 px-4 md:px-8 lg:px-12">
       {/* Sort Dropdown */}
@@ -117,10 +118,15 @@ const DetailProduk = () => {
                 {/* Tombol dan Info */}
                 <div className="flex flex-col gap-2 p-2 bg-[#F79E0E] lg:flex-wrap lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <h3 className="text-lg text-white font-medium">{product.name}</h3>
+                    <h3 className="text-lg text-white font-medium">
+                      {product.name}
+                    </h3>
                     <p className="text-white">Rp {product.price}</p>
                   </div>
-                  <button className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm hover:bg-[#F79E0E] hover:text-white transition">
+                  <button
+                    className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm cursor-pointer"
+                    onClick={() => router.push('/detail')}
+                  >
                     Beli
                   </button>
                 </div>
@@ -168,4 +174,4 @@ const DetailProduk = () => {
   )
 }
 
-export default DetailProduk
+export default Produk

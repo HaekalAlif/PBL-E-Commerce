@@ -1,24 +1,31 @@
-'use client';
+'use client'
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react'
+import { useRouter } from 'next/navigation'
 
 const categories = [
-  'Pakaian', 'Elektronik', 'Motor', 'Mobil', 'Aksesoris', 'Perabotan', 'Olahraga', 'Lain - Lain'
-];
+  'Pakaian',
+  'Elektronik',
+  'Motor',
+  'Mobil',
+  'Aksesoris',
+  'Perabotan',
+  'Olahraga',
+  'Lain - Lain',
+]
 
 const products = Array(8).fill({
-  image: '/camera.png',
-  name: 'Nama Barang',
-  price: '100.000.00'
-});
+  image: '/baju.png',
+  name: 'Kaos Polos',
+  price: '20.000.00',
+})
 
 export default function Rekomendasi() {
-  const router = useRouter();
+  const router = useRouter()
 
   const handleProduk = () => {
-    router.push('/produk');
-  };
+    router.push('/produk')
+  }
 
   return (
     <div className="bg-white">
@@ -69,16 +76,21 @@ export default function Rekomendasi() {
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-72 object-cover rounded-md"
+                  className="w-full h-60 xl:h-72 object-cover rounded-md"
                 />
 
                 {/* Tombol dan Info */}
                 <div className="flex flex-col gap-2 p-2 bg-[#F79E0E] lg:flex-wrap lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <h3 className="text-lg text-white font-medium">{product.name}</h3>
+                    <h3 className="text-lg text-white font-medium">
+                      {product.name}
+                    </h3>
                     <p className="text-white">Rp {product.price}</p>
                   </div>
-                  <button className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm hover:bg-[#F79E0E] hover:text-white transition">
+                  <button
+                    className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm transition cursor-pointer"
+                    onClick={() => router.push('/detail')}
+                  >
                     Beli
                   </button>
                 </div>
@@ -95,5 +107,5 @@ export default function Rekomendasi() {
         </p>
       </div>
     </div>
-  );
+  )
 }
