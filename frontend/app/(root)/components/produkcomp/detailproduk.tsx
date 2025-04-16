@@ -18,8 +18,14 @@ import {
 } from '@/components/ui/pagination'
 
 const categories = [
-  'Pakaian', 'Elektronik', 'Motor', 'Mobil', 
-  'Aksesoris', 'Perabotan', 'Olahraga', 'Lain - Lain'
+  'Pakaian',
+  'Elektronik',
+  'Motor',
+  'Mobil',
+  'Aksesoris',
+  'Perabotan',
+  'Olahraga',
+  'Lain - Lain',
 ]
 
 const products = Array(18).fill({
@@ -36,8 +42,8 @@ const DetailProduk = () => {
   const totalPages = Math.ceil(products.length / itemsPerPage)
 
   const currentProducts = products.slice(
-    (currentPage - 1) * itemsPerPage, 
-    currentPage * itemsPerPage
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
   )
 
   const handlePageChange = (page: number) => {
@@ -45,11 +51,12 @@ const DetailProduk = () => {
   }
 
   return (
-    <div className="bg-white min-h-screen mt-12">
-      <div className="flex justify-end mb-4 mx-48">
+    <div className="bg-white min-h-screen mt-12 px-4 md:px-8 lg:px-12">
+      {/* Sort Dropdown */}
+      <div className="flex justify-end mb-4 2xl:px-48">
         <Select>
-          <SelectTrigger className="w-[180px] h-[40px] rounded-xl">
-            <SelectValue placeholder="Urutkan" className="text-white" />
+          <SelectTrigger className="w-full sm:w-[180px] h-[40px] rounded-xl">
+            <SelectValue placeholder="Urutkan" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -61,8 +68,10 @@ const DetailProduk = () => {
         </Select>
       </div>
 
-      <div className="flex gap-8 mx-48">
-        <div className="bg-white p-6 rounded-lg shadow-md w-1/4 h-[700px]">
+      {/* Main Content */}
+      <div className="flex flex-col lg:flex-row gap-8 2xl:px-48">
+        {/* Sidebar Filter */}
+        <div className="bg-white p-6 rounded-lg shadow-md h-fit w-full lg:w-1/4">
           <h2 className="text-2xl font-bold text-orange-500 mb-6">Filter</h2>
           <h3 className="text-lg font-semibold mb-4">Filter Kategori</h3>
           {categories.map((cat, index) => (
@@ -92,8 +101,9 @@ const DetailProduk = () => {
           </button>
         </div>
 
+        {/* Product Grid */}
         <div className="flex-1">
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
             {currentProducts.map((product, index) => (
               <div
                 key={index}
@@ -102,29 +112,31 @@ const DetailProduk = () => {
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-72 object-cover rounded-md"
+                  className="w-full h-60 object-cover rounded-md"
                 />
-                <div className="flex justify-between items-center p-2 bg-[#F79E0E]">
+                {/* Tombol dan Info */}
+                <div className="flex flex-col gap-2 p-2 bg-[#F79E0E] lg:flex-wrap lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <h3 className="text-lg text-white font-medium">{product.name}</h3>
-                    <p className="text-white">
-                      Rp {product.price}
-                    </p>
+                    <p className="text-white">Rp {product.price}</p>
                   </div>
-                  <button className="bg-white text-[#F79E0E] py-1 px-4 rounded">
-                    Beli Barang
+                  <button className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm hover:bg-[#F79E0E] hover:text-white transition">
+                    Beli
                   </button>
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Pagination */}
           <Pagination className="mt-8 mb-8">
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                  className={`${currentPage === 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`} 
+                  onClick={() =>
+                    currentPage > 1 && handlePageChange(currentPage - 1)
+                  }
+                  className={`${currentPage === 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                 />
               </PaginationItem>
 
@@ -141,7 +153,10 @@ const DetailProduk = () => {
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  onClick={() =>
+                    currentPage < totalPages &&
+                    handlePageChange(currentPage + 1)
+                  }
                   className={`${currentPage === totalPages ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                 />
               </PaginationItem>
