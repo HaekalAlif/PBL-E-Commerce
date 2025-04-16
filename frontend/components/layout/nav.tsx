@@ -2,7 +2,9 @@
 import * as React from 'react'
 import Searchbar from '../ui/searchbar'
 import { useRouter } from 'next/navigation'
-import ProfileCard from '../common/profile-card'
+import ProfileCardNav from '../common/profile-card-nav'
+import axios from 'axios'
+
 
 
 const MenuIcon = () => (
@@ -74,79 +76,78 @@ const CartIcon = () => (
   </svg>
 )
 
-export function Navigation() {
+const Navigation = () => {
   const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean | null>(null) // null = loading
+  const [isLoggedIn, setIsLoggedIn] = React.useState<boolean | null>(null)
 
   React.useEffect(() => {
-    const checkAuth = async () => {
+    const fetchUser = async () => {
       try {
-        const res = await fetch('/api/user', { credentials: 'include' }) // Pastikan cookies ikut dikirim
-        if (res.ok) {
-          const data = await res.json()
-          if (data && data.id) {
-            setIsLoggedIn(true)
-          } else {
-            setIsLoggedIn(false)
-          }
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+        const response = await axios.get(`${apiUrl}/user/profile`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          withCredentials: true,
+          validateStatus: (status) => {
+            // Jangan anggap 401 sebagai error
+            return status === 200 || status === 401
+          },
+        })
+    
+        if (response.status === 200 && response.data?.status === 'success') {
+          setIsLoggedIn(true)
         } else {
           setIsLoggedIn(false)
         }
       } catch (error) {
+        console.error('Unexpected error checking auth status:', error)
         setIsLoggedIn(false)
       }
     }
-
-    checkAuth()
+    
+    fetchUser()
   }, [])
 
-  const handleLogin = () => {
-    router.push('/login')
-  }
-
-  const handleRegister = () => {
-    router.push('/register')
-  }
+  const handleLogin = () => router.push('/login')
+  const handleRegister = () => router.push('/register')
 
   return (
     <nav className="w-full bg-white shadow-sm" role="navigation" aria-label="Main navigation">
-      <div className="flex gap-8 justify-between items-center px-12 py-3 mx-auto max-w-[1920px] max-sm:py-2">
-        <a href="/" className="font-bold">E Commerce</a>
-
-        <div className="flex flex-1 gap-4 items-center max-sm:hidden">
+      {/* --- Desktop/Tablet Layout --- */}
+      <div className="hidden max-sm:hidden gap-8 justify-between items-center px-12 py-3 mx-auto max-w-[1920px] sm:flex">
+        <a href="/" className="font-bold text-lg">E Commerce</a>
+  
+        <div className="flex flex-1 gap-4 items-center">
           <div className="flex flex-1 h-14 rounded-md">
             <Searchbar />
           </div>
         </div>
-
-        <div className="flex gap-6 items-center max-sm:ml-auto">
-          {isLoggedIn === null && (
-            <div>Loading...</div> // loading state opsional
-          )}
-
+  
+        <div className="flex gap-6 items-center">
+          {isLoggedIn === null && <div>Loading...</div>}
+  
           {isLoggedIn === true && (
             <>
-              <button aria-label="Notifications">
-                <NotificationIcon />
-              </button>
-              <button aria-label="Shopping cart">
-                <CartIcon />
-              </button>
-              <ProfileCard />
+              <button aria-label="Notifications"><NotificationIcon /></button>
+              <button aria-label="Shopping cart"><CartIcon /></button>
+              <ProfileCardNav />
             </>
           )}
-
+  
           {isLoggedIn === false && (
             <>
-              <button onClick={handleLogin}
-                className="h-14 text-sm font-semibold text-amber-400 rounded-md border-2 border-amber-500 w-[123px] cursor-pointer"
+              <button
+                onClick={handleLogin}
+                className="h-14 text-sm font-semibold text-amber-400 rounded-md border-2 border-amber-500 w-[123px]"
                 type="button"
               >
                 Masuk
               </button>
-
-              <button onClick={handleRegister}
-                className="h-14 text-sm font-semibold text-white rounded-md bg-[linear-gradient(180deg,#F3AC27_0%,#F5A71E_100%)] w-[123px] cursor-pointer"
+              <button
+                onClick={handleRegister}
+                className="h-14 text-sm font-semibold text-white bg-amber-500 rounded-md w-[123px]"
                 type="button"
               >
                 Daftar
@@ -154,10 +155,53 @@ export function Navigation() {
             </>
           )}
         </div>
-
-        <button className="hidden max-sm:block" aria-label="Toggle mobile menu" aria-expanded="false">
-          <MenuIcon />
-        </button>
+      </div>
+  
+      {/* --- Mobile Layout --- */}
+      <div className="sm:hidden flex flex-col gap-4 px-4 py-4">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <a href="/" className="text-xl font-bold text-amber-500">E-Commerce</a>
+        </div>
+  
+        {/* Search Bar */}
+        <div className="w-full">
+          <Searchbar />
+        </div>
+  
+        {/* Auth / Actions */}
+        <div className="flex flex-col items-center gap-4">
+          {isLoggedIn === null && <div className="text-sm text-gray-500">Memuat...</div>}
+  
+          {isLoggedIn === true && (
+            <div className="flex justify-center gap-4 items-center">
+              <button aria-label="Notifikasi" className="p-2 rounded-full hover:bg-gray-100 transition-all">
+                <NotificationIcon />
+              </button>
+              <button aria-label="Keranjang" className="p-2 rounded-full hover:bg-gray-100 transition-all">
+                <CartIcon />
+              </button>
+              <ProfileCardNav />
+            </div>
+          )}
+  
+          {isLoggedIn === false && (
+            <div className="flex flex-col gap-3 w-full">
+              <button
+                onClick={handleLogin}
+                className="h-12 text-sm font-semibold border border-amber-500 text-amber-500 rounded-xl hover:bg-amber-50 transition-all"
+              >
+                Masuk
+              </button>
+              <button
+                onClick={handleRegister}
+                className="h-12 text-sm font-semibold bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-all"
+              >
+                Daftar
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   )
