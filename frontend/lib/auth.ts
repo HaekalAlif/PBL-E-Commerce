@@ -46,3 +46,12 @@ export const isAuthenticated = (): boolean => {
 export const getUserRole = (): string | null => {
   return Cookies.get("role_name") || null;
 };
+
+export async function getCurrentUser() {
+  const res = await fetch('/api/user', { credentials: 'include' })
+
+  if (!res.ok) return null
+
+  const user = await res.json()
+  return user
+}

@@ -1,4 +1,6 @@
 import { Toaster } from "@/components/ui/toast";
+import Navigation from "@/components/layout/nav";
+import Footer from "@/components/layout/footer";
 
 export default function RootPageLayout({
   children,
@@ -7,7 +9,9 @@ export default function RootPageLayout({
 }>) {
   return (
     <>
+      <Navigation/>
       {children}
+      <Footer/>
       <Toaster />
     </>
   );
