@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import ProfileCardNav from '../common/profile-card-nav'
 import axios from 'axios'
 
-
-
 const MenuIcon = () => (
   <svg
     width="24"
@@ -83,18 +81,19 @@ const Navigation = () => {
   React.useEffect(() => {
     const fetchUser = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
         const response = await axios.get(`${apiUrl}/user/profile`, {
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
           },
           withCredentials: true,
-          validateStatus: (status) => {
+          validateStatus: status => {
             return status === 200 || status === 401
           },
         })
-    
+
         if (response.status === 200 && response.data?.status === 'success') {
           setIsLoggedIn(true)
         } else {
@@ -105,7 +104,7 @@ const Navigation = () => {
         setIsLoggedIn(false)
       }
     }
-    
+
     fetchUser()
   }, [])
 
@@ -113,28 +112,42 @@ const Navigation = () => {
   const handleRegister = () => router.push('/register')
 
   return (
-    <nav className="w-full bg-white shadow-sm" role="navigation" aria-label="Main navigation">
+    <nav
+      className="w-full bg-white shadow-sm"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       {/* --- Desktop/Tablet Layout --- */}
       <div className="hidden max-sm:hidden gap-8 justify-between items-center px-12 py-3 mx-auto max-w-[1920px] sm:flex">
-        <a href="/" className="font-bold text-lg">E Commerce</a>
-  
+        <a href="/" className="font-bold text-lg">
+          E Commerce
+        </a>
+
         <div className="flex flex-1 gap-4 items-center">
           <div className="flex flex-1 h-14 rounded-md">
             <Searchbar />
           </div>
         </div>
-  
+
         <div className="flex gap-6 items-center">
           {isLoggedIn === null && <div>Loading...</div>}
-  
+
           {isLoggedIn === true && (
             <>
-              <button aria-label="Notifications"><NotificationIcon /></button>
-              <button aria-label="Shopping cart"><CartIcon /></button>
+              <button aria-label="Notifications">
+                <NotificationIcon />
+              </button>
+              <button
+                aria-label="Shopping cart"
+                onClick={() => router.push('/keranjang')}
+                className="cursor-pointer"
+              >
+                <CartIcon />
+              </button>
               <ProfileCardNav />
             </>
           )}
-  
+
           {isLoggedIn === false && (
             <>
               <button
@@ -155,35 +168,45 @@ const Navigation = () => {
           )}
         </div>
       </div>
-  
+
       {/* --- Mobile Layout --- */}
       <div className="sm:hidden flex flex-col gap-4 px-4 py-4">
         {/* Logo */}
         <div className="flex justify-center">
-          <a href="/" className="text-xl font-bold text-amber-500">E-Commerce</a>
+          <a href="/" className="text-xl font-bold text-amber-500">
+            E-Commerce
+          </a>
         </div>
-  
+
         {/* Search Bar */}
         <div className="w-full">
           <Searchbar />
         </div>
-  
+
         {/* Auth / Actions */}
         <div className="flex flex-col items-center gap-4">
-          {isLoggedIn === null && <div className="text-sm text-gray-500">Memuat...</div>}
-  
+          {isLoggedIn === null && (
+            <div className="text-sm text-gray-500">Memuat...</div>
+          )}
+
           {isLoggedIn === true && (
             <div className="flex justify-center gap-4 items-center">
-              <button aria-label="Notifikasi" className="p-2 rounded-full hover:bg-gray-100 transition-all">
+              <button
+                aria-label="Notifikasi"
+                className="p-2 rounded-full hover:bg-gray-100 transition-all"
+              >
                 <NotificationIcon />
               </button>
-              <button aria-label="Keranjang" className="p-2 rounded-full hover:bg-gray-100 transition-all">
+              <button
+                aria-label="Keranjang"
+                className="p-2 rounded-full hover:bg-gray-100 transition-all"
+              >
                 <CartIcon />
               </button>
               <ProfileCardNav />
             </div>
           )}
-  
+
           {isLoggedIn === false && (
             <div className="flex flex-col gap-3 w-full">
               <button

@@ -90,7 +90,7 @@ const DetailProduk = () => {
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               className="border border-orange-400 text-orange-500 rounded px-4 py-2 hover:bg-orange-400 hover:text-white transition duration-200"
-              onClick={() => router.push('/checkout')}
+              onClick={() => router.push('/keranjang')}
             >
               Checkout Barang
             </button>
