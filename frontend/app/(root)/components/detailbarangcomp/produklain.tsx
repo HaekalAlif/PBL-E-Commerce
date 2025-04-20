@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/pagination';
 
 const rekomendasiData = Array(20).fill({
-  image: '/baju.png', // Ganti dengan path gambar kamu
+  image: '/baju.png', 
   name: 'Nama Barang',
   price: '00000000',
 });

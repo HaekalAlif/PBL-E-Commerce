@@ -50,7 +50,7 @@ const Produk = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
-  const router = useRouter() // tambahkan ini di dalam komponen
+  const router = useRouter() 
   return (
     <div className="bg-white min-h-screen mt-12 px-4 md:px-8 lg:px-12">
       {/* Sort Dropdown */}

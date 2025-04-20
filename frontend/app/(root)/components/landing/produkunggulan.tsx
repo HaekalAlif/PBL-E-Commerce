@@ -14,7 +14,7 @@ const products = [
 
 export default function ProdukUnggulan() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const router = useRouter() // tambahkan ini di dalam komponen
+  const router = useRouter()
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -32,7 +32,6 @@ export default function ProdukUnggulan() {
       </h2>
 
       <div className="flex items-center justify-center gap-2 sm:gap-4">
-        {/* Panah kiri - tampil hanya di layar >= 1440px */}
         <button
           onClick={() => scroll('left')}
           className="hidden xl:flex bg-white w-10 h-10 rounded-full items-center justify-center shadow hover:scale-105 transition z-10"
@@ -76,8 +75,6 @@ export default function ProdukUnggulan() {
             ))}
           </div>
         </div>
-
-        {/* Panah kanan - tampil hanya di layar >= 1440px */}
         <button
           onClick={() => scroll('right')}
           className="hidden xl:flex bg-white w-10 h-10 rounded-full items-center justify-center shadow hover:scale-105 transition z-10"

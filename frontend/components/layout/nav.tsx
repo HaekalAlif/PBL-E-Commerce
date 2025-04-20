@@ -91,7 +91,6 @@ const Navigation = () => {
           },
           withCredentials: true,
           validateStatus: (status) => {
-            // Jangan anggap 401 sebagai error
             return status === 200 || status === 401
           },
         })

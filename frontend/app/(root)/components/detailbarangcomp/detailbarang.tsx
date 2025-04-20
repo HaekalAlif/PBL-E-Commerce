@@ -12,7 +12,7 @@ const DetailProduk = () => {
     if (type === 'inc') setQuantity(q => q + 1)
     else if (type === 'dec' && quantity > 1) setQuantity(q => q - 1)
   }
-  const router = useRouter() // tambahkan ini di dalam komponen
+  const router = useRouter() 
 
   return (
     <div className=" bg-[#FFF8F3] py-8 px-6 flex flex-col items-center">
@@ -23,7 +23,7 @@ const DetailProduk = () => {
       <div className="bg-white rounded-xl shadow-lg p-6 max-w-7xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         <div className="relative aspect-square">
           <Image
-            src="/baju.png" // Letakkan gambar ini di public/kaos.jpg
+            src="/baju.png" 
             alt="Baju Bekas"
             layout="fill"
             objectFit="contain"
