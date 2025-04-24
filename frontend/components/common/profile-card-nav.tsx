@@ -116,7 +116,7 @@ const ProfileCardNav = () => {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full relative justify-between p-5 rounded-lg transition-all duration-200 hover:bg-orange-100 text-orange-600 "
+            className="w-full relative justify-between p-5 rounded-lg transition-all duration-200 hover:bg-orange-100 text-orange-600"
           >
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -128,20 +128,20 @@ const ProfileCardNav = () => {
                 <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
               </div>
               <div className="flex flex-col items-start">
-                <p className="font-medium text-sm truncate max-w-[120px]">
+                <p className="font-medium text-sm truncate max-w-[120px] max-sm:hidden">
                   {loading ? "Loading..." : userInfo.username}
                 </p>
-                <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                <p className="text-xs text-muted-foreground truncate max-w-[120px] max-sm:hidden">
                   {loading ? "..." : userInfo.email}
                 </p>
               </div>
             </div>
-            <ChevronDown className="h-4 w-4 text-orange-500 opacity-70 group-hover:opacity-100 transition-opacity" />
+            <ChevronDown className="h-4 w-4 text-orange-500 opacity-70 group-hover:opacity-100 transition-opacity max-sm:hidden" />
           </Button>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
-          className="w-64 p-2 border border-orange-300 bg-orange-50 shadow-md"
+          className="w-64 p-2 border border-orange-300  shadow-md"
           align="end"
           side="bottom"
         >

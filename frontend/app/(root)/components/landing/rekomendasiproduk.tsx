@@ -29,7 +29,7 @@ export default function Rekomendasi() {
 
   return (
     <div className="bg-white">
-      <h1 className="text-center text-[#F79E0E] text-4xl font-bold h-24 flex items-center justify-center">
+      <h1 className="text-center text-[#F79E0E] text-[28px] font-bold h-24 flex items-center justify-center">
         Rekomendasi
       </h1>
 

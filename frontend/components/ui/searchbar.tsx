@@ -54,11 +54,11 @@ const Searchbar: React.FC = () => {
                 <input
                     type="search"
                     placeholder='Cari Barang'
-                    className='w-full p-4 rounded-full bg-white border-2 border-gray-300 text-black focus:border-[#F79E0E] focus:outline-none'
+                    className='w-full p-4 max-sm:py-2 rounded-full bg-white border-2 border-gray-300 text-black focus:border-[#F79E0E] focus:outline-none'
                     value={searchTerm}
                     onChange={handleSearch}
                 />
-                <button type="submit" className='absolute right-1 top-1/2 -translate-y-1/2 p-4 bg-[#F79E0E] rounded-full'>
+                <button type="submit" className='absolute right-1 top-1/2 -translate-y-1/2 p-4 bg-[#F79E0E] rounded-full max-sm:p-2'>
                     <SearchIcon/>
                 </button>
             </div>

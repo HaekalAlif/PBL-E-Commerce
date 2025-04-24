@@ -27,7 +27,7 @@ export default function ProdukUnggulan() {
 
   return (
     <section className="bg-[#F79E0E] py-14 px-4 sm:px-6 relative">
-      <h2 className="text-[24px] sm:text-[28px] text-white font-semibold text-center mb-10">
+      <h2 className="text-[22px] sm:text-[24px] text-white font-semibold text-center mb-10">
         Produk Unggulan
       </h2>
 

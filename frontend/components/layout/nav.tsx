@@ -170,9 +170,9 @@ const Navigation = () => {
       </div>
 
       {/* --- Mobile Layout --- */}
-      <div className="sm:hidden flex flex-col gap-4 px-4 py-4">
+      <div className="sm:hidden flex flex-row gap-4 px-4 py-4">
         {/* Logo */}
-        <div className="flex justify-center">
+        <div className="max-sm:hidden flex justify-center">
           <a href="/" className="text-xl font-bold text-amber-500">
             E-Commerce
           </a>
@@ -193,13 +193,14 @@ const Navigation = () => {
             <div className="flex justify-center gap-4 items-center">
               <button
                 aria-label="Notifikasi"
-                className="p-2 rounded-full hover:bg-gray-100 transition-all"
+                className="p-2 rounded-full hover:bg-gray-100 transition-all max-sm:hidden"
               >
                 <NotificationIcon />
               </button>
               <button
                 aria-label="Keranjang"
                 className="p-2 rounded-full hover:bg-gray-100 transition-all"
+                onClick={() => router.push('/keranjang')}
               >
                 <CartIcon />
               </button>
