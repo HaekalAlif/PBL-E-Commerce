@@ -14,7 +14,6 @@ class EnsureIsPrimaryColumnExists extends Migration
      */
     public function up()
     {
-        // Check if the column exists
         if (!Schema::hasColumn('alamat_user', 'is_primary')) {
             Schema::table('alamat_user', function (Blueprint $table) {
                 $table->boolean('is_primary')->default(false)->after('kode_pos');

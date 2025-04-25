@@ -91,7 +91,7 @@ interface Barang {
 export default function BarangDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const slug = params.slug as string;
+  const slug = params?.slug as string || "";
 
   // States
   const [barang, setBarang] = useState<Barang | null>(null);

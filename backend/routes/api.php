@@ -179,7 +179,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [UserManagementController::class, 'destroy']);
         });
         
-        // Toko management (admin only) - Moved outside the admin prefix to match the frontend request URL
+        // Toko management (admin only)
         Route::prefix('admin/toko')->group(function() {
             Route::get('/', [TokoManagementController::class, 'index']);
             Route::get('/{id}', [TokoManagementController::class, 'show']);

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { getCsrfToken, getCsrfTokenFromCookie } from "@/lib/axios";
+import { getCsrfTokenFromCookie, getCsrfToken } from "@/lib/axios";
 import { Product, ProductFormData } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -121,10 +121,9 @@ export const useProductManagement = () => {
   const updateProduct = useCallback(
     async (id: number, formData: ProductFormData) => {
       try {
+        const csrfToken = getCsrfTokenFromCookie();
         console.log("Updating product:", id, formData);
 
-        // Get CSRF token
-        const csrfToken = getCsrfTokenFromCookie();
         if (!csrfToken) {
           await getCsrfToken();
         }
@@ -136,7 +135,7 @@ export const useProductManagement = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
             },
             withCredentials: true,
           }
@@ -183,7 +182,7 @@ export const useProductManagement = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
             },
             withCredentials: true,
           }
@@ -227,7 +226,7 @@ export const useProductManagement = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
             },
             withCredentials: true,
           }
@@ -268,7 +267,7 @@ export const useProductManagement = () => {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+            "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
           },
           withCredentials: true,
         });

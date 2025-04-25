@@ -16,7 +16,7 @@ interface ProductStatsProps {
 export default function ProductStats({ stats }: ProductStatsProps) {
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total Products */}
         <Card className="p-4">
           <div className="flex items-center h-full">
@@ -52,19 +52,6 @@ export default function ProductStats({ stats }: ProductStatsProps) {
             <div className="ml-4">
               <p className="text-sm text-muted-foreground">Deleted Products</p>
               <h3 className="text-xl font-bold">{stats.deletedProducts}</h3>
-            </div>
-          </div>
-        </Card>
-
-        {/* Categories Used */}
-        <Card className="p-4">
-          <div className="flex items-center h-full">
-            <div className="p-2 bg-purple-100 rounded-full w-10 h-10 flex items-center justify-center">
-              <Tag className="h-5 w-5 text-purple-700" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-muted-foreground">Categories</p>
-              <h3 className="text-xl font-bold">{stats.totalCategories}</h3>
             </div>
           </div>
         </Card>

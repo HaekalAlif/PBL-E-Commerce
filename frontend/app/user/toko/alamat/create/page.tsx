@@ -101,7 +101,12 @@ const StoreAddressForm = () => {
         });
 
         if (response.data.status === "success") {
-          setProvinces(response.data.data);
+          // Filter out duplicate provinces based on their id
+          const uniqueProvinces = response.data.data.filter(
+            (province: Province, index: number, self: Province[]) =>
+              index === self.findIndex((p) => p.id === province.id)
+          );
+          setProvinces(uniqueProvinces);
         } else {
           throw new Error("Failed to fetch provinces");
         }
