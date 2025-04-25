@@ -37,7 +37,7 @@ const products = Array(18).fill({
 
 const itemsPerPage = 16
 
-const Produk = () => {
+const ProdukComp = () => {
   const [currentPage, setCurrentPage] = useState(1)
 
   const totalPages = Math.ceil(products.length / itemsPerPage)
@@ -174,4 +174,4 @@ const Produk = () => {
   )
 }
 
-export default Produk
+export default ProdukComp

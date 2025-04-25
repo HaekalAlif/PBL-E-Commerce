@@ -1,9 +1,9 @@
 import Image from "next/image";
-import Hero from "./components/landing/herolanding";
-import Kategori from "./components/landing/kategori";
-import ProdukUnggulan from "./components/landing/produkunggulan";
-import Kelebihan from "./components/landing/kelebihan";
-import Rekomendasi from "./components/landing/rekomendasiproduk";
+import Hero from "./components/herolanding";
+import Kategori from "./components/kategori";
+import ProdukUnggulan from "./components/produkunggulan";
+import Kelebihan from "./components/kelebihan";
+import Rekomendasi from "./components/rekomendasiproduk";
 
 
 export default function Home() {

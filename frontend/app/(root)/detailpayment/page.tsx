@@ -1,9 +1,9 @@
 import Image from "next/image";
-import DetailPembayaran from "../components/keranjang-payment/detailpaymentpage";
-export default function Home() {
+import DetailPembayaranComp from "./components/detailpaymentpage";
+export default function DetailPembayaran() {
   return (
     <>
-        <DetailPembayaran/>
+        <DetailPembayaranComp/>
     </>
   );
 }

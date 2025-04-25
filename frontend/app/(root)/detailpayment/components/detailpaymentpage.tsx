@@ -16,7 +16,7 @@ const banks = [
   { name: 'Bank Mandiri', logo: '/mandiri.png' },
 ];
 
-export default function DetailPembayaran() {
+export default function DetailPembayaranComp() {
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
 
   const subtotal = products.reduce((acc, p) => acc + p.price, 0);

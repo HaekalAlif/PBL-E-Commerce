@@ -34,7 +34,7 @@ const initialCart: (Product & { quantity: number })[] = [
   },
 ];
 
-export default function Keranjang() {
+export default function KeranjangPage() {
   const router = useRouter() 
   const [cart, setCart] = useState(initialCart);
 
