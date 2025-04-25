@@ -82,7 +82,7 @@ export default function ProductTable({
               <TableRow key={product.id_barang}>
                 <TableCell>
                   {product.gambar_barang && product.gambar_barang[0] ? (
-                    <div className="relative w-12 h-12 overflow-hidden rounded">
+                      <div className="relative w-12 h-12 overflow-hidden rounded">
                       <img
                         src={product.gambar_barang[0].url_gambar}
                         alt={product.nama_barang}

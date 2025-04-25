@@ -4,7 +4,7 @@ import Image from "next/image";
 const page = () => {
   return (
     <div className="">
-      <Image src="/testing.jpg" alt="Deskripsi gambar" width={500} height={500} />
+      <h1>Landing</h1>
     </div>
   );
 };

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { getCsrfToken, getCsrfTokenFromCookie } from "@/lib/axios";
+import { getCsrfTokenFromCookie, getCsrfToken } from "@/lib/axios";
 import { Kategori, KategoriFormData } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -44,8 +44,13 @@ export const useKategoriManagement = () => {
   const createKategori = useCallback(
     async (formData: KategoriFormData) => {
       try {
-        // Selalu dapatkan CSRF token baru sebelum request POST
-        await getCsrfToken();
+        // Ensure CSRF token is fetched before making the request
+        await getCsrfToken(); // Fetch CSRF token and set XSRF-TOKEN cookie
+
+        const csrfToken = getCsrfTokenFromCookie(); 
+        if (!csrfToken) {
+          throw new Error("CSRF token is missing. Please refresh the page.");
+        }
 
         const response = await axios.post(
           `${API_URL}/admin/kategori`,
@@ -54,7 +59,7 @@ export const useKategoriManagement = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken), // Ensure token is decoded
             },
             withCredentials: true,
           }
@@ -84,12 +89,9 @@ export const useKategoriManagement = () => {
   const updateKategori = useCallback(
     async (kategoriId: number, formData: KategoriFormData) => {
       try {
-        // Periksa jika token CSRF sudah ada
-        const csrfToken = getCsrfTokenFromCookie();
-
-        // Jika tidak ada, dapatkan token CSRF baru
+        const csrfToken = getCsrfTokenFromCookie(); // Use existing CSRF token
         if (!csrfToken) {
-          await getCsrfToken();
+          throw new Error("CSRF token is missing. Please refresh the page.");
         }
 
         const response = await axios.put(
@@ -99,7 +101,7 @@ export const useKategoriManagement = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken),
             },
             withCredentials: true,
           }
@@ -129,12 +131,9 @@ export const useKategoriManagement = () => {
   const deleteKategori = useCallback(
     async (kategoriId: number) => {
       try {
-        // Periksa jika token CSRF sudah ada
-        const csrfToken = getCsrfTokenFromCookie();
-
-        // Jika tidak ada, dapatkan token CSRF baru
+        const csrfToken = getCsrfTokenFromCookie(); // Use existing CSRF token
         if (!csrfToken) {
-          await getCsrfToken();
+          throw new Error("CSRF token is missing. Please refresh the page.");
         }
 
         const response = await axios.delete(
@@ -143,7 +142,7 @@ export const useKategoriManagement = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": getCsrfTokenFromCookie() || "",
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken),
             },
             withCredentials: true,
           }
