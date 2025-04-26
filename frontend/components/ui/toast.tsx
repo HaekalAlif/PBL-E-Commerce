@@ -7,9 +7,15 @@ export function Toaster() {
     <SonnerToaster
       position="top-right"
       toastOptions={{
-        duration: 5000,
-        className: "border border-border",
+        duration: 3000,
+        className: "border-border",
+        style: {
+          background: "var(--background)",
+          color: "var(--foreground)",
+          border: "1px solid var(--border)",
+        },
       }}
+      richColors
     />
   );
 }

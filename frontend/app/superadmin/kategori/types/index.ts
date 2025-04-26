@@ -1,18 +1,22 @@
 export interface Kategori {
   id_kategori: number;
   nama_kategori: string;
-  slug_kategori: string;
+  slug: string;
+  is_active: boolean;
   is_deleted: boolean;
-  parent_id: number | null; // Add this property to fix the error
-  icon_url: string | null; // Add this property to fix the error
+  logo?: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface KategoriFormData {
+export interface KategoriFormState {
   nama_kategori: string;
-  parent_id?: number | null;
-  icon_url?: string | null;
+  is_active: boolean;
+}
+
+export interface FormDataWithTyping extends FormData {
+  append(name: string, value: string | Blob): void;
+  get(name: string): string | null;
 }
 
 export const ITEMS_PER_PAGE = 10;

@@ -28,13 +28,13 @@ export default function LogoutButton({ className }: LogoutButtonProps) {
       // Redirect to login page after a short delay
       setTimeout(() => {
         // Force a complete page refresh to ensure all state is reset
-        window.location.href = "/login";
+        window.location.href = "/";
       }, 300);
     } catch (error) {
       console.error("Logout failed with error:", error);
 
       // Still redirect to login even if logout API fails
-      window.location.href = "/login";
+      window.location.href = "/";
     }
   };
 

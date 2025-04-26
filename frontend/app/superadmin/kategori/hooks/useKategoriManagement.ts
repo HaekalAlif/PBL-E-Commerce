@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { getCsrfTokenFromCookie, getCsrfToken } from "@/lib/axios";
-import { Kategori, KategoriFormData } from "../types";
+import { Kategori } from "../types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -19,6 +19,8 @@ export const useKategoriManagement = () => {
   const fetchKategori = useCallback(async () => {
     try {
       setLoading(true);
+      console.log("Fetching categories from:", `${API_URL}/admin/kategori`);
+
       const response = await axios.get(`${API_URL}/admin/kategori`, {
         headers: {
           "Content-Type": "application/json",
@@ -27,14 +29,18 @@ export const useKategoriManagement = () => {
         withCredentials: true,
       });
 
+      console.log("API Response:", response.data);
+
       if (response.data.status === "success") {
         setKategori(response.data.data);
       } else {
-        toast.error(response.data.message || "Gagal mengambil data kategori");
+        toast.error(response.data.message || "Failed to fetch categories");
+        setKategori([]);
       }
     } catch (error: any) {
-      console.error("Error fetching kategori:", error);
-      toast.error("Gagal memuat data kategori. Silakan coba lagi nanti.");
+      console.error("Error fetching categories:", error);
+      toast.error(error.response?.data?.message || "Failed to load categories");
+      setKategori([]);
     } finally {
       setLoading(false);
     }
@@ -42,43 +48,53 @@ export const useKategoriManagement = () => {
 
   // Create a new kategori
   const createKategori = useCallback(
-    async (formData: KategoriFormData) => {
+    async (formData: FormData) => {
       try {
-        // Ensure CSRF token is fetched before making the request
-        await getCsrfToken(); // Fetch CSRF token and set XSRF-TOKEN cookie
+        // Ensure CSRF token is present
+        await getCsrfToken();
+        const csrfToken = getCsrfTokenFromCookie();
+        
+        console.log("Creating category with data:", Object.fromEntries(formData));
 
-        const csrfToken = getCsrfTokenFromCookie(); 
-        if (!csrfToken) {
-          throw new Error("CSRF token is missing. Please refresh the page.");
-        }
-
-        const response = await axios.post(
-          `${API_URL}/admin/kategori`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "X-XSRF-TOKEN": decodeURIComponent(csrfToken), // Ensure token is decoded
-            },
-            withCredentials: true,
-          }
-        );
+        const response = await axios.post(`${API_URL}/admin/kategori`, formData, {
+          headers: {
+            Accept: "application/json",
+            "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
+          },
+          withCredentials: true,
+        });
 
         if (response.data.status === "success") {
-          toast.success("Kategori berhasil dibuat!");
+          toast.success("Category created successfully!");
           await fetchKategori();
           return true;
-        } else {
-          toast.error(response.data.message || "Gagal membuat kategori");
-          return false;
         }
+        
+        toast.error(response.data.message || "Failed to create category");
+        return false;
       } catch (error: any) {
-        console.error("Error creating kategori:", error);
-        toast.error(
-          error.response?.data?.message ||
-            "Gagal membuat kategori. Silakan coba lagi."
-        );
+        console.error("Error creating category:", {
+          error: error.message,
+          response: error.response?.data
+        });
+
+        // Improved error handling with proper type checking
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors;
+          Object.values(errors).forEach((errorMessages: unknown) => {
+            if (Array.isArray(errorMessages)) {
+              errorMessages.forEach((message: unknown) => {
+                if (typeof message === 'string') {
+                  toast.error(message);
+                }
+              });
+            } else if (typeof errorMessages === 'string') {
+              toast.error(errorMessages);
+            }
+          });
+        } else {
+          toast.error(error.response?.data?.message || "Failed to create category");
+        }
         return false;
       }
     },
@@ -87,40 +103,38 @@ export const useKategoriManagement = () => {
 
   // Update an existing kategori
   const updateKategori = useCallback(
-    async (kategoriId: number, formData: KategoriFormData) => {
+    async (kategoriId: number, formData: FormData) => {
       try {
-        const csrfToken = getCsrfTokenFromCookie(); // Use existing CSRF token
-        if (!csrfToken) {
-          throw new Error("CSRF token is missing. Please refresh the page.");
-        }
+        const csrfToken = getCsrfTokenFromCookie();
+        console.log("Updating category:", kategoriId, Object.fromEntries(formData));
 
-        const response = await axios.put(
+        formData.append('_method', 'PUT');
+
+        const response = await axios.post(
           `${API_URL}/admin/kategori/${kategoriId}`,
           formData,
           {
             headers: {
-              "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": decodeURIComponent(csrfToken),
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
             },
             withCredentials: true,
           }
         );
 
+        console.log("Update category response:", response.data);
+
         if (response.data.status === "success") {
-          toast.success("Kategori berhasil diperbarui!");
+          toast.success("Category updated successfully!");
           await fetchKategori();
           return true;
         } else {
-          toast.error(response.data.message || "Gagal memperbarui kategori");
+          toast.error(response.data.message || "Failed to update category");
           return false;
         }
       } catch (error: any) {
-        console.error("Error updating kategori:", error);
-        toast.error(
-          error.response?.data?.message ||
-            "Gagal memperbarui kategori. Silakan coba lagi."
-        );
+        console.error("Error updating category:", error);
+        toast.error(error.response?.data?.message || "Failed to update category");
         return false;
       }
     },
@@ -131,34 +145,37 @@ export const useKategoriManagement = () => {
   const deleteKategori = useCallback(
     async (kategoriId: number) => {
       try {
-        const csrfToken = getCsrfTokenFromCookie(); // Use existing CSRF token
+        console.log("Deleting category:", kategoriId);
+
+        const csrfToken = getCsrfTokenFromCookie();
         if (!csrfToken) {
-          throw new Error("CSRF token is missing. Please refresh the page.");
+          await getCsrfToken();
         }
 
         const response = await axios.delete(
           `${API_URL}/admin/kategori/${kategoriId}`,
           {
             headers: {
-              "Content-Type": "application/json",
               Accept: "application/json",
-              "X-XSRF-TOKEN": decodeURIComponent(csrfToken),
+              "X-XSRF-TOKEN": decodeURIComponent(csrfToken || ""),
             },
             withCredentials: true,
           }
         );
 
+        console.log("Delete category response:", response.data);
+
         if (response.data.status === "success") {
-          toast.success("Kategori berhasil dihapus!");
+          toast.success("Category deleted successfully!");
           await fetchKategori();
           return true;
         } else {
-          toast.error(response.data.message || "Gagal menghapus kategori");
+          toast.error(response.data.message || "Failed to delete category");
           return false;
         }
       } catch (error: any) {
-        console.error("Error deleting kategori:", error);
-        toast.error("Gagal menghapus kategori. Silakan coba lagi.");
+        console.error("Error deleting category:", error);
+        toast.error("Failed to delete category");
         return false;
       }
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Trash2, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -37,19 +37,12 @@ export default function KategoriTable({
   onClearFilters,
   hasActiveFilters,
 }: KategoriTableProps) {
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Logo</TableHead>
             <TableHead>Category Name</TableHead>
             <TableHead>Slug</TableHead>
             <TableHead>Status</TableHead>
@@ -60,6 +53,25 @@ export default function KategoriTable({
           {kategori.length > 0 ? (
             kategori.map((item) => (
               <TableRow key={item.id_kategori}>
+                <TableCell>
+                  {item.logo ? (
+                    <div className="relative w-12 h-12 overflow-hidden rounded">
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${item.logo}`}
+                        alt={item.nama_kategori}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "/placeholder-category.png";
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                      <Tag className="h-5 w-5 text-gray-500" />
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">
                   {item.nama_kategori}
                 </TableCell>

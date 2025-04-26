@@ -526,4 +526,62 @@ class BarangController extends Controller
             'data' => $barang
         ]);
     }
+
+    /**
+     * Get featured products for public display
+     */
+    public function getFeaturedProducts()
+    {
+        try {
+            // Debug: Get total count of all products
+            $totalProducts = Barang::count();
+            \Log::info('Total products in database: ' . $totalProducts);
+
+            // Start with base query
+            $query = Barang::query();
+            
+            // Add conditions one by one and log counts
+            $query->where('is_deleted', false);
+            \Log::info('Products after is_deleted check: ' . $query->count());
+            
+            $query->where('status_barang', 'Tersedia');
+            \Log::info('Products after status check: ' . $query->count());
+
+            // Add relationships
+            $query->with(['kategori', 'toko', 'gambarBarang' => function($query) {
+                $query->orderBy('urutan', 'asc');
+            }]);
+
+            // Order by most recent
+            $query->orderBy('created_at', 'desc');
+
+            // Get featured products
+            $products = $query->take(10)->get();
+            
+            \Log::info('Final products count: ' . $products->count());
+            \Log::info('Product IDs returned: ' . $products->pluck('id_barang'));
+
+            return response()->json([
+                'status' => 'success',
+                'debug_info' => [
+                    'total_products' => $totalProducts,
+                    'filtered_count' => $products->count(),
+                    'conditions_used' => [
+                        'is_deleted' => false,
+                        'status_barang' => 'Tersedia'
+                    ]
+                ],
+                'data' => $products
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getFeaturedProducts: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch featured products',
+                'debug_error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
 }

@@ -43,8 +43,11 @@ Route::prefix('toko')->group(function() {
     Route::get('/slug/{slug}', [TokoController::class, 'getBySlug']);
 });
 
+// Public Product Routes
+Route::get('/featured-products', [App\Http\Controllers\User\BarangController::class, 'getFeaturedProducts']);
+
 // Add a public kategori endpoint for the frontend
-Route::get('/kategori', [KategoriController::class, 'index']);
+Route::get('/kategori', [App\Http\Controllers\User\KategoriController::class, 'index']);
 
 // Public product catalog routes
 Route::get('/products', [BarangController::class, 'getPublicProducts']);
@@ -295,3 +298,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
     });
 });
+

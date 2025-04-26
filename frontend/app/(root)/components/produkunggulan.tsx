@@ -1,87 +1,188 @@
-'use client';
+"use client";
 
-import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation'
+import React, { useRef } from "react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useFeaturedProducts } from "./hooks/useFeaturedProducts";
+import { motion } from "framer-motion";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const products = [
-  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
-  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
-  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
-  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
-  { image: '/baju.png', name: 'Kaos Polos', price: '20.000.00' },
-];
+interface Product {
+  id_barang: number;
+  nama_barang: string;
+  slug: string;
+  harga: number;
+  gambarBarang?: Array<{
+    url_gambar: string;
+    is_primary: boolean;
+  }>;
+  gambar_barang?: Array<{
+    url_gambar: string;
+    is_primary: boolean;
+  }>;
+}
+
+const ProductSkeleton = () => (
+  <div className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/6 pl-4">
+    <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+      <div className="relative h-44 w-full">
+        <Skeleton className="h-full w-full" />
+      </div>
+      <div className="p-3">
+        <Skeleton className="h-4 w-3/4 mb-2" />
+        <Skeleton className="h-5 w-1/2 mb-3" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function ProdukUnggulan() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const router = useRouter()
+  const router = useRouter();
+  const { products, loading, error } = useFeaturedProducts();
+  const plugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
 
-  const scroll = (dir: 'left' | 'right') => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({
-        left: dir === 'left' ? -400 : 400,
-        behavior: 'smooth',
-      });
-    }
+  const hasProductImage = (product: Product) => {
+    return Boolean(
+      (product.gambarBarang && product.gambarBarang.length > 0) ||
+        (product.gambar_barang && product.gambar_barang.length > 0)
+    );
   };
 
-  return (
-    <section className="bg-[#F79E0E] py-14 px-4 sm:px-6 relative">
-      <h2 className="text-[22px] sm:text-[24px] text-white font-semibold text-center mb-10">
-        Produk Unggulan
-      </h2>
+  const getProductImage = (product: Product) => {
+    return (
+      product.gambarBarang?.[0]?.url_gambar ||
+      product.gambar_barang?.[0]?.url_gambar ||
+      "/placeholder-product.png"
+    );
+  };
 
-      <div className="flex items-center justify-center gap-2 sm:gap-4">
-        <button
-          onClick={() => scroll('left')}
-          className="hidden xl:flex bg-white w-10 h-10 rounded-full items-center justify-center shadow hover:scale-105 transition z-10"
-        >
-          <ChevronLeft className="text-[#F79E0E]" size={22} />
-        </button>
-
-        {/* Slider */}
-        <div className="flex justify-center w-full">
-          <div
-            ref={scrollRef}
-            className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide w-full max-w-7xl px-1 sm:px-2 py-4"
-          >
-            {products.map((product, index) => (
-              <div
-                key={index}
-                className="bg-[#FFF8EF] rounded-lg shadow-md overflow-hidden cursor-pointer w-[180px] sm:w-[220px] md:w-[250px] flex-shrink-0"
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-40 sm:h-56 md:h-72 object-cover rounded-md"
-                />
-                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-start sm:items-center p-2">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold">
-                      {product.name}
-                    </h3>
-                    <p className="text-yellow-500 text-sm sm:text-base font-semibold">
-                      Rp {product.price}
-                    </p>
-                  </div>
-                  <button
-                    className="mt-2 sm:mt-0 bg-[#F79E0E] text-white text-sm sm:text-base py-1 px-3 sm:px-4 rounded cursor-pointer"
-                    onClick={() => router.push('/detail')}
-                  >
-                    Beli
-                  </button>
-                </div>
-              </div>
+  if (loading) {
+    return (
+      <section className="bg-gradient-to-br from-[#F79E0E] to-[#FFB648] py-12 px-4 sm:px-6 relative shadow-lg">
+        <h2 className="text-[26px] sm:text-[32px] text-white font-bold text-center mb-8 relative">
+          Produk Unggulan
+        </h2>
+        <div className="max-w-[1400px] mx-auto">
+          <div className="flex gap-4 overflow-hidden">
+            {[...Array(6)].map((_, index) => (
+              <ProductSkeleton key={index} />
             ))}
           </div>
         </div>
-        <button
-          onClick={() => scroll('right')}
-          className="hidden xl:flex bg-white w-10 h-10 rounded-full items-center justify-center shadow hover:scale-105 transition z-10"
+      </section>
+    );
+  }
+
+  if (error || !products?.length) {
+    return null;
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
+  return (
+    <motion.section
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
+      className="bg-gradient-to-br from-[#F79E0E] to-[#FFB648] py-12 px-4 sm:px-6 relative shadow-lg"
+    >
+      <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+
+      <motion.h2
+        variants={itemVariants}
+        className="text-[26px] sm:text-[32px] text-white font-bold text-center mb-8 relative"
+      >
+        Produk Unggulan
+      </motion.h2>
+
+      <div className="max-w-[1400px] mx-auto">
+        <Carousel
+          opts={{
+            align: "start",
+            loop: true,
+          }}
+          plugins={[plugin.current]}
+          className="w-full relative"
         >
-          <ChevronRight className="text-[#F79E0E]" size={22} />
-        </button>
+          <CarouselContent>
+            {products.map((product, index) => (
+              <CarouselItem
+                key={product.id_barang}
+                className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/6 pl-4"
+              >
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  className="bg-white rounded-xl shadow-xl overflow-hidden cursor-pointer"
+                >
+                  <div className="relative h-44 w-full overflow-hidden group">
+                    {hasProductImage(product) ? (
+                      <motion.img
+                        src={getProductImage(product)}
+                        alt={product.nama_barang}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "/placeholder-product.png";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+                        <p className="text-gray-400">No Image</p>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  <div className="p-3 bg-gradient-to-b from-white to-gray-50">
+                    <h3 className="text-base font-bold line-clamp-1 text-gray-800 mb-1">
+                      {product.nama_barang}
+                    </h3>
+                    <p className="text-yellow-600 text-base font-bold mb-3">
+                      Rp {product.harga.toLocaleString("id-ID")}
+                    </p>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full bg-[#F79E0E] text-white text-sm py-2 px-3 rounded-lg font-semibold shadow-md hover:bg-[#E08D0D] transition-colors"
+                      onClick={() =>
+                        router.push(`/user/katalog/detail/${product.slug}`)
+                      }
+                    >
+                      Beli Sekarang
+                    </motion.button>
+                  </div>
+                </motion.div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="absolute -left-4 lg:-left-6" />
+          <CarouselNext className="absolute -right-4 lg:-right-6" />
+        </Carousel>
       </div>
-    </section>
-  )
+    </motion.section>
+  );
 }

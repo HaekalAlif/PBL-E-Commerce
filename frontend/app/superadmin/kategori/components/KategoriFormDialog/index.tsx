@@ -13,14 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Kategori, KategoriFormData } from "../../types";
+import { Kategori, KategoriFormState } from "../../types";
+import { toast } from "sonner";
 
 interface KategoriFormDialogProps {
   isOpen: boolean;
   isCreateMode: boolean;
   kategori?: Kategori | null;
   onClose: () => void;
-  onSubmit: (formData: KategoriFormData) => void;
+  onSubmit: (formData: FormData) => void;
 }
 
 export default function KategoriFormDialog({
@@ -30,38 +31,63 @@ export default function KategoriFormDialog({
   onClose,
   onSubmit,
 }: KategoriFormDialogProps) {
-  const [formData, setFormData] = useState<KategoriFormData>({
+  const [formData, setFormData] = useState<KategoriFormState>({
     nama_kategori: kategori?.nama_kategori || "",
     is_active: kategori?.is_active ?? true,
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  // Reset form when kategori or isOpen changes
   useEffect(() => {
     if (isOpen) {
       setFormData({
         nama_kategori: kategori?.nama_kategori || "",
         is_active: kategori?.is_active ?? true,
       });
+      setLogoFile(null);
+      setPreviewUrl(kategori?.logo ? `/storage/${kategori.logo}` : "");
     }
   }, [isOpen, kategori]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: KategoriFormState) => ({
       ...prev,
       [name]: value,
     }));
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleSwitchChange = (checked: boolean) => {
-    setFormData((prev) => ({
+    setFormData((prev: KategoriFormState) => ({
       ...prev,
       is_active: checked,
     }));
   };
 
   const handleSubmit = () => {
-    onSubmit(formData);
+    // Validate form data before submission
+    if (!formData.nama_kategori.trim()) {
+      toast.error("Nama kategori harus diisi");
+      return;
+    }
+
+    const submitData = new FormData();
+    submitData.append("nama_kategori", formData.nama_kategori.trim());
+    submitData.append("is_active", formData.is_active.toString());
+
+    if (logoFile) {
+      submitData.append("logo", logoFile);
+    }
+
+    onSubmit(submitData);
   };
 
   return (
@@ -87,6 +113,25 @@ export default function KategoriFormDialog({
               onChange={handleInputChange}
               placeholder="Nama Kategori"
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="logo">Logo</Label>
+            <Input
+              id="logo"
+              name="logo"
+              type="file"
+              accept="image/*"
+              onChange={handleLogoChange}
+            />
+            {previewUrl && (
+              <div className="mt-2">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg"
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <Label htmlFor="is_active">Aktif</Label>

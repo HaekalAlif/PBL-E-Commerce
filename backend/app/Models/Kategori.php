@@ -33,6 +33,7 @@ class Kategori extends Model
     protected $fillable = [
         'nama_kategori',
         'slug',
+        'logo',
         'is_active',
         'is_deleted',
         'created_by',
