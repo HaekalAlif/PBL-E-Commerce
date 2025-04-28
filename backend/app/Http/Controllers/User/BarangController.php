@@ -584,4 +584,43 @@ class BarangController extends Controller
             ], 500);
         }
     }
+
+    public function getRecommendedProducts()
+    {
+        try {
+            \Log::info('Fetching recommended products...');
+            
+            $products = Barang::where('is_deleted', false)
+                ->where('status_barang', 'Tersedia')
+                ->with(['kategori', 'toko', 'gambar_barang' => function($query) {
+                    $query->where('is_primary', true)
+                          ->orderBy('urutan', 'asc');
+                }])
+                ->inRandomOrder()
+                ->take(12)
+                ->get()
+                ->map(function ($product) {
+                    if ($product->gambar_barang) {
+                        foreach ($product->gambar_barang as &$gambar) {
+                            // Ensure the image URL is formatted correctly without duplication
+                            $gambar->url_gambar = trim($gambar->url_gambar);
+                        }
+                    }
+                    return $product;
+                });
+
+            \Log::info('Found ' . $products->count() . ' recommended products');
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $products
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getRecommendedProducts: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch recommended products'
+            ], 500);
+        }
+    }
 }

@@ -1,111 +1,192 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { useRouter } from 'next/navigation'
+import React from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useRecommendedProducts } from "./hooks/useRecommendedProducts";
+import { RecommendedProduct } from "./hooks/useRecommendedProducts";
 
-const categories = [
-  'Pakaian',
-  'Elektronik',
-  'Motor',
-  'Mobil',
-  'Aksesoris',
-  'Perabotan',
-  'Olahraga',
-  'Lain - Lain',
-]
+const containerVariants = {
+  hidden: {
+    opacity: 0,
+    y: 50,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: [0.43, 0.13, 0.23, 0.96],
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
 
-const products = Array(8).fill({
-  image: '/baju.png',
-  name: 'Kaos Polos',
-  price: '20.000.00',
-})
+const itemVariants = {
+  hidden: {
+    opacity: 0,
+    y: 30,
+    scale: 0.9,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+};
+
+const getProductImage = (product: RecommendedProduct) => {
+  const imageUrl = product.gambar_barang?.[0]?.url_gambar;
+
+  if (imageUrl) {
+    // Check if the URL already includes the backend URL to prevent double prefixing
+    if (imageUrl.startsWith("http")) {
+      return imageUrl;
+    }
+    return `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${imageUrl}`;
+  }
+  return "/placeholder-product.png";
+};
+
+const LoadingSkeleton = () => (
+  <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
+    <div className="relative">
+      <div className="w-full h-60 xl:h-72 bg-gradient-to-r from-gray-200 to-gray-300 animate-pulse" />
+    </div>
+    <div className="flex flex-col gap-2 p-4 bg-[#F79E0E]">
+      <div className="space-y-2">
+        <div className="h-5 w-3/4 bg-white/30 rounded animate-pulse" />
+        <div className="h-4 w-1/2 bg-white/30 rounded animate-pulse" />
+      </div>
+      <div className="h-10 w-full bg-white/30 rounded animate-pulse mt-2" />
+    </div>
+  </div>
+);
 
 export default function Rekomendasi() {
-  const router = useRouter()
-
-  const handleProduk = () => {
-    router.push('/produk')
-  }
+  const router = useRouter();
+  const { products, loading, error } = useRecommendedProducts();
 
   return (
-    <div className="bg-white">
-      <h1 className="text-center text-[#F79E0E] text-[28px] font-bold h-24 flex items-center justify-center">
-        Rekomendasi
-      </h1>
-
-      <div className="bg-amber-50 py-10 md:py-16">
-        <div className="flex flex-col lg:flex-row gap-8 px-4 md:px-8 xl:px-12 2xl:px-48">
-          {/* Filter Section */}
-          <div className="bg-white p-6 rounded-lg shadow-md w-full lg:w-1/4 h-auto lg:h-[700px] mb-8 lg:mb-0">
-            <h2 className="text-2xl font-bold text-orange-500 mb-6">Filter</h2>
-            <h3 className="text-lg font-semibold mb-4">Filter Kategori</h3>
-            {categories.map((cat, index) => (
-              <label key={index} className="flex items-center mb-2">
-                <input type="radio" name="category" className="mr-2" />
-                {cat}
-              </label>
-            ))}
-            <h3 className="text-lg font-semibold mt-6 mb-4">Harga</h3>
-            <div className="mb-4">
-              <input
-                type="number"
-                placeholder="Range Harga Minimum"
-                className="w-full p-2 border rounded-md mb-2"
-              />
-              <input
-                type="number"
-                placeholder="Range Harga Maksimum"
-                className="w-full p-2 border rounded-md"
-              />
-            </div>
-            <button className="w-full bg-[#F79E0E] text-white py-2 rounded-md mb-2">
-              Terapkan
-            </button>
-            <button className="w-full text-[#F79E0E] border border-[#F79E0E] py-2 rounded-md">
-              Reset Filter
-            </button>
-          </div>
-
-          {/* Product Section */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 flex-1">
-            {products.map((product, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer flex flex-col"
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-60 xl:h-72 object-cover rounded-md"
-                />
-
-                {/* Tombol dan Info */}
-                <div className="flex flex-col gap-2 p-2 bg-[#F79E0E] lg:flex-wrap lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <h3 className="text-lg text-white font-medium">
-                      {product.name}
-                    </h3>
-                    <p className="text-white">Rp {product.price}</p>
-                  </div>
-                  <button
-                    className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm transition cursor-pointer"
-                    onClick={() => router.push('/detail')}
-                  >
-                    Beli
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p
-          onClick={handleProduk}
-          className="text-right text-[#F79E0E] mt-6 px-4 md:px-8 xl:px-12 2xl:px-48 cursor-pointer"
+    <>
+      <section className="py-6 bg-white">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={containerVariants}
+          className="flex flex-col items-center"
         >
-          Lihat Semua
-        </p>
-      </div>
-    </div>
-  )
+          <motion.h2
+            variants={itemVariants}
+            className="text-2xl md:text-3xl font-bold text-[#F79E0E] mb-3"
+          >
+            Rekomendasi
+          </motion.h2>
+        </motion.div>
+      </section>
+
+      {/* Products Section */}
+      <section className="py-10 bg-amber-50">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-[1920px]">
+          {loading ? (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
+            >
+              {[...Array(12)].map((_, index) => (
+                <motion.div key={index} variants={itemVariants} custom={index}>
+                  <LoadingSkeleton />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
+            >
+              {products.map((product) => (
+                <motion.div
+                  key={product.id_barang}
+                  variants={itemVariants}
+                  className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer flex flex-col"
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="relative group">
+                    {product.gambar_barang &&
+                    product.gambar_barang.length > 0 ? (
+                      <img
+                        src={getProductImage(product)}
+                        alt={product.nama_barang}
+                        className="w-full h-60 xl:h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "/placeholder-product.png";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-60 xl:h-72 bg-gray-100 flex items-center justify-center">
+                        <p className="text-gray-400">No Image</p>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+
+                  <div className="flex flex-col gap-2 p-4 bg-[#F79E0E] flex-grow">
+                    <div>
+                      <h3 className="text-lg text-white font-medium mb-1">
+                        {product.nama_barang}
+                      </h3>
+                      <p className="text-white font-semibold">
+                        Rp {product.harga.toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        router.push(`/user/katalog/detail/${product.slug}`)
+                      }
+                      className="mt-auto w-full bg-white text-[#F79E0E] py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200 shadow-sm"
+                    >
+                      Lihat Detail
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* View All Link */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="flex justify-center mt-12"
+          >
+            <motion.button
+              onClick={() => router.push("/user/katalog")}
+              className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 hover:translate-y-[-2px]"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span>Lihat Semua Produk</span>
+              <span className="transform transition-transform group-hover:translate-x-1">
+                →
+              </span>
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+    </>
+  );
 }

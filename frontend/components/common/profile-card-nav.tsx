@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,52 @@ interface UserInfo {
   id_user?: number;
   role_name?: string;
 }
+
+const loadingVariants = {
+  animate: {
+    backgroundPosition: ["0%", "100%"],
+    transition: {
+      duration: 1,
+      ease: "linear",
+      repeat: Infinity,
+    },
+  },
+};
+
+const ProfileLoadingSkeleton = () => (
+  <motion.div
+    variants={loadingVariants}
+    animate="animate"
+    className="flex items-center gap-2 px-3 py-2"
+  >
+    <div className="relative">
+      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-orange-100 to-orange-200 animate-pulse" />
+      <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-200 rounded-full animate-pulse" />
+    </div>
+    <div className="h-4 w-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded animate-pulse" />
+  </motion.div>
+);
+
+const dropdownAnimation = {
+  initial: { opacity: 0, y: -10, scale: 0.95 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      duration: 0.3,
+      stiffness: 300,
+      damping: 22,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.95,
+    transition: { duration: 0.2 },
+  },
+};
 
 const ProfileCardNav = () => {
   const [userInfo, setUserInfo] = useState<UserInfo>({
@@ -121,7 +167,15 @@ const ProfileCardNav = () => {
     router.push("/login");
   };
 
-  if (!mounted) return null;
+  if (!mounted || loading) {
+    return (
+      <div className="transition-all duration-200">
+        <Button variant="ghost" className="relative">
+          <ProfileLoadingSkeleton />
+        </Button>
+      </div>
+    );
+  }
 
   const menuItems = [
     {
@@ -200,7 +254,13 @@ const ProfileCardNav = () => {
     <div className="transition-all duration-200">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             <Button
               variant="ghost"
               className="relative flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-orange-50 border border-transparent hover:border-orange-200"
@@ -227,59 +287,73 @@ const ProfileCardNav = () => {
         <DropdownMenuContent
           className="w-72 p-2 border border-orange-100 shadow-lg rounded-xl"
           align="end"
+          sideOffset={8}
+          alignOffset={0}
+          asChild
         >
-          <div className="p-3 mb-2 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12 border-2 border-white shadow">
-                <AvatarImage src="/placeholder.jpg" alt="Profile" />
-                <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white">
-                  {getInitials(userInfo.username)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium text-gray-900">{userInfo.username}</p>
-                <p className="text-xs text-gray-500">{userInfo.email}</p>
-                {userInfo.role_name && (
-                  <span className="inline-flex items-center mt-1 px-2 py-0.5 bg-orange-200 text-orange-700 rounded-full text-xs font-medium">
-                    <Shield className="w-3 h-3 mr-1" />
-                    {userInfo.role_name}
-                  </span>
-                )}
+          <motion.div
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={dropdownAnimation}
+          >
+            <div className="p-3 mb-2 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12 border-2 border-white shadow">
+                  <AvatarImage src="/placeholder.jpg" alt="Profile" />
+                  <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white">
+                    {getInitials(userInfo.username)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {userInfo.username}
+                  </p>
+                  <p className="text-xs text-gray-500">{userInfo.email}</p>
+                  {userInfo.role_name && (
+                    <span className="inline-flex items-center mt-1 px-2 py-0.5 bg-orange-200 text-orange-700 rounded-full text-xs font-medium">
+                      <Shield className="w-3 h-3 mr-1" />
+                      {userInfo.role_name}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {menuItems.map((group, index) => (
-            <div key={group.group}>
-              {index > 0 && (
-                <DropdownMenuSeparator className="my-1.5 bg-orange-100" />
-              )}
-              <DropdownMenuLabel className="text-xs font-medium text-gray-500 px-2">
-                {group.group}
-              </DropdownMenuLabel>
-              <DropdownMenuGroup>
-                {group.items.map((item) => (
-                  <DropdownMenuItem
-                    key={item.label}
-                    onClick={item.onClick}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-orange-50"
-                  >
-                    <item.icon className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm text-gray-700">{item.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            </div>
-          ))}
+            {menuItems.map((group, index) => (
+              <div key={group.group}>
+                {index > 0 && (
+                  <DropdownMenuSeparator className="my-1.5 bg-orange-100" />
+                )}
+                <DropdownMenuLabel className="text-xs font-medium text-gray-500 px-2">
+                  {group.group}
+                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  {group.items.map((item) => (
+                    <DropdownMenuItem
+                      key={item.label}
+                      onClick={item.onClick}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-orange-50"
+                    >
+                      <item.icon className="w-4 h-4 text-orange-500" />
+                      <span className="text-sm text-gray-700">
+                        {item.label}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </div>
+            ))}
 
-          <DropdownMenuSeparator className="my-1.5 bg-orange-100" />
-          <DropdownMenuItem
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-red-600 hover:bg-red-50"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="text-sm font-medium">Logout</span>
-          </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1.5 bg-orange-100" />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </DropdownMenuItem>
+          </motion.div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

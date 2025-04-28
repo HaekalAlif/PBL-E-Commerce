@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import axios from '@/lib/axios';
+import { useState, useEffect } from "react";
+import axios from "@/lib/axios";
 
 export interface FeaturedProduct {
   id_barang: number;
@@ -24,20 +24,24 @@ export function useFeaturedProducts() {
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        console.log('Fetching featured products...');
-        const response = await axios.get('/api/featured-products');
-        console.log('Full API Response:', response.data);
+        console.log("Fetching featured products...");
+        const response = await axios.get("/api/featured-products");
+        console.log("Full API Response:", response.data);
 
-        if (response.data.status === 'success') {
+        if (response.data.status === "success") {
           const productsData = response.data.data;
-          console.log('Products with images:', productsData);
+          console.log("Products data:", productsData);
+          console.log(
+            "First product images:",
+            productsData[0]?.gambarBarang || productsData[0]?.gambar_barang
+          );
           setProducts(productsData || []);
         } else {
-          setError('Failed to load featured products');
+          setError("Failed to load featured products");
         }
       } catch (err: any) {
-        console.error('Error details:', err);
-        setError(err.response?.data?.message || 'Failed to fetch products');
+        console.error("Error details:", err);
+        setError(err.response?.data?.message || "Failed to fetch products");
       } finally {
         setLoading(false);
       }

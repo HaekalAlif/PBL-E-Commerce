@@ -3,10 +3,14 @@
 import Copyright from "./copyright";
 
 const FooterComp = () => {
+  console.log("Current image path:", '/Footer.png'); 
+
   return (
     <footer
-      className="text-white p-8"
-      style={{ backgroundImage: "url(/footer.png)", backgroundSize: "cover" }}
+      className="text-white p-8 bg-cover bg-center bg-no-repeat"
+      style={{ 
+        backgroundImage: "url('/Footer.png')",  // Direct reference to public folder
+      }}
     >
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
         <div>

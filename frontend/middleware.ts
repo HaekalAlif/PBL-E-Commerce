@@ -16,43 +16,40 @@ const roleNames = {
 export function middleware(request: NextRequest) {
   // Get cookies
   const userRole = request.cookies.get("user_role")?.value;
-  const roleName = request.cookies.get("role_name")?.value;
-
-  // In Next.js, auth_session isn't automatically set - we need to check
-  // for our own session cookie or token
-  const sessionToken = request.cookies.get("auth_session")?.value;
-  const isAuthenticated = Boolean(userRole); // Use userRole as authentication indicator
-
   const path = request.nextUrl.pathname;
 
   // Debug information
-  console.log({
-    path,
-    userRole,
-    roleName,
-    isAuthenticated,
-  });
+  console.log("Middleware Path:", path);
+  console.log("User Role:", userRole);
 
-  // Skip middleware for public routes that don't need auth
-  const publicRoutes = ["/login", "/register", "/forgot-password", "/"];
-  if (
-    publicRoutes.some((route) => path === route || path.startsWith(route + "?"))
-  ) {
-    // Only redirect login/register pages, not the root path
-    if (isAuthenticated && path !== "/") {
-      if (userRole === String(ROLE_SUPERADMIN)) {
-        return NextResponse.redirect(new URL("/superadmin", request.url));
-      } else if (userRole === String(ROLE_ADMIN)) {
-        return NextResponse.redirect(new URL("/admin", request.url));
-      } else if (userRole === String(ROLE_USER)) {
-        return NextResponse.redirect(new URL("/user", request.url));
-      }
-    }
+  // Allow access to public routes and assets without authentication
+  const publicPaths = [
+    "/",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/storage",
+    "/assets",
+    "/images",
+    "/api/featured-products",
+    "/api/recommended-products"
+  ];
+
+  // Check if the path starts with any of these patterns
+  const isPublicAsset = (path: string) =>
+    path.startsWith("/_next") ||
+    path.startsWith("/storage") ||
+    path.startsWith("/images") ||
+    path.includes(".") || // Files with extensions (images, etc)
+    publicPaths.some(publicPath => path === publicPath || path.startsWith(publicPath + "/"));
+
+  // Allow access to public paths and assets
+  if (isPublicAsset(path)) {
     return NextResponse.next();
   }
 
   // If not authenticated and trying to access protected route, redirect to login
-  if (!isAuthenticated) {
+  if (!userRole) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -63,7 +60,7 @@ export function middleware(request: NextRequest) {
       if (userRole === String(ROLE_ADMIN)) {
         return NextResponse.redirect(new URL("/admin", request.url));
       } else {
-        return NextResponse.redirect(new URL("/user", request.url));
+        return NextResponse.redirect(new URL("/", request.url));
       }
     }
   } else if (path.startsWith("/admin")) {
@@ -72,7 +69,7 @@ export function middleware(request: NextRequest) {
       userRole !== String(ROLE_SUPERADMIN)
     ) {
       // Redirect to user dashboard instead of root
-      return NextResponse.redirect(new URL("/user", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
   } else if (path.startsWith("/user")) {
     if (
@@ -90,12 +87,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except:
-    // - Next.js static files (_next/static, _next/image)
-    // - Standard static files (favicon.ico, images)
-    // - API routes (/api)
-    // - Image routes from backend or any path containing 'images' or 'img'
-    // - File extensions typically used for images (.jpg, .jpeg, .png, .gif, .svg, .webp)
-    "/((?!_next/static|_next/image|favicon.ico|images|img|api|\\.jpg|\\.jpeg|\\.png|\\.gif|\\.svg|\\.webp).*)",
+    "/((?!_next/static|_next/image|favicon.ico|storage/|assets/|images/|api/featured-products|api/recommended-products).*)",
   ],
 };

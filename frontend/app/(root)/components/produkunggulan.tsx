@@ -32,14 +32,16 @@ interface Product {
 
 const ProductSkeleton = () => (
   <div className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/6 pl-4">
-    <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-      <div className="relative h-44 w-full">
-        <Skeleton className="h-full w-full" />
+    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="relative h-44 w-full overflow-hidden">
+        <div className="w-full h-full bg-gradient-to-r from-amber-200 to-amber-300 animate-pulse" />
       </div>
-      <div className="p-3">
-        <Skeleton className="h-4 w-3/4 mb-2" />
-        <Skeleton className="h-5 w-1/2 mb-3" />
-        <Skeleton className="h-8 w-full" />
+      <div className="p-3 bg-gradient-to-b from-white to-gray-50">
+        <div className="space-y-2">
+          <div className="h-4 w-3/4 bg-gradient-to-r from-amber-100 to-amber-200 rounded animate-pulse" />
+          <div className="h-5 w-1/2 bg-gradient-to-r from-amber-200 to-amber-300 rounded animate-pulse" />
+        </div>
+        <div className="h-9 w-full bg-gradient-to-r from-amber-100 to-amber-200 rounded-lg mt-3 animate-pulse" />
       </div>
     </div>
   </div>
@@ -58,11 +60,18 @@ export default function ProdukUnggulan() {
   };
 
   const getProductImage = (product: Product) => {
-    return (
+    const imageUrl =
       product.gambarBarang?.[0]?.url_gambar ||
-      product.gambar_barang?.[0]?.url_gambar ||
-      "/placeholder-product.png"
-    );
+      product.gambar_barang?.[0]?.url_gambar;
+
+    if (imageUrl) {
+      // Check if the URL already includes the backend URL to prevent double prefixing
+      if (imageUrl.startsWith("http")) {
+        return imageUrl;
+      }
+      return `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${imageUrl}`;
+    }
+    return "/placeholder-product.png";
   };
 
   if (loading) {
@@ -87,25 +96,43 @@ export default function ProdukUnggulan() {
   }
 
   const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
     show: {
       opacity: 1,
+      y: 0,
       transition: {
+        duration: 0.6,
+        ease: [0.43, 0.13, 0.23, 0.96], // Custom easing
         staggerChildren: 0.1,
-        delayChildren: 0.3,
       },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
+    hidden: {
+      opacity: 0,
+      y: 30,
+      scale: 0.9,
+    },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
   };
 
   return (
     <motion.section
       initial="hidden"
-      animate="show"
+      whileInView="show"
+      viewport={{ once: true, margin: "-100px" }}
       variants={containerVariants}
       className="bg-gradient-to-br from-[#F79E0E] to-[#FFB648] py-12 px-4 sm:px-6 relative shadow-lg"
     >
@@ -145,6 +172,10 @@ export default function ProdukUnggulan() {
                         alt={product.nama_barang}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         onError={(e) => {
+                          console.log(
+                            "Image failed to load:",
+                            (e.target as HTMLImageElement).src
+                          );
                           (e.target as HTMLImageElement).src =
                             "/placeholder-product.png";
                         }}

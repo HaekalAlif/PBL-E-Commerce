@@ -45,6 +45,7 @@ Route::prefix('toko')->group(function() {
 
 // Public Product Routes
 Route::get('/featured-products', [App\Http\Controllers\User\BarangController::class, 'getFeaturedProducts']);
+Route::get('/recommended-products', [App\Http\Controllers\User\BarangController::class, 'getRecommendedProducts']);
 
 // Add a public kategori endpoint for the frontend
 Route::get('/kategori', [App\Http\Controllers\User\KategoriController::class, 'index']);
