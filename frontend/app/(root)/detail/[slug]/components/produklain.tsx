@@ -1,113 +1,106 @@
-'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+"use client";
 
-const rekomendasiData = Array(20).fill({
-  image: '/baju.png', 
-  name: 'Nama Barang',
-  price: '00000000',
-});
+import { useRouter } from "next/navigation";
+import { useRecommendedProducts } from "@/app/(root)/components/hooks/useRecommendedProducts";
+import { motion } from "framer-motion";
 
-const itemsPerPage = 8;
-
-const ProdukLain = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+export default function ProdukLain() {
   const router = useRouter();
+  const { products, loading, error } = useRecommendedProducts();
 
-  const totalPages = Math.ceil(rekomendasiData.length / itemsPerPage);
-  const currentItems = rekomendasiData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const getProductImage = (product: any) => {
+    const imageUrl = product.gambar_barang?.[0]?.url_gambar;
+    if (imageUrl) {
+      if (imageUrl.startsWith("http")) return imageUrl;
+      return `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage/${imageUrl}`;
+    }
+    return "/placeholder-product.png";
+  };
 
-  return (
-    <div className="bg-[#FFF8F3] py-12 px-4 text-center">
-      <h2 className="text-xl md:text-2xl font-semibold text-[#F79E0E] mb-10">
-        Kamu Mungkin Juga Suka
-      </h2>
-
-      {/* Produk Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-        {currentItems.map((product, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer border"
-          >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-60 md:h-60 xl:h-72 object-cover rounded-md"
-            />
-            <div className="flex flex-col gap-2 p-2 bg-[#F79E0E] lg:flex-wrap lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h3 className="text-md text-white font-medium text-left">
-                  {product.name}
-                </h3>
-                <div className="flex items-center text-sm text-white">
-                  <span className="mr-1">Rp</span>
-                  <span>{product.price}</span>
+  if (loading) {
+    return (
+      <section className="py-10 bg-amber-50">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl shadow-sm overflow-hidden"
+              >
+                <div className="h-36 sm:h-40 bg-gradient-to-r from-orange-100 to-orange-200 animate-pulse" />
+                <div className="p-3 bg-[#F79E0E] space-y-2">
+                  <div className="h-4 w-3/4 bg-white/30 rounded animate-pulse" />
+                  <div className="h-5 w-1/2 bg-white/30 rounded animate-pulse" />
+                  <div className="h-8 w-full bg-white/30 rounded animate-pulse" />
                 </div>
               </div>
-              <button
-                className="bg-white text-[#F79E0E] py-1 px-4 rounded text-sm hover:bg-[#F79E0E] hover:text-white transition"
-                onClick={() => router.push('/detail')}
-              >
-                Beli
-              </button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      </section>
+    );
+  }
 
-      {/* Pagination */}
-      <Pagination className="mt-10">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-              className={`${
-                currentPage === 1
-                  ? 'opacity-50 pointer-events-none'
-                  : 'cursor-pointer'
-              }`}
-            />
-          </PaginationItem>
+  return (
+    <section className=" bg-amber-50">
+      <div className="container mx-auto px-4">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          className="text-2xl md:text-3xl font-bold text-amber-400 text-center py-6 mb-2"
+        >
+          Kamu Mungkin Juga Suka
+        </motion.h2>
 
-          {Array.from({ length: totalPages }, (_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
-                isActive={currentPage === i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-              >
-                {i + 1}
-              </PaginationLink>
-            </PaginationItem>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
+        >
+          {products.slice(0, 12).map((product) => (
+            <motion.div
+              key={product.id_barang}
+              whileHover={{ y: -4 }}
+              className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer flex flex-col"
+              onClick={() => router.push(`/detail/${product.slug}`)}
+            >
+              <div className="relative group">
+                <div className="h-36 sm:h-40 overflow-hidden">
+                  <img
+                    src={getProductImage(product)}
+                    alt={product.nama_barang}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "/placeholder-product.png";
+                    }}
+                  />
+                </div>
+                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+
+              <div className="flex flex-col gap-1 p-3 bg-[#F79E0E] flex-grow">
+                <h3 className="text-sm text-white font-medium line-clamp-1">
+                  {product.nama_barang}
+                </h3>
+                <p className="text-white font-semibold text-sm">
+                  Rp {product.harga.toLocaleString("id-ID")}
+                </p>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/detail/${product.slug}`);
+                  }}
+                  className="mt-2 w-full bg-white text-[#F79E0E] py-1.5 px-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  Lihat Detail
+                </button>
+              </div>
+            </motion.div>
           ))}
-
-          <PaginationItem>
-            <PaginationNext
-              onClick={() =>
-                currentPage < totalPages && setCurrentPage(currentPage + 1)
-              }
-              className={`${
-                currentPage === totalPages
-                  ? 'opacity-50 pointer-events-none'
-                  : 'cursor-pointer'
-              }`}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
-  )
-};
-
-export default ProdukLain;
+        </motion.div>
+      </div>
+    </section>
+  );
+}

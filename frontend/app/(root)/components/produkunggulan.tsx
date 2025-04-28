@@ -128,6 +128,10 @@ export default function ProdukUnggulan() {
     },
   };
 
+  const handleProductClick = (slug: string) => {
+    router.push(`/detail/${slug}`);
+  };
+
   return (
     <motion.section
       initial="hidden"
@@ -163,8 +167,10 @@ export default function ProdukUnggulan() {
                 <motion.div
                   variants={itemVariants}
                   whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="bg-white rounded-xl shadow-xl overflow-hidden cursor-pointer"
+                  onClick={() => handleProductClick(product.slug)}
+                  className="bg-white rounded-xl shadow-xl overflow-hidden cursor-pointer transform transition-all duration-200 hover:shadow-2xl"
                 >
+                  {/* Product Image */}
                   <div className="relative h-44 w-full overflow-hidden group">
                     {hasProductImage(product) ? (
                       <motion.img
@@ -188,6 +194,7 @@ export default function ProdukUnggulan() {
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
 
+                  {/* Product Info */}
                   <div className="p-3 bg-gradient-to-b from-white to-gray-50">
                     <h3 className="text-base font-bold line-clamp-1 text-gray-800 mb-1">
                       {product.nama_barang}
@@ -195,13 +202,15 @@ export default function ProdukUnggulan() {
                     <p className="text-yellow-600 text-base font-bold mb-3">
                       Rp {product.harga.toLocaleString("id-ID")}
                     </p>
+                    {/* Button remains separate clickable element */}
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className="w-full bg-[#F79E0E] text-white text-sm py-2 px-3 rounded-lg font-semibold shadow-md hover:bg-[#E08D0D] transition-colors"
-                      onClick={() =>
-                        router.push(`/user/katalog/detail/${product.slug}`)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click
+                        handleProductClick(product.slug);
+                      }}
                     >
                       Beli Sekarang
                     </motion.button>

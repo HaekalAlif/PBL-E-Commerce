@@ -509,9 +509,19 @@ class BarangController extends Controller
     {
         $barang = Barang::where('slug', $slug)
                         ->where('is_deleted', false)
-                        ->with(['kategori', 'toko', 'gambarBarang' => function($query) {
-                            $query->orderBy('is_primary', 'desc')->orderBy('urutan', 'asc');
-                        }])
+                        ->with([
+                            'kategori',
+                            'toko' => function($query) {
+                                $query->with(['alamat_toko' => function($query) {
+                                    $query->where('is_primary', true)
+                                          ->with(['province:id,name', 'regency:id,name', 'district:id,name']);
+                                }]);
+                            },
+                            'gambarBarang' => function($query) {
+                                $query->orderBy('is_primary', 'desc')
+                                     ->orderBy('urutan', 'asc');
+                            }
+                        ])
                         ->first();
                         
         if (!$barang) {

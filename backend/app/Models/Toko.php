@@ -2,18 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class Toko extends Model
 {
-    use HasFactory;
-
-    // Set the table name explicitly
     protected $table = 'toko';
-    
-    // Set the primary key
     protected $primaryKey = 'id_toko';
 
     // Fields that can be mass-assigned
@@ -61,7 +54,7 @@ class Toko extends Model
      */
     public static function generateUniqueSlug($name)
     {
-        $baseSlug = Str::slug($name);
+        $baseSlug = \Illuminate\Support\Str::slug($name);
         $slug = $baseSlug;
         $count = 1;
         
@@ -98,5 +91,14 @@ class Toko extends Model
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by', 'id_user');
+    }
+
+    /**
+     * Get the addresses for the store.
+     */
+    public function alamat_toko()
+    {
+        return $this->hasMany(AlamatToko::class, 'id_toko', 'id_toko')
+                    ->with(['province', 'regency', 'district']);
     }
 }

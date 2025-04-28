@@ -91,7 +91,6 @@ export default function Rekomendasi() {
         </motion.div>
       </section>
 
-      {/* Products Section */}
       <section className="py-10 bg-amber-50">
         <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-[1920px]">
           {loading ? (
@@ -122,6 +121,7 @@ export default function Rekomendasi() {
                   className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer flex flex-col"
                   whileHover={{ y: -4 }}
                   transition={{ duration: 0.2 }}
+                  onClick={() => router.push(`/detail/${product.slug}`)}
                 >
                   <div className="relative group">
                     {product.gambar_barang &&
@@ -153,9 +153,10 @@ export default function Rekomendasi() {
                       </p>
                     </div>
                     <button
-                      onClick={() =>
-                        router.push(`/user/katalog/detail/${product.slug}`)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/detail/${product.slug}`); {/* Updated path */}
+                      }}
                       className="mt-auto w-full bg-white text-[#F79E0E] py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200 shadow-sm"
                     >
                       Lihat Detail

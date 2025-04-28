@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Barang extends Model
+class Barang extends Model 
 {
     use HasFactory;
 
@@ -68,11 +68,14 @@ class Barang extends Model
     }
 
     /**
-     * Get the toko that owns the barang.
+     * Get the toko that owns the barang with its address.
      */
     public function toko()
     {
-        return $this->belongsTo(Toko::class, 'id_toko', 'id_toko');
+        return $this->belongsTo(Toko::class, 'id_toko', 'id_toko')
+                    ->with(['alamat_toko' => function($query) {
+                        $query->where('is_primary', true);
+                    }]);
     }
 
     /**
