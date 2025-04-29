@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Hero from "./components/landing/herolanding";
 import Kategori from "./components/landing/kategori";
 import ProdukUnggulan from "./components/landing/produkunggulan";

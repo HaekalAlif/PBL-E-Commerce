@@ -1,30 +1,14 @@
-"use client";
+import LoginPage from "./components/LoginPage";
+import Navigation from "@/components/layout/nav";
+import Footer from "@/components/layout/footer";
 
-import { LoginForm } from "./components/LoginForm";
-import { useLogin } from "./hooks/useLogin";
-
-export default function Login() {
-  const {
-    formData,
-    error,
-    loading,
-    showPassword,
-    handleInputChange,
-    handleSubmit,
-    togglePasswordVisibility,
-  } = useLogin();
-
+export default function Page() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100 p-4">
-      <LoginForm
-        formData={formData}
-        error={error}
-        loading={loading}
-        showPassword={showPassword}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-        togglePasswordVisibility={togglePasswordVisibility}
-      />
-    </div>
+    <>
+      <Navigation />
+      <LoginPage />
+      <Footer />
+    </>
   );
 }
+

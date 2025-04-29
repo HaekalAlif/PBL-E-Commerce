@@ -17,7 +17,7 @@ export function useRegister() {
     tanggal_lahir: "", 
     agreement: false,
   });
-  
+
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -40,16 +40,17 @@ export function useRegister() {
     setShowConfirmPassword((prev) => !prev);
   };
 
-  const handleCheckboxChange = (checked: boolean): void => {
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const { checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      agreement: checked,
+      agreement: checked, // Fix checkbox to update agreement status
     }));
   };
 
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
-    
+
     if (loading) return;
     setLoading(true);
     setError("");
@@ -111,3 +112,4 @@ export function useRegister() {
     handleCheckboxChange,
   };
 }
+

@@ -5,12 +5,12 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
 import Searchbar from '../ui/searchbar'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 
 
@@ -96,7 +96,7 @@ export function Navigation() {
     router.push('/register')
   }
 
-  const [isSearchFocused, setIsSearchFocused] = React.useState(false)
+  // Removed unused isSearchFocused state
 
   return (
     <nav
@@ -105,8 +105,8 @@ export function Navigation() {
       aria-label="Main navigation"
     >
       <div className="flex gap-8 justify-between items-center px-12 py-3 mx-auto max-w-[1920px] max-sm:py-2">
-        {/* Masukkan Kodingan Logo Disini*/}
-        <a href="/" className="font-bold">E Commerce</a>
+        <Link href="/" className="font-bold">E Commerce</Link>
+        
 
         <div className="flex flex-1 gap-4 items-center max-sm:hidden">
           <Select>

@@ -1,7 +1,9 @@
 "use client";
 
-import { RegisterForm } from "./components/RegisterForm";
+import { RegisterForm } from "./components/RegistrationForm";
 import { useRegister } from "./hooks/useRegister";
+import Navigation from "@/components/layout/nav";
+import Footer from "@/components/layout/footer";  
 
 export default function Register() {
   const {
@@ -18,21 +20,22 @@ export default function Register() {
   } = useRegister();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-gray-50 to-gray-100 p-4">
-      <div className="max-w-md w-full">
-        <RegisterForm
-          formData={formData}
-          error={error}
-          loading={loading}
-          showPassword={showPassword}
-          showConfirmPassword={showConfirmPassword}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleSubmit}
-          togglePasswordVisibility={togglePasswordVisibility}
-          toggleConfirmPasswordVisibility={toggleConfirmPasswordVisibility}
-          handleCheckboxChange={handleCheckboxChange}
-        />
-      </div>
-    </div>
+    <>
+      <Navigation />
+      <RegisterForm
+        formData={formData}
+        error={error}
+        loading={loading}
+        showPassword={showPassword}
+        showConfirmPassword={showConfirmPassword}
+        handleInputChange={handleInputChange}
+        handleSubmit={handleSubmit}
+        togglePasswordVisibility={togglePasswordVisibility}
+        toggleConfirmPasswordVisibility={toggleConfirmPasswordVisibility}
+        handleCheckboxChange={handleCheckboxChange}
+      />
+      <Footer />
+    </>
   );
 }
+

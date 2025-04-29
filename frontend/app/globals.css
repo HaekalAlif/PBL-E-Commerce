@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
-@plugin "tailwindcss-animate";
+/* Removed as it is now configured in the Tailwind config file */
 
-@custom-variant dark (&:is(.dark *));
+/* Removed invalid @custom-variant rule. Use Tailwind's dark mode configuration instead. */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #fff; /* Optional: bisa ganti dengan warna lain */
+}
 
 :root {
   --background: oklch(1 0 0);
