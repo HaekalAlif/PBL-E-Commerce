@@ -286,7 +286,7 @@ export function useCart() {
       if (response.data.status === "success") {
         toast.success("Checkout successful! Redirecting to checkout page...");
         router.push(
-          `/user/checkout?code=${response.data.data.kode_pembelian}&multi_store=${isMultiStore}`
+          `/checkout?code=${response.data.data.kode_pembelian}&multi_store=${isMultiStore}`
         );
       }
     } catch (error) {

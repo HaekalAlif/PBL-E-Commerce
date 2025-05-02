@@ -53,7 +53,7 @@ export default function CartPage() {
                 />
                 <label
                   htmlFor="select-all"
-                  className="text-amber-600 font-medium"
+                  className="text-amber-500 font-medium"
                 >
                   Pilih Semua Barang
                 </label>

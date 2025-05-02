@@ -45,7 +45,7 @@ export function StoreGroupCard({
             </div>
             <label
               htmlFor={`store-${store.id_toko}`}
-              className="text-amber-700 font-medium cursor-pointer"
+              className="text-amber-500 font-medium cursor-pointer"
             >
               {store.nama_toko}
             </label>
