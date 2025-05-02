@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useFeaturedProducts } from "./hooks/useFeaturedProducts";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAddToCart } from "../keranjang/hooks/useAddToCart";
 
 interface Product {
   id_barang: number;
@@ -51,6 +52,7 @@ export default function ProdukUnggulan() {
   const router = useRouter();
   const { products, loading, error } = useFeaturedProducts();
   const plugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
+  const { addingToCart, handleAddToCart } = useAddToCart();
 
   const hasProductImage = (product: Product) => {
     return Boolean(
@@ -202,18 +204,35 @@ export default function ProdukUnggulan() {
                     <p className="text-yellow-600 text-base font-bold mb-3">
                       Rp {product.harga.toLocaleString("id-ID")}
                     </p>
-                    {/* Button remains separate clickable element */}
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full bg-[#F79E0E] text-white text-sm py-2 px-3 rounded-lg font-semibold shadow-md hover:bg-[#E08D0D] transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click
-                        handleProductClick(product.slug);
-                      }}
-                    >
-                      Beli Sekarang
-                    </motion.button>
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1 bg-[#F79E0E] text-white text-sm py-2 px-3 rounded-lg font-semibold shadow-md hover:bg-[#E08D0D] transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProductClick(product.slug);
+                        }}
+                      >
+                        Beli Sekarang
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="px-3 bg-white border border-[#F79E0E] text-[#F79E0E] rounded-lg hover:bg-[#F79E0E]/5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(product.id_barang, product.nama_barang);
+                        }}
+                        disabled={addingToCart === product.id_barang}
+                      >
+                        {addingToCart === product.id_barang ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="h-5 w-5" />
+                        )}
+                      </motion.button>
+                    </div>
                   </div>
                 </motion.div>
               </CarouselItem>

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRecommendedProducts } from "./hooks/useRecommendedProducts";
 import { RecommendedProduct } from "./hooks/useRecommendedProducts";
+import { useAddToCart } from "../keranjang/hooks/useAddToCart";
+import { Loader2, ShoppingCart } from "lucide-react";
 
 const containerVariants = {
   hidden: {
@@ -71,6 +73,7 @@ const LoadingSkeleton = () => (
 export default function Rekomendasi() {
   const router = useRouter();
   const { products, loading, error } = useRecommendedProducts();
+  const { addingToCart, handleAddToCart } = useAddToCart();
 
   return (
     <>
@@ -152,15 +155,34 @@ export default function Rekomendasi() {
                         Rp {product.harga.toLocaleString("id-ID")}
                       </p>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/detail/${product.slug}`); {/* Updated path */}
-                      }}
-                      className="mt-auto w-full bg-white text-[#F79E0E] py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200 shadow-sm"
-                    >
-                      Lihat Detail
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/detail/${product.slug}`);
+                        }}
+                        className="flex-1 bg-white text-[#F79E0E] py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200 shadow-sm"
+                      >
+                        Lihat Detail
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(
+                            product.id_barang,
+                            product.nama_barang
+                          );
+                        }}
+                        disabled={addingToCart === product.id_barang}
+                        className="px-4 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                      >
+                        {addingToCart === product.id_barang ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
