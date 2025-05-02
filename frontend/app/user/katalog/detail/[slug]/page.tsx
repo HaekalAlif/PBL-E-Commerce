@@ -59,7 +59,7 @@ interface Product {
 export default function ProductDetail() {
   const router = useRouter();
   const params = useParams();
-  const slug = params.slug as string;
+  const slug = (params?.slug as string) || "";
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,7 +149,7 @@ export default function ProductDetail() {
         const { kode_pembelian } = response.data.data;
 
         // Redirect to checkout page with the purchase code
-        router.push(`/user/checkout?code=${kode_pembelian}`);
+        router.push(`/checkout?code=${kode_pembelian}`);
       } else {
         toast.error(response.data.message || "Failed to process your purchase");
       }

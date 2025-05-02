@@ -39,10 +39,10 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {/* Left Column - Image Skeleton */}
             <div className="space-y-4">
-              <div className="aspect-square w-full max-w-[420px] mx-auto bg-orange-50 rounded-lg animate-pulse" />
+              <div className="aspect-square w-full max-w-[420px] mx-auto bg-amber-50 rounded-lg animate-pulse" />
               <div className="grid grid-cols-6 gap-2 max-w-[420px] mx-auto">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="aspect-square rounded-md bg-orange-100/50 animate-pulse" />
+                  <div key={i} className="aspect-square rounded-md bg-amber-100/50 animate-pulse" />
                 ))}
               </div>
             </div>
@@ -51,7 +51,7 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
             <div className="flex flex-col h-full">
               <div className="space-y-6">
                 {/* Store Card Skeleton */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white animate-pulse" />
@@ -66,16 +66,16 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
 
                 {/* Product Info Skeleton */}
                 <div className="space-y-4">
-                  <div className="h-7 w-3/4 bg-orange-100 rounded animate-pulse" />
-                  <div className="h-9 w-1/2 bg-orange-200 rounded animate-pulse" />
+                  <div className="h-7 w-3/4 bg-amber-100 rounded animate-pulse" />
+                  <div className="h-9 w-1/2 bg-amber-200 rounded animate-pulse" />
                 </div>
 
                 {/* Specifications Skeleton */}
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center gap-4">
-                      <div className="w-20 h-4 bg-orange-100 rounded animate-pulse" />
-                      <div className="h-4 w-32 bg-orange-100/70 rounded animate-pulse" />
+                      <div className="w-20 h-4 bg-amber-100 rounded animate-pulse" />
+                      <div className="h-4 w-32 bg-amber-100/70 rounded animate-pulse" />
                     </div>
                   ))}
                 </div>
@@ -83,13 +83,13 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                 {/* Actions Skeleton */}
                 <div className="bg-white rounded-xl border p-4 space-y-4">
                   <div className="flex justify-between items-center">
-                    <div className="w-32 h-4 bg-orange-100 rounded animate-pulse" />
-                    <div className="w-20 h-4 bg-orange-100 rounded animate-pulse" />
+                    <div className="w-32 h-4 bg-amber-100 rounded animate-pulse" />
+                    <div className="w-20 h-4 bg-amber-100 rounded animate-pulse" />
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="h-12 bg-orange-200 rounded-lg animate-pulse" />
-                    <div className="h-12 bg-orange-100 rounded-lg animate-pulse" />
-                    <div className="h-12 bg-orange-100 rounded-lg animate-pulse" />
+                    <div className="h-12 bg-amber-200 rounded-lg animate-pulse" />
+                    <div className="h-12 bg-amber-100 rounded-lg animate-pulse" />
+                    <div className="h-12 bg-amber-100 rounded-lg animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -157,8 +157,8 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                     className={`relative rounded-md overflow-hidden h-20
                       ${
                         selectedImageIndex === index
-                          ? "ring-2 ring-orange-500 ring-offset-2"
-                          : "ring-1 ring-gray-200 hover:ring-orange-200"
+                          ? "ring-2 ring-amber-500 ring-offset-2"
+                          : "ring-1 ring-gray-200 hover:ring-amber-200"
                       }`}
                     onClick={() => setSelectedImageIndex(index)}
                     whileHover={{ scale: 1.05 }}
@@ -180,14 +180,14 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
             <div className="space-y-6 py-4">
               {/* Store Card */}
               <motion.div
-                className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-4 border border-orange-100 shadow-sm"
+                className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4 border border-amber-100 shadow-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-white rounded-lg shadow-sm">
-                      <Store className="w-5 h-5 text-orange-500" />
+                      <Store className="w-5 h-5 text-amber-500" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
@@ -198,7 +198,7 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 text-sm font-medium text-orange-500 bg-white rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors">
+                  <button className="px-4 py-2 text-sm font-medium text-amber-500 bg-white rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors">
                     Kunjungi Toko
                   </button>
                 </div>
@@ -209,7 +209,7 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {product?.nama_barang}
                 </h1>
-                <p className="text-3xl font-bold text-orange-500">
+                <p className="text-3xl font-bold text-amber-500">
                   Rp {product?.harga?.toLocaleString("id-ID")}
                 </p>
               </div>
@@ -227,7 +227,7 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
+                  <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
                     Grade {product?.grade}
                   </span>
                   <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
@@ -274,8 +274,8 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="px-4 py-3 bg-orange-500 text-white rounded-lg font-medium 
-            hover:bg-orange-600 transition-colors text-sm sm:text-base
+                    className="px-4 py-3 bg-amber-500 text-white rounded-lg font-medium 
+            hover:bg-amber-600 transition-colors text-sm sm:text-base
             flex items-center justify-center gap-2"
                     onClick={() => router.push("/checkout")}
                   >
@@ -285,8 +285,8 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="px-4 py-3 border border-orange-500 text-orange-500 
-            rounded-lg font-medium hover:bg-orange-50 transition-colors
+                    className="px-4 py-3 border border-amber-500 text-amber-500 
+            rounded-lg font-medium hover:bg-amber-50 transition-colors
             text-sm sm:text-base flex items-center justify-center gap-2"
                     onClick={() => router.push("/tawar")}
                   >
@@ -296,8 +296,8 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="px-4 py-3 border border-orange-500 text-orange-500 
-            rounded-lg font-medium hover:bg-orange-50 transition-colors
+                    className="px-4 py-3 border border-amber-500 text-amber-500 
+            rounded-lg font-medium hover:bg-amber-50 transition-colors
             text-sm sm:text-base flex items-center justify-center gap-2"
                     onClick={() => router.push("/cart")}
                   >

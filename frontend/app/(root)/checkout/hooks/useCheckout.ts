@@ -464,7 +464,7 @@ export const useCheckout = () => {
       if (response.data.status === "success") {
         const { kode_tagihan } = response.data.data;
         toast.success("Checkout successful! Redirecting to payment page...");
-        router.push(`/user/payments/${kode_tagihan}`);
+        router.push(`/payments/${kode_tagihan}`);
       }
     } catch (error) {
       toast.error("Failed to process checkout. Please try again.");
