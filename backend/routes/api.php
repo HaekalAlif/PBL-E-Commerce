@@ -63,6 +63,10 @@ Route::post('/payments/callback', [TagihanController::class, 'callback']);
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user/profile', [UserController::class, 'getCurrentUser']);
+
+    Route::post('/chat/create-room', [ChatController::class, 'createRoom']);
+    Route::get('/chat/{roomId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/chat/{roomId}/messages', [ChatController::class, 'sendMessage']);
     
     // Toko (Store) management for regular users
     Route::prefix('toko')->group(function() {
