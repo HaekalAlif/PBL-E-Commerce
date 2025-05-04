@@ -76,43 +76,6 @@ export default function Deskripsi({ product, loading }: DeskripsiProps) {
                 </div>
               </div>
             </div>
-
-            {/* Store Info & Specs Grid Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-orange-200 animate-pulse" />
-                  <div className="h-5 w-32 bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg animate-pulse" />
-                </div>
-                <div className="bg-orange-50/50 p-4 rounded-lg border border-orange-100">
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-orange-200/60 animate-pulse" />
-                        <div className="flex-1 h-4 bg-orange-100/60 rounded animate-pulse" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-orange-200 animate-pulse" />
-                  <div className="h-5 w-32 bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg animate-pulse" />
-                </div>
-                <div className="bg-orange-50/50 p-4 rounded-lg border border-orange-100">
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full bg-orange-200/60 animate-pulse" />
-                        <div className="h-4 bg-orange-100/60 rounded animate-pulse flex-1" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

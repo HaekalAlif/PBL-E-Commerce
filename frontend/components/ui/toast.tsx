@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster as SonnerToaster } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function Toaster() {
   return (
@@ -8,14 +9,15 @@ export function Toaster() {
       position="top-right"
       toastOptions={{
         duration: 3000,
-        className: "border-border",
+        className: "bg-amber-50 border-[#F79E0E] text-[#F79E0E] font-medium",
         style: {
-          background: "var(--background)",
-          color: "var(--foreground)",
-          border: "1px solid var(--border)",
+          background: "#FFF8EF", // light amber bg
+          color: "#F79E0E", // orange text
+          border: "1px solid #F79E0E", // orange border
+          boxShadow: "0 2px 8px rgba(247, 158, 14, 0.08)",
         },
       }}
-      richColors
+      richColors={false}
     />
   );
 }
