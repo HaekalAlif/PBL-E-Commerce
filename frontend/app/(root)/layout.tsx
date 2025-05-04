@@ -9,10 +9,9 @@ export default function RootPageLayout({
 }>) {
   return (
     <>
-      <Navigation/>
+      <Navigation />
       {children}
-      <Footer/>
-      <Toaster />
+      <Footer />
     </>
   );
 }

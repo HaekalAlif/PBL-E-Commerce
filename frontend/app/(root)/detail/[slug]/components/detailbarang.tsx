@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { ProductDetail } from "../hooks/useProductDetail";
+import { useProductActions } from "../hooks/useProductActions";
 import { ChevronLeft, ChevronRight, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +18,9 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const router = useRouter();
+
+  const { addingToCart, handleBuyNow, handleMakeOffer, handleAddToCart } =
+    useProductActions(product);
 
   const handleQuantity = (type: "inc" | "dec") => {
     if (type === "inc" && quantity < (product?.stok || 0)) {
@@ -42,7 +46,10 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
               <div className="aspect-square w-full max-w-[420px] mx-auto bg-amber-50 rounded-lg animate-pulse" />
               <div className="grid grid-cols-6 gap-2 max-w-[420px] mx-auto">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="aspect-square rounded-md bg-amber-100/50 animate-pulse" />
+                  <div
+                    key={i}
+                    className="aspect-square rounded-md bg-amber-100/50 animate-pulse"
+                  />
                 ))}
               </div>
             </div>
@@ -277,7 +284,7 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                     className="px-4 py-3 bg-amber-500 text-white rounded-lg font-medium 
             hover:bg-amber-600 transition-colors text-sm sm:text-base
             flex items-center justify-center gap-2"
-                    onClick={() => router.push("/checkout")}
+                    onClick={() => handleBuyNow(quantity)}
                   >
                     <span className="whitespace-nowrap">Beli Sekarang</span>
                   </motion.button>
@@ -288,7 +295,7 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                     className="px-4 py-3 border border-amber-500 text-amber-500 
             rounded-lg font-medium hover:bg-amber-50 transition-colors
             text-sm sm:text-base flex items-center justify-center gap-2"
-                    onClick={() => router.push("/tawar")}
+                    onClick={() => handleMakeOffer(quantity)}
                   >
                     <span className="whitespace-nowrap">Tawar</span>
                   </motion.button>
@@ -296,12 +303,16 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    disabled={addingToCart}
                     className="px-4 py-3 border border-amber-500 text-amber-500 
             rounded-lg font-medium hover:bg-amber-50 transition-colors
-            text-sm sm:text-base flex items-center justify-center gap-2"
-                    onClick={() => router.push("/cart")}
+            text-sm sm:text-base flex items-center justify-center gap-2
+            disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleAddToCart(quantity)}
                   >
-                    <span className="whitespace-nowrap">+ Keranjang</span>
+                    <span className="whitespace-nowrap">
+                      {addingToCart ? "Menambahkan..." : "+ Keranjang"}
+                    </span>
                   </motion.button>
                 </div>
               </div>

@@ -91,7 +91,7 @@ export function useLogin() {
         } else if (role === 1) {
           router.push("/admin");
         } else {
-          router.push("/user");
+          router.push("/");
         }
       }, 300);
     } catch (err: any) {

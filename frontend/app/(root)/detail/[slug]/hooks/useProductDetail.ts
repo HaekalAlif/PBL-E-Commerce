@@ -69,5 +69,7 @@ export function useProductDetail(slug: string) {
     }
   }, [slug]);
 
+  
+
   return { product, loading, error };
 }
