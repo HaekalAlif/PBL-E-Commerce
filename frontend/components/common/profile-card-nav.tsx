@@ -184,7 +184,7 @@ const ProfileCardNav = () => {
         {
           icon: User,
           label: "My Profile",
-          onClick: () => router.push("/user"),
+          onClick: () => router.push("/akun/profile"),
         },
         {
           icon: Settings,
@@ -215,21 +215,6 @@ const ProfileCardNav = () => {
           icon: Store,
           label: "My Shop",
           onClick: () => router.push("/user/shop"),
-        },
-      ],
-    },
-    {
-      group: "Payment & Shipping",
-      items: [
-        {
-          icon: CreditCard,
-          label: "Payment Methods",
-          onClick: () => router.push("/user/payments"),
-        },
-        {
-          icon: MapPin,
-          label: "Addresses",
-          onClick: () => router.push("/user/addresses"),
         },
       ],
     },
