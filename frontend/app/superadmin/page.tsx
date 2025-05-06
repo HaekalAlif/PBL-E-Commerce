@@ -2,7 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import LogoutButton from "@/components/auth/LogoutButton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import axios from "axios";
+import {
+  User,
+  Phone,
+  Calendar,
+  ShieldCheck,
+  CheckCircle,
+  XCircle,
+  Mail
+} from "lucide-react";
+
+
 
 interface UserData {
   id_user?: number;
@@ -27,17 +39,14 @@ const SuperadminPage = () => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-
-        // Using Axios and the environment variables for API URL
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
         const response = await axios.get(`${apiUrl}/user/profile`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          withCredentials: true, // Important for sending cookies with request
+          withCredentials: true,
         });
 
         if (response.data.status === "success") {
@@ -46,12 +55,8 @@ const SuperadminPage = () => {
           throw new Error(response.data.message || "Something went wrong");
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
-        console.error("Error fetching user data:", err);
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
 
-        // Fallback to using cookies if API fails
         const userRole = document.cookie
           .split("; ")
           .find((row) => row.startsWith("user_role="))
@@ -74,95 +79,133 @@ const SuperadminPage = () => {
     fetchUserData();
   }, []);
 
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-orange-50 flex items-center justify-center text-orange-500 font-semibold text-xl">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Dashboard
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Welcome to your dashboard
-              </p>
-              {error && (
-                <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
-                  {error}
-                </div>
-              )}
+    <div className="min-h-screen bg-amber-50">
+      <div className="mx-12 py-6 px-4">
+        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+          <div className="bg-[#F79E0E] px-6 py-5 text-white rounded-t-2xl">
+            <h3 className="text-xl font-bold">Dashboard</h3>
+            <p className="text-sm">
+              Selamat datang kembali, {userData.name || 'User'}!
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-100 text-red-700 p-3 m-4 rounded-md">
+              {error}
             </div>
-            <div className="border-t border-gray-200">
-              <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Username
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.username || "Not available"}
-                  </dd>
+          )}
+
+          <div className="p-6 space-y-5 text-sm text-gray-700">
+            {/* Avatar dan nama */}
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-10 w-10 border-2 border-background shadow-sm transition-all">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold text-sm">
+                  {loading ? '...' : getInitials(userData.name || '')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-semibold text-lg">
+                  {userData.name || 'Nama tidak tersedia'}
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Full Name
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.name || "Not available"}
-                  </dd>
+                <div className="text-gray-500">
+                  {userData.email || 'Email tidak tersedia'}
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.email || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Phone Number
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.no_hp || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    User Role
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.role_name || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Account Status
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.is_active === true
-                      ? "Active"
-                      : userData.is_active === false
-                      ? "Inactive"
-                      : "Unknown"}
-                  </dd>
-                </div>
-              </dl>
+              </div>
             </div>
 
-            <div className="px-4 py-5 sm:px-6 flex justify-end">
-              <LogoutButton />
+            {/* Data pengguna */}
+            <div className="divide-y divide-gray-200 space-y-4">
+              {/* Username */}
+              <div className="flex justify-between items-start py-2">
+                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                  <User className="text-orange-500 w-5 h-5" />
+                  Username
+                </div>
+                <div className="text-right text-gray-800">
+                  {userData.username || 'Tidak tersedia'}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex justify-between items-start py-2">
+                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                  <Mail className="text-orange-500 w-5 h-5" />
+                  Email
+                </div>
+                <div className="text-right text-gray-800">
+                  {userData.email || 'Tidak tersedia'}
+                </div>
+              </div>
+
+              {/* Nomor HP */}
+              <div className="flex justify-between items-start py-2">
+                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                  <Phone className="text-orange-500 w-5 h-5" />
+                  No. HP
+                </div>
+                <div className="text-right text-gray-800">
+                  {userData.no_hp || 'Tidak tersedia'}
+                </div>
+              </div>
+
+              {/* Role */}
+              <div className="flex justify-between items-start py-2">
+                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                  <ShieldCheck className="text-orange-500 w-5 h-5" />
+                  Role
+                </div>
+                <div className="text-right text-gray-800">
+                  {userData.role_name || 'Tidak tersedia'}
+                </div>
+              </div>
+
+              {/* Status Akun */}
+              <div className="flex justify-between items-start py-2">
+                <div className="flex items-center gap-2 text-gray-500 font-medium">
+                  {userData.is_active ? (
+                    <CheckCircle className="text-green-500 w-5 h-5" />
+                  ) : (
+                    <XCircle className="text-red-500 w-5 h-5" />
+                  )}
+                  Status Akun
+                </div>
+                <div className="text-right text-gray-800">
+                  {userData.is_active === true
+                    ? 'Aktif'
+                    : userData.is_active === false
+                      ? 'Tidak Aktif'
+                      : 'Tidak Diketahui'}
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="border-t px-6 py-4 flex justify-end bg-gray-50">
+            <LogoutButton />
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 };
 
 export default SuperadminPage;

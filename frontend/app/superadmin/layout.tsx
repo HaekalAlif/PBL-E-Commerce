@@ -113,7 +113,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Main content area */}
           <ScrollArea className="h-[calc(100vh-4.5rem)]">
-            <main className="container px-6">{children}</main>
+            <main className="">{children}</main>
           </ScrollArea>
         </div>
       </SidebarInset>
