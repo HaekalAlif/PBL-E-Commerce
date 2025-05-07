@@ -168,8 +168,57 @@ export default function ProductDetail() {
     }
   };
 
-  const handleMakeOffer = () => {
-    toast.info("Penawaran akan segera hadir!");
+  const handleMakeOffer = async () => {
+    if (!product) return;
+  
+    try {
+      toast.loading("Checking chat room...");
+  
+      // First check for existing chat room
+      const chatRoomsResponse = await axiosInstance.get('/api/chat/rooms');
+      const existingRoom = chatRoomsResponse.data.data.find(
+        (room: any) => room.id_penjual === product.toko.id_toko
+      );
+  
+      if (existingRoom) {
+        toast.dismiss();
+        toast.success("Redirecting to existing chat");
+        router.push(`/user/chat?roomId=${existingRoom.id_ruang_chat}`);
+        return;
+      }
+  
+      // If no existing room, create new one
+      const response = await axiosInstance.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/create-room`,
+        {
+          id_barang: product.id_barang,
+          id_penjual: product.toko.id_toko,
+        }
+      );
+  
+      console.log("Chat room creation response:", response.data);
+  
+      if (response.data && response.data.id_ruang_chat) {
+        toast.dismiss();
+        toast.success("Chat room created");
+        router.push(`/user/chat?roomId=${response.data.id_ruang_chat}`);
+      } else {
+        toast.dismiss();
+        toast.error("Failed to get chat room details");
+      }
+    } catch (error: any) {
+      console.error("Error handling chat room:", error.response || error);
+      toast.dismiss();
+      
+      if (error.response?.status === 401) {
+        toast.error("Please log in to make an offer");
+        router.push("/login");
+      } else if (error.response?.status === 403) {
+        toast.error("You cannot make an offer on your own product");
+      } else {
+        toast.error("Failed to create chat room. Please try again.");
+      }
+    }
   };
 
   const handleAddToCart = async () => {
@@ -292,7 +341,7 @@ export default function ProductDetail() {
                     className="w-full h-full object-contain"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
-                        "/placeholder-product.png";
+                        "https://placehold.co/400x400?text=No+Image";
                     }}
                   />
                 ) : (

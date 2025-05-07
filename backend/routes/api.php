@@ -20,6 +20,7 @@ use App\Http\Controllers\User\KeranjangController;
 use App\Http\Controllers\User\PesananTokoController;
 use App\Http\Controllers\Admin\PesananManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
+use App\Http\Controllers\ChatController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -64,9 +65,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user/profile', [UserController::class, 'getCurrentUser']);
 
+    Route::get('/chat/rooms', [ChatController::class, 'getRooms']);
+
     Route::post('/chat/create-room', [ChatController::class, 'createRoom']);
     Route::get('/chat/{roomId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/chat/{roomId}/messages', [ChatController::class, 'sendMessage']);
+    Route::get('/chat/rooms/{roomId}', [ChatController::class, 'getRoom']);
     
     // Toko (Store) management for regular users
     Route::prefix('toko')->group(function() {

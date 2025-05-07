@@ -32,4 +32,10 @@ class RuangChat extends Model
     {
         return $this->belongsTo(Barang::class, 'id_barang', 'id_barang');
     }
+
+    public function pesan_terakhir()
+    {
+        return $this->hasOne(Pesan::class, 'id_ruang_chat')
+            ->latest('created_at');
+    }
 }
