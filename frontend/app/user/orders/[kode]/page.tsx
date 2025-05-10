@@ -136,7 +136,11 @@ const trackingSteps = [
 export default function OrderDetail() {
   const router = useRouter();
   const params = useParams();
-  const kode = params.kode as string;
+  const kode = params?.kode as string | undefined;
+
+  if (!kode) {
+    throw new Error("Invalid order code. Please try again.");
+  }
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);

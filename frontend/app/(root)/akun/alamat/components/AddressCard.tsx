@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { MapPin, Star, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { AddressCardProps } from "../types";
 import {
   AlertDialog,
@@ -34,6 +35,19 @@ export const AddressCard = ({
         ? "kota"
         : "kecamatan"
     ];
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await onDelete(id);
+      toast.success("Alamat berhasil dihapus", {
+        description: "Alamat telah dihapus dari daftar Anda",
+      });
+    } catch (error) {
+      toast.error("Gagal menghapus alamat", {
+        description: "Terjadi kesalahan saat menghapus alamat",
+      });
+    }
   };
 
   return (
@@ -70,7 +84,7 @@ export const AddressCard = ({
         <div className="flex gap-2">
           <button
             onClick={() =>
-              router.push(`/user/alamat/edit/${address.id_alamat}`)
+              router.push(`/akun/alamat/edit/${address.id_alamat}`)
             }
             className="p-2 text-gray-600 hover:text-[#F79E0E] hover:bg-orange-50 rounded-lg transition-colors"
           >
@@ -83,20 +97,24 @@ export const AddressCard = ({
                 <Trash2 className="w-5 h-5" />
               </button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="border-orange-100">
               <AlertDialogHeader>
-                <AlertDialogTitle>Hapus Alamat</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogTitle className="text-gray-900">
+                  Hapus Alamat
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-500">
                   Apakah Anda yakin ingin menghapus alamat ini? Tindakan ini
                   tidak dapat dibatalkan.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogCancel className="border-[#F79E0E] text-[#F79E0E] hover:bg-orange-50">
+                  Batal
+                </AlertDialogCancel>
                 <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={() => onDelete(address.id_alamat)}
+                  onClick={() => handleDelete(address.id_alamat)}
                   disabled={isDeleting}
+                  className="bg-[#F79E0E] hover:bg-[#E08D0D] text-white border-none"
                 >
                   {isDeleting ? (
                     <>

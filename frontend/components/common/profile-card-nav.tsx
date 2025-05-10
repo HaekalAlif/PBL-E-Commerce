@@ -189,12 +189,7 @@ const ProfileCardNav = () => {
         {
           icon: Settings,
           label: "Settings",
-          onClick: () => router.push("/user/settings"),
-        },
-        {
-          icon: Bell,
-          label: "Notifications",
-          onClick: () => router.push("/user/notifications"),
+          onClick: () => router.push("/akun/setting"),
         },
       ],
     },
@@ -204,12 +199,7 @@ const ProfileCardNav = () => {
         {
           icon: ShoppingBag,
           label: "My Orders",
-          onClick: () => router.push("/user/orders"),
-        },
-        {
-          icon: Heart,
-          label: "Wishlist",
-          onClick: () => router.push("/user/wishlist"),
+          onClick: () => router.push("/akun/pesanan"),
         },
         {
           icon: Store,

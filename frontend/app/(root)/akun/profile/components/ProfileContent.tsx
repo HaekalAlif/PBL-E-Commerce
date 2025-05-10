@@ -45,7 +45,7 @@ export const ProfileContent = ({ userData }: ProfileContentProps) => (
 
     {/* Profile Information */}
     <div className="md:col-span-8 lg:col-span-9">
-      <div className="bg-white rounded-xl p-6 space-y-8">
+      <div className="bg-white rounded-xl p-6 space-y-4">
         {/* Personal Data Section */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">

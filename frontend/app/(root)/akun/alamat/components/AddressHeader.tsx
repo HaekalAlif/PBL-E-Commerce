@@ -35,7 +35,7 @@ export const AddressHeader = ({ title, description }: AddressHeaderProps) => {
         transition={{ delay: 0.2 }}
       >
         <Button
-          onClick={() => router.push("/user/alamat/create")}
+          onClick={() => router.push("/akun/alamat/create")}
           className="bg-[#F79E0E] hover:bg-[#E08D0D]"
         >
           <Plus className="w-5 h-5 mr-2" />

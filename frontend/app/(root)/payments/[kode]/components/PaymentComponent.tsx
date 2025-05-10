@@ -93,7 +93,9 @@ export const PaymentComponent = ({
                   variant="outline"
                   asChild
                 >
-                  <Link href="/orders">View Orders</Link>
+                  <Link href={`/akun/pesanan/${invoice.pembelian.kode_pembelian}`}>
+                    Lihat Detail Pesanan
+                  </Link>
                 </Button>
               </motion.div>
               <motion.div
@@ -104,7 +106,7 @@ export const PaymentComponent = ({
                   className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white"
                   asChild
                 >
-                  <Link href="/user/katalog">Continue Shopping</Link>
+                  <Link href="/katalog">Lanjut Belanja</Link>
                 </Button>
               </motion.div>
             </div>

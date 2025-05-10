@@ -49,23 +49,26 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isUserPath = pathname?.startsWith("/user") ?? false;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-gray-50">
       <div className="flex-grow container mx-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto h-full">
-          {/* Breadcrumb */}
-          <nav className="mb-6 text-sm px-2">
-            <ol className="flex items-center space-x-2">
-              <li>
-                <Link href="/" className="text-gray-500 hover:text-[#F79E0E]">
-                  Beranda
-                </Link>
-              </li>
-              <li className="text-gray-400">/</li>
-              <li className="text-[#F79E0E] font-medium">Akun Saya</li>
-            </ol>
-          </nav>
+          {/* Breadcrumb - hidden for /user paths */}
+          {!isUserPath && (
+            <nav className="mb-6 text-sm px-2">
+              <ol className="flex items-center space-x-2">
+                <li>
+                  <Link href="/" className="text-gray-500 hover:text-[#F79E0E]">
+                    Beranda
+                  </Link>
+                </li>
+                <li className="text-gray-400">/</li>
+                <li className="text-[#F79E0E] font-medium">Akun Saya</li>
+              </ol>
+            </nav>
+          )}
 
           <div className="flex flex-col md:flex-row gap-6 h-[calc(100dvh-12rem)]">
             {/* Sidebar Section */}

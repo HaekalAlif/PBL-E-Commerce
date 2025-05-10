@@ -1,4 +1,5 @@
 import Axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import Cookies from "js-cookie";
 
 // Create a base Axios instance with common configuration
 const axios = Axios.create({
