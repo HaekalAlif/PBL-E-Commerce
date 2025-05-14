@@ -1,9 +1,9 @@
 "use client";
 
-import { useEditAddress } from "./hooks/useEditAddress";
 import { EditAddressForm } from "./components/EditAddressForm";
 import { AddressHeader } from "../../components/AddressHeader";
-import { Loader2 } from "lucide-react";
+import { EditAddressSkeleton } from "./components/EditAddressSkeleton";
+import { useEditAddress } from "./hooks/useEditAddress";
 
 export default function EditAddressPage({
   params,
@@ -29,11 +29,7 @@ export default function EditAddressPage({
   } = useEditAddress(params.id);
 
   if (loadingData) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#F79E0E]" />
-      </div>
-    );
+    return <EditAddressSkeleton />;
   }
 
   return (

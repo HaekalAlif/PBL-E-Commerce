@@ -1,20 +1,29 @@
+import { LucideIcon } from "lucide-react";
+
 export interface UserData {
   id_user?: number;
-  username?: string;
+  username: string;
   name?: string;
-  email?: string;
+  email: string;
   no_hp?: string;
-  foto_profil?: string | null;
-  tanggal_lahir?: string | null;
-  role?: number;
-  role_name?: string;
+  foto_profil?: string;
   is_verified?: boolean;
-  is_active?: boolean;
+  role_name?: string;
+}
+
+export interface ProfileHeaderProps {
+  title: string;
+  description: string;
 }
 
 export interface InfoFieldProps {
   label: string;
-  value?: string | null;
-  icon: React.FC<{ className?: string }>;
+  value: string | undefined;
+  icon: LucideIcon;
   verified?: boolean;
+}
+
+export interface ProfileContentProps {
+  userData: UserData;
+  onEditClick: () => void;
 }

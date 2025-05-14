@@ -43,7 +43,9 @@ export default function CreateAddressPage() {
         handleSelectChange={handleSelectChange}
         handleCheckboxChange={handleCheckboxChange}
         handleSubmit={handleSubmit}
-        onCancel={handleCancel} success={null}      />
+        onCancel={handleCancel}
+        success={null}
+      />
     </>
   );
 }

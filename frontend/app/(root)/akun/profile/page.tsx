@@ -13,19 +13,19 @@ export default function ProfilePage() {
   }
 
   return (
-    <>
+    <div className="space-y-6">
       <ProfileHeader
         title="Profile Saya"
         description="Kelola informasi profil Anda untuk keamanan akun"
       />
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg border border-red-200 text-sm">
+        <div className="mb-6 p-4 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 text-sm">
           {error}
         </div>
       )}
 
       <ProfileContent userData={userData} />
-    </>
+    </div>
   );
 }
