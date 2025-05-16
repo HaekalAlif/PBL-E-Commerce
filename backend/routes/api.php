@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chat/{roomId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/chat/{roomId}/messages', [ChatController::class, 'sendMessage']);
     Route::get('/chat/rooms/{roomId}', [ChatController::class, 'getRoom']);
+    Route::post('/chat/{roomId}/mark-as-read', [ChatController::class, 'markAsRead']);
     
     // Toko (Store) management for regular users
     Route::prefix('toko')->group(function() {
