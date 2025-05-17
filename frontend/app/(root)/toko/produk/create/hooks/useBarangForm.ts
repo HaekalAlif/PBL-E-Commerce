@@ -208,7 +208,7 @@ export default function useBarangForm() {
         },
         {
           headers: {
-            "X-XSRF-TOKEN": token || "", // Pastikan token tidak undefined
+            "X-XSRF-TOKEN": token || "", 
           },
         }
       );

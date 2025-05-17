@@ -29,7 +29,7 @@ export const ProductDetailHeader = ({
   const router = useRouter();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Breadcrumb with updated styling */}
       <motion.nav
         initial={{ opacity: 0, y: -10 }}
@@ -39,10 +39,10 @@ export const ProductDetailHeader = ({
         <ol className="flex items-center space-x-2">
           <li>
             <Link
-              href="/toko/dashboard"
+              href="/toko/profile"
               className="text-gray-500 hover:text-[#F79E0E]"
             >
-              Dashboard
+              Toko
             </Link>
           </li>
           <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -102,7 +102,10 @@ export const ProductDetailHeader = ({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Batal</AlertDialogCancel>
-                  <AlertDialogAction onClick={onDelete}>
+                  <AlertDialogAction
+                    onClick={onDelete}
+                    className="bg-[#F79E0E] hover:bg-[#E08D0D] text-white"
+                  >
                     Hapus
                   </AlertDialogAction>
                 </AlertDialogFooter>

@@ -319,13 +319,8 @@ class TagihanController extends Controller
                                         // Reduce stock
                                         $barang->stok -= $detail->jumlah;
                                         
-                                        // Update product status to sold for second-hand/pre-owned products
-                                        if ($barang->stok <= 0) {
-                                            $barang->status_barang = 'Habis';
-                                        } else {
-                                            // Mark as sold since payment was successful
-                                            $barang->status_barang = 'Terjual';
-                                        }
+                                        // Always mark as 'Dijual' when payment is successful, regardless of stock
+                                        $barang->status_barang = 'Terjual';
                                         
                                         $barang->save();
                                         

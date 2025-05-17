@@ -1,6 +1,7 @@
 export interface Product {
+  id: any;
   kategori: any;
-  id_barang: number;
+  id_barang: number;  // Make sure this exists
   id_kategori: number;
   id_toko: number;
   nama_barang: string;
@@ -30,40 +31,17 @@ export interface PaginatedResponse {
 }
 
 export interface ProductListProps {
-  barangList: Product[];
-  loading: boolean;
-  error: string | null;
-  onDelete: (id: number) => Promise<void>;
-  pagination: {
-    currentPage: number;
-    lastPage: number;
-    total: number;
-  };
-  onPageChange: (page: number) => void;
-}
-
-export interface ProductTableProps {
   products: Product[];
+  searchQuery: string;
+  activeFilter: string;
   pagination: {
     currentPage: number;
     lastPage: number;
     total: number;
   };
+  onSearch: (value: string) => void;
+  onFilterChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onDelete: (id: number) => Promise<void>;
-}
-
-export interface ProductContentProps {
-  barangList: Product[];
-  loading: boolean;
-  error: string | null;
-  searchTerm: string;
-  pagination: {
-    currentPage: number;
-    lastPage: number;
-    total: number;
-  };
-  onSearch: (term: string) => void;
-  onPageChange: (page: number) => void;
-  onDelete: (id: number) => Promise<void>;
+  refetchProducts: () => void;
 }

@@ -99,7 +99,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id_barang}/gambar', [GambarBarangController::class, 'store'])->where('id_barang', '[0-9]+');
         Route::post('/slug/{slug}/gambar', [GambarBarangController::class, 'storeByBarangSlug']);
         Route::put('/{id_barang}/gambar/{id_gambar}', [GambarBarangController::class, 'update'])->where('id_barang', '[0-9]+');
+        Route::put('/slug/{slug}/gambar/{id_gambar}', [GambarBarangController::class, 'updateByBarangSlug']);
         Route::delete('/{id_barang}/gambar/{id_gambar}', [GambarBarangController::class, 'destroy'])->where('id_barang', '[0-9]+');
+        Route::delete('/slug/{slug}/gambar/{id_gambar}', [GambarBarangController::class, 'destroyByBarangSlug']); // Add this line
     });
     
     // User Address Management

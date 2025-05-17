@@ -265,6 +265,62 @@ class GambarBarangController extends Controller
     }
     
     /**
+     * Delete the specified product image by product slug.
+     */
+    public function destroyByBarangSlug(Request $request, $slug, $id_gambar)
+    {
+        // Get the authenticated user
+        $user = Auth::user();
+        
+        // Get the user's shop
+        $toko = Toko::where('id_user', $user->id_user)->first();
+        
+        if (!$toko) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda belum memiliki toko'
+            ], 404);
+        }
+        
+        // Find the product by slug and ensure it belongs to the user's shop
+        $barang = Barang::where('slug', $slug)
+                        ->where('id_toko', $toko->id_toko)
+                        ->where('is_deleted', false)
+                        ->first();
+                        
+        if (!$barang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk tidak ditemukan'
+            ], 404);
+        }
+        
+        // Find the image
+        $gambar = GambarBarang::where('id_gambar', $id_gambar)
+                             ->where('id_barang', $barang->id_barang)
+                             ->first();
+                             
+        if (!$gambar) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gambar tidak ditemukan'
+            ], 404);
+        }
+        
+        // Delete the file from storage
+        $path = str_replace('/storage/', '', parse_url($gambar->url_gambar, PHP_URL_PATH));
+        Storage::disk('public')->delete($path);
+        
+        // Delete the database record
+        $gambar->delete();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Gambar berhasil dihapus'
+        ]);
+    }
+    
+    /**
      * Get all images for a product
      */
     public function index($id_barang)
@@ -305,5 +361,176 @@ class GambarBarangController extends Controller
             'status' => 'success',
             'data' => $gambar
         ]);
+    }
+    
+    /**
+     * Update the specified product image by product slug.
+     */
+    public function updateByBarangSlug(Request $request, $slug, $id_gambar)
+    {
+        // Get the authenticated user
+        $user = Auth::user();
+        
+        // Get the user's shop
+        $toko = Toko::where('id_user', $user->id_user)->first();
+        
+        if (!$toko) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda belum memiliki toko'
+            ], 404);
+        }
+        
+        // Find the product by slug and ensure it belongs to the user's shop
+        $barang = Barang::where('slug', $slug)
+                        ->where('id_toko', $toko->id_toko)
+                        ->where('is_deleted', false)
+                        ->first();
+                        
+        if (!$barang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk tidak ditemukan'
+            ], 404);
+        }
+        
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'is_primary' => 'required|boolean',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        // Find the image
+        $gambar = GambarBarang::where('id_gambar', $id_gambar)
+                             ->where('id_barang', $barang->id_barang)
+                             ->first();
+                             
+        if (!$gambar) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gambar tidak ditemukan'
+            ], 404);
+        }
+        
+        // If this image is being set as primary, update all other images of this product
+        if ($request->input('is_primary', false)) {
+            GambarBarang::where('id_barang', $barang->id_barang)
+                       ->where('is_primary', true)
+                       ->update(['is_primary' => false]);
+        }
+        
+        // Update the image record
+        $gambar->is_primary = $request->input('is_primary');
+        $gambar->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Status gambar berhasil diperbarui',
+            'data' => $gambar
+        ]);
+    }
+
+    /**
+     * Store a new image by product slug.
+     */
+    public function storeByBarangSlug(Request $request, $slug)
+    {
+        // Get the authenticated user
+        $user = Auth::user();
+        
+        // Get the user's shop
+        $toko = Toko::where('id_user', $user->id_user)->first();
+        
+        if (!$toko) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda belum memiliki toko'
+            ], 404);
+        }
+        
+        // Find the product by slug and ensure it belongs to the user's shop
+        $barang = Barang::where('slug', $slug)
+                    ->where('id_toko', $toko->id_toko)
+                    ->where('is_deleted', false)
+                    ->first();
+                    
+        if (!$barang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk tidak ditemukan'
+            ], 404);
+        }
+        
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'is_primary' => 'boolean',
+            'urutan' => 'integer|min:1',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        // Handle file upload
+        if ($request->hasFile('gambar')) {
+            $file = $request->file('gambar');
+            // Generate unique filename
+            $fileName = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+            
+            // Define directory path - store in public/products/[product_id]
+            $directoryPath = 'products/' . $barang->id_barang;
+            
+            // Store the file in public disk
+            $path = $file->storeAs($directoryPath, $fileName, 'public');
+            
+            // Generate URL that can be accessed publicly
+            $url = Storage::disk('public')->url($path);
+            
+            // If this is set to primary, update all other images of this product
+            if ($request->input('is_primary', false)) {
+                GambarBarang::where('id_barang', $barang->id_barang)
+                           ->where('is_primary', true)
+                           ->update(['is_primary' => false]);
+            }
+            
+            // Get the next urutan if not provided
+            $urutan = $request->input('urutan', 0);
+            if ($urutan == 0) {
+                $lastUrutan = GambarBarang::where('id_barang', $barang->id_barang)
+                                         ->max('urutan');
+                $urutan = $lastUrutan ? $lastUrutan + 1 : 1;
+            }
+            
+            // Create the image record
+            $gambar = new GambarBarang();
+            $gambar->id_barang = $barang->id_barang;
+            $gambar->url_gambar = $url;
+            $gambar->urutan = $urutan;
+            $gambar->is_primary = $request->input('is_primary', false);
+            $gambar->save();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Gambar produk berhasil ditambahkan',
+                'data' => $gambar
+            ], 201);
+        }
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Tidak ada file yang diunggah'
+        ], 400);
     }
 }

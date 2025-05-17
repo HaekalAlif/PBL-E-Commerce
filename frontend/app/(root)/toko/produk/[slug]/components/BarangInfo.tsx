@@ -83,18 +83,6 @@ export const BarangInfo = ({ barang, formatCurrency }: BarangInfoProps) => {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100">
-          <p className="text-sm text-amber-700/70">Total Dilihat</p>
-          <p className="text-lg font-semibold text-amber-900">0 kali</p>
-        </div>
-        <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100">
-          <p className="text-sm text-amber-700/70">Total Terjual</p>
-          <p className="text-lg font-semibold text-amber-900">0 produk</p>
-        </div>
-      </div>
-
       {/* Product Details */}
       <div className="bg-white rounded-xl p-6 border border-amber-100">
         <div className="grid grid-cols-2 gap-4">

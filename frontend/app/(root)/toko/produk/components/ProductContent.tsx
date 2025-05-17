@@ -1,4 +1,4 @@
-import { ProductTable } from "./ProductTable";
+import { ProductList } from "./ProductList";
 import { ProductHeader } from "./ProductHeader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Package } from "lucide-react";
@@ -9,21 +9,31 @@ import { useRouter } from "next/navigation";
 interface ProductContentProps {
   products: Product[];
   error: string | null;
+  searchQuery: string;
+  activeFilter: string;
   pagination: {
     currentPage: number;
     lastPage: number;
     total: number;
   };
+  onSearch: (value: string) => void;
+  onFilterChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onDelete: (id: number) => Promise<void>;
+  refetchProducts: () => void;
 }
 
 export const ProductContent = ({
   products,
   error,
+  searchQuery,
+  activeFilter,
   pagination,
+  onSearch,
+  onFilterChange,
   onPageChange,
   onDelete,
+  refetchProducts,
 }: ProductContentProps) => {
   const router = useRouter();
 
@@ -49,7 +59,7 @@ export const ProductContent = ({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-6">
       <ProductHeader />
       {error && (
         <Alert variant="destructive">
@@ -57,11 +67,16 @@ export const ProductContent = ({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <ProductTable
+      <ProductList
         products={products}
+        searchQuery={searchQuery}
+        activeFilter={activeFilter}
         pagination={pagination}
+        onSearch={onSearch}
+        onFilterChange={onFilterChange}
         onPageChange={onPageChange}
         onDelete={onDelete}
+        refetchProducts={refetchProducts}
       />
     </div>
   );

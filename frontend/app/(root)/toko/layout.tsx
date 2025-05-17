@@ -154,32 +154,6 @@ export default function StoreLayout({
                       </div>
                     ))}
                   </nav>
-
-                  {/* Close Store Section */}
-                  <div className="mt-auto">
-                    <div className="p-3">
-                      <button
-                        onClick={() => {
-                          /* Add close store handler */
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                          bg-gradient-to-r from-red-500/10 to-red-500/5
-                          hover:from-red-500/20 hover:to-red-500/10
-                          text-red-600 transition-all duration-200
-                          border border-red-100 shadow-sm
-                          hover:shadow-md hover:-translate-y-0.5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-1 bg-red-100 rounded">
-                            <LogOut className="w-4 h-4" />
-                          </div>
-                          <span className="font-medium text-sm">
-                            Tutup Toko
-                          </span>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </motion.nav>
             </div>
@@ -191,7 +165,7 @@ export default function StoreLayout({
               transition={{ duration: 0.3, delay: 0.3 }}
               className="flex-grow bg-white rounded-xl shadow-sm border border-gray-100 overflow-y-auto"
             >
-              <div className="p-6 md:p-8">{children}</div>
+              <div className="p-6">{children}</div>
             </motion.main>
           </div>
         </div>
