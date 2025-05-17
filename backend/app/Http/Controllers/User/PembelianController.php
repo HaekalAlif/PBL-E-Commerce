@@ -99,37 +99,31 @@ class PembelianController extends Controller
             ], 404);
         }
         
-        // Load the purchase with all its related data - improved eager loading
+        // Load the purchase with all its related data
         $completeData = Pembelian::with([
-                'detailPembelian',
-                'detailPembelian.barang',
-                'detailPembelian.barang.gambarBarang',
-                'detailPembelian.toko',
-                'tagihan',
-                'alamat.province',
-                'alamat.regency',
-                'alamat.district',
-                'alamat.village'
-            ])
-            ->where('id_pembelian', $pembelian->id_pembelian)
-            ->first();
-            
+            'detailPembelian',
+            'detailPembelian.barang',
+            'detailPembelian.barang.gambarBarang',
+            'detailPembelian.pengiriman_pembelian', // Add shipping info for each detail
+            'tagihan', // Keep the invoice data
+            'pengiriman', // Add main shipping info
+            'alamat.province',
+            'alamat.regency',
+            'alamat.district',
+            'alamat.village'
+        ])
+        ->where('kode_pembelian', $kode)
+        ->where('id_pembeli', $user->id_user)
+        ->where('is_deleted', false)
+        ->first();
+        
         if (!$completeData) {
-            \Log::error('Failed to load complete purchase data for ID: ' . $pembelian->id_pembelian);
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memuat data pembelian lengkap'
-            ], 500);
+                'message' => 'Pesanan tidak ditemukan'
+            ], 404);
         }
-        
-        // Debug the loaded data structure
-        \Log::debug('Detail pembelian count in loaded data: ' . count($completeData->detailPembelian));
-        
-        // Ensure we have detail pembelian data
-        if (count($completeData->detailPembelian) === 0) {
-            \Log::error('DetailPembelian relationship loaded but empty for purchase ID: ' . $pembelian->id_pembelian);
-        }
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $completeData

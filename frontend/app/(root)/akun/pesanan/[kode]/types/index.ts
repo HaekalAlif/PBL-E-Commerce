@@ -9,80 +9,151 @@ import {
 
 export interface OrderDetail {
   id_pembelian: number;
+  id_pembeli: number;
+  id_alamat: number;
   kode_pembelian: string;
   status_pembelian: string;
-  catatan_pembeli?: string;
+  catatan_pembeli: string | null;
+  is_deleted: number;
   created_at: string;
   updated_at: string;
-  alamat: {
-    nama_penerima: string;
-    no_telp: string;
-    alamat_lengkap: string;
-    kode_pos: string;
-    district: { name: string };
-    regency: { name: string };
-    province: { name: string };
-  };
-  detailPembelian: Array<{
-    id_detail_pembelian: number;
-    jumlah: number;
+  created_by: number;
+  updated_by: number;
+  calculated_total: number;
+  detail_pembelian: Array<{
+    id_detail: number;
+    id_pembelian: number;
+    id_barang: number;
+    id_toko: number;
+    id_keranjang: number | null;
+    id_pesan: number | null;
     harga_satuan: number;
+    jumlah: number;
     subtotal: number;
+    created_at: string;
+    updated_at: string;
     barang: {
+      id_barang: number;
+      id_kategori: number;
+      id_toko: number;
       nama_barang: string;
       slug: string;
-      gambar_barang?: Array<{ url_gambar: string }>;
+      deskripsi_barang: string;
+      harga: number;
+      grade: string;
+      status_barang: string;
+      stok: number;
+      kondisi_detail: string;
+      berat_barang: string;
+      dimensi: string;
+      is_deleted: boolean;
+      created_at: string;
+      updated_at: string;
+      created_by: number;
+      updated_by: number;
+      gambar_barang: Array<{
+        id_gambar: number;
+        id_barang: number;
+        url_gambar: string;
+        urutan: number;
+        is_primary: boolean;
+        created_at: string;
+      }>;
+    };
+    pengiriman_pembelian?: {
+      id_pengiriman: number;
+      id_detail_pembelian: number;
+      nomor_resi: string;
+      tanggal_pengiriman: string;
+      bukti_pengiriman: string;
+      catatan_pengiriman: string | null;
+      created_at: string;
+      updated_at: string;
     };
   }>;
   tagihan?: {
     id_tagihan: number;
+    id_pembelian: number;
     kode_tagihan: string;
+    group_id: string;
     total_harga: number;
     biaya_kirim: number;
+    opsi_pengiriman: string;
     biaya_admin: number;
     total_tagihan: number;
-    status_pembayaran: string;
     metode_pembayaran: string;
-    deadline_pembayaran?: string;
-    tanggal_pembayaran?: string;
-    midtrans_payment_type?: string;
-    opsi_pengiriman?: string;
+    midtrans_transaction_id: string;
+    midtrans_payment_type: string | null;
+    midtrans_status: string;
+    status_pembayaran: string;
+    deadline_pembayaran: string;
+    tanggal_pembayaran: string;
+    snap_token: string;
+    payment_url: string;
+    created_at: string;
+    updated_at: string;
   };
-  tracking_info?: {
-    resi?: string;
-    courier?: string;
+  alamat: {
+    id_alamat: number;
+    id_user: number;
+    nama_penerima: string;
+    no_telepon: string;
+    alamat_lengkap: string;
+    provinsi: string;
+    kota: string;
+    kecamatan: string;
+    kode_pos: string;
+    is_primary: boolean;
+    created_at: string;
+    updated_at: string;
+    province: {
+      id: string;
+      name: string;
+    };
+    regency: {
+      id: string;
+      province_id: string;
+      name: string;
+    };
+    district: {
+      id: string;
+      regency_id: string;
+      name: string;
+    };
+    village: null;
   };
+  pengiriman: null;
 }
 
 export const trackingSteps = [
   {
-    status: "Order Placed",
+    status: "Pesanan Dibuat",
     icon: Package,
-    description: "Your order has been received",
+    description: "Pesanan telah diterima",
   },
   {
-    status: "Payment",
+    status: "Pembayaran",
     icon: CreditCard,
-    description: "Payment has been confirmed",
+    description: "Pembayaran telah dikonfirmasi",
   },
   {
-    status: "Processing",
+    status: "Diproses",
     icon: PackageCheck,
-    description: "Your order is being processed",
+    description: "Pesanan sedang diproses",
   },
   {
-    status: "Shipped",
+    status: "Dikirim",
     icon: Truck,
-    description: "Your order has been shipped",
+    description: "Pesanan dalam pengiriman",
   },
   {
-    status: "Delivered",
+    status: "Sampai",
     icon: Home,
-    description: "Package has been delivered",
+    description: "Paket telah sampai",
   },
   {
-    status: "Completed",
+    status: "Selesai",
     icon: ThumbsUp,
-    description: "Order completed",
+    description: "Pesanan selesai",
   },
 ] as const;

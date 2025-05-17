@@ -17,7 +17,7 @@ export const useOrderSummary = (order: OrderDetail | null) => {
       shippingCost,
       adminFee,
       total,
-      itemCount: order.detailPembelian?.length || 0,
+      itemCount: order.detail_pembelian?.length || 0,
       paymentInfo: {
         method: order.tagihan?.metode_pembayaran,
         status: order.tagihan?.status_pembayaran || "Pending",

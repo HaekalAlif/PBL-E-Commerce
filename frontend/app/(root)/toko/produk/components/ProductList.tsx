@@ -49,7 +49,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { getCsrfToken } from "@/lib/axios";
 const ITEMS_PER_PAGE = 10;
 
 interface ProductListProps {

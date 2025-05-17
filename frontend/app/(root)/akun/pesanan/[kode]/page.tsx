@@ -76,22 +76,75 @@ export default function OrderDetailPage() {
           <OrderTrackingTimeline
             currentStep={currentStep}
             steps={trackingSteps}
-            trackingInfo={order.tracking_info}
+            trackingInfo={{
+              resi: order.detail_pembelian[0]?.pengiriman_pembelian?.nomor_resi,
+              courier: order.tagihan?.opsi_pengiriman,
+            }}
             isCancelled={order.status_pembelian === "Dibatalkan"}
           />
 
-          <OrderItems items={order.detailPembelian} onRetry={refetch} />
-
-          <ShippingInfo
-            address={order.alamat}
-            shippingMethod={order.tagihan?.opsi_pengiriman}
-            notes={order.catatan_pembeli}
+          <OrderItems
+            items={order.detail_pembelian.map((item) => ({
+              id_detail_pembelian: item.id_detail,
+              jumlah: item.jumlah,
+              harga_satuan: item.harga_satuan,
+              subtotal: item.subtotal,
+              barang: {
+                nama_barang: item.barang.nama_barang,
+                slug: item.barang.slug,
+                gambar_barang: item.barang.gambar_barang,
+              },
+            }))}
+            onRetry={refetch}
           />
+
+          {order.detail_pembelian[0]?.pengiriman_pembelian && (
+            <ShippingInfo
+              pengiriman={{
+                ...order.detail_pembelian[0].pengiriman_pembelian,
+                catatan_pengiriman:
+                  order.detail_pembelian[0].pengiriman_pembelian
+                    .catatan_pengiriman || undefined,
+              }}
+              address={{
+                nama_penerima: order.alamat.nama_penerima,
+                no_telepon: order.alamat.no_telepon,
+                alamat_lengkap: order.alamat.alamat_lengkap,
+                kode_pos: order.alamat.kode_pos,
+                district: {
+                  name: order.alamat.district.name,
+                },
+                regency: {
+                  name: order.alamat.regency.name,
+                },
+                province: {
+                  name: order.alamat.province.name,
+                },
+              }}
+              shippingMethod={order.tagihan?.opsi_pengiriman}
+              notes={order.catatan_pembeli || undefined}
+              showBukti={true}
+            />
+          )}
         </div>
 
         <div className="space-y-6">
           <PaymentSummary
-            order={order}
+            order={{
+              status_pembelian: order.status_pembelian,
+              tagihan: {
+                total_harga: order.tagihan?.total_harga || 0,
+                biaya_kirim: order.tagihan?.biaya_kirim || 0,
+                biaya_admin: order.tagihan?.biaya_admin || 0,
+                total_tagihan: order.tagihan?.total_tagihan || 0,
+                status_pembayaran: order.tagihan?.status_pembayaran || "",
+                metode_pembayaran: order.tagihan?.metode_pembayaran || "",
+                midtrans_payment_type:
+                  order.tagihan?.midtrans_payment_type || undefined,
+                tanggal_pembayaran: order.tagihan?.tanggal_pembayaran,
+                kode_tagihan: order.tagihan?.kode_tagihan,
+              },
+            }}
             onConfirmDelivery={() => setIsConfirmDeliveryOpen(true)}
             onReportIssue={() => setIsComplaintDialogOpen(true)}
             onPayNow={() =>

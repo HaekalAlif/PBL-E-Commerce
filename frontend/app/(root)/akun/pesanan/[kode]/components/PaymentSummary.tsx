@@ -55,41 +55,50 @@ export const PaymentSummary = ({
   };
 
   return (
-    <Card className="border border-orange-100 shadow-sm">
+    <Card className="border-orange-100">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="h-5 w-5 text-[#F79E0E]" />
-          Ringkasan Pembayaran
+        <CardTitle className="flex items-center gap-2 text-base">
+          <div className="p-1.5 rounded-lg bg-orange-50">
+            <CreditCard className="h-4 w-4 text-[#F79E0E]" />
+          </div>
+          <span className="font-medium">Ringkasan Pembayaran</span>
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Subtotal</span>
-            <span>{formatRupiah(order.tagihan?.total_harga || 0)}</span>
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Subtotal Produk</span>
+            <span className="font-medium">
+              {formatRupiah(order.tagihan?.total_harga || 0)}
+            </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Biaya Pengiriman</span>
-            <span>{formatRupiah(order.tagihan?.biaya_kirim || 0)}</span>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Biaya Pengiriman</span>
+            <span className="font-medium">
+              {formatRupiah(order.tagihan?.biaya_kirim || 0)}
+            </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Biaya Admin</span>
-            <span>{formatRupiah(order.tagihan?.biaya_admin || 0)}</span>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Biaya Admin</span>
+            <span className="font-medium">
+              {formatRupiah(order.tagihan?.biaya_admin || 0)}
+            </span>
           </div>
-          <Separator className="my-2" />
-          <div className="flex justify-between font-bold">
-            <span>Total</span>
-            <span className="text-[#F79E0E]">
+          <Separator className="my-2 bg-orange-100" />
+          <div className="flex justify-between">
+            <span className="font-medium">Total</span>
+            <span className="font-bold text-[#F79E0E]">
               {formatRupiah(order.tagihan?.total_tagihan || 0)}
             </span>
           </div>
         </div>
 
-        {/* Payment information */}
-        <div className="mt-4 space-y-2 bg-gray-50 p-3 rounded-lg">
-          <div className="flex justify-between items-start">
-            <span className="text-gray-500 text-sm">Status Pembayaran</span>
-            <span className="text-sm font-medium text-right">
+        {/* Payment information with updated styling */}
+        <div className="mt-4 space-y-2 bg-orange-50/50 p-3 rounded-lg border border-orange-100">
+          <div className="flex justify-between items-start text-sm">
+            <span className="text-gray-600">Status Pembayaran</span>
+            <span className="font-medium text-right">
               {order.tagihan?.status_pembayaran || "Tidak Tersedia"}
             </span>
           </div>
@@ -121,13 +130,13 @@ export const PaymentSummary = ({
       </CardContent>
 
       <CardFooter className="flex flex-col gap-3 pt-6 border-t border-orange-100">
+        {/* Action buttons with consistent styling */}
         {order.status_pembelian === "Menunggu Pembayaran" && canPayNow() && (
           <Button
-            variant="outline"
-            className="w-full border-[#F79E0E] text-[#F79E0E] hover:border-[#F79E0E] hover:text-[#F79E0E] hover:bg-orange-100"
+            className="w-full bg-[#F79E0E] hover:bg-[#F79E0E]/90 text-white"
             onClick={onPayNow}
           >
-            <FaMoneyBill className="h-4 w-4 mr-2" />
+            <CreditCard className="h-4 w-4 mr-2" />
             Bayar Sekarang
           </Button>
         )}
@@ -135,7 +144,8 @@ export const PaymentSummary = ({
         {order.status_pembelian === "Dikirim" && (
           <>
             <Button
-              className="w-full border-[#F79E0E] text-[#F79E0E] hover:border-[#F79E0E] hover:text-[#F79E0E] hover:bg-orange-100"
+              variant="outline"
+              className="w-full border-[#F79E0E] text-[#F79E0E] hover:border-[#F79E0E] hover:text-[#F79E0E] hover:bg-orange-1200"
               onClick={onConfirmDelivery}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
@@ -143,7 +153,7 @@ export const PaymentSummary = ({
             </Button>
             <Button
               variant="outline"
-              className="w-full border-[#F79E0E] text-[#F79E0E] hover:border-[#F79E0E] hover:text-[#F79E0E] hover:bg-orange-100"
+              className="w-full border-[#F79E0E] bg-red-500 text-white hover:border-[#F79E0E] hover:text-white hover:bg-red-800"
               onClick={onReportIssue}
             >
               <AlertCircle className="h-4 w-4 mr-2" />

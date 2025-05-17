@@ -90,6 +90,18 @@ class Pembelian extends Model
         return $this->belongsTo(User::class, 'updated_by', 'id_user');
     }
     
+    // Define the relationship with the shipping information
+    public function pengiriman()
+    {
+        return $this->hasOne(PengirimanPembelian::class, 'id_detail_pembelian', 'id_pembelian');
+    }
+
+    // Define the relationship with the items in the purchase
+    public function items()
+    {
+        return $this->hasMany(DetailPembelian::class, 'id_pembelian', 'id_pembelian');
+    }
+    
     // Helper method to check if purchase can be canceled
     public function canBeCancelled()
     {

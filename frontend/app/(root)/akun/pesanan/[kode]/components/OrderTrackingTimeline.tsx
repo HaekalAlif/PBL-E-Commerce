@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, TruckIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trackingSteps } from "../types";
 import {
@@ -32,16 +33,21 @@ export const OrderTrackingTimeline = ({
 }: OrderTrackingTimelineProps) => {
   if (isCancelled) {
     return (
-      <Card>
+      <Card className="border-orange-100">
         <CardHeader className="pb-2">
-          <CardTitle>Status Pesanan</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <div className="p-1.5 rounded-lg bg-orange-50">
+              <Clock className="h-4 w-4 text-[#F79E0E]" />
+            </div>
+            <span className="font-medium">Status Pesanan</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="p-4 border rounded-lg border-red-200 bg-red-50 flex items-start">
             <Ban className="text-red-500 h-5 w-5 mt-0.5 mr-2" />
             <div>
               <h4 className="font-medium text-red-700">Pesanan Dibatalkan</h4>
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-red-600 mt-1">
                 Pesanan ini telah dibatalkan.
               </p>
             </div>
@@ -52,11 +58,18 @@ export const OrderTrackingTimeline = ({
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle>Status Pesanan</CardTitle>
+    <Card className="border-orange-100">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <div className="p-1.5 rounded-lg bg-orange-50">
+            <Clock className="h-4 w-4 text-[#F79E0E]" />
+          </div>
+          <span className="font-medium">Status Pesanan</span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Display tracking info if available */}
+
         <div className="relative">
           <div className="ml-6 mt-3 space-y-8">
             {steps.map((step, idx) => {
@@ -73,19 +86,21 @@ export const OrderTrackingTimeline = ({
                 >
                   {idx < steps.length - 1 && (
                     <div
-                      className={`absolute left-[-24px] top-6 w-0.5 h-full ${
-                        idx < currentStep ? "bg-[#F79E0E]" : "bg-gray-200"
-                      }`}
+                      className={`absolute left-[-24px] top-6 w-0.5 h-full 
+                        ${idx < currentStep ? "bg-[#F79E0E]" : "bg-gray-200"}`}
                     />
                   )}
 
                   <div className="flex items-start mb-1">
                     <div
-                      className={`absolute left-[-30px] rounded-full w-[30px] h-[30px] flex items-center justify-center ${
-                        isActive
-                          ? "bg-[#F79E0E] text-white"
-                          : "bg-gray-200 text-gray-400"
-                      } ${isCurrent ? "ring-4 ring-orange-100" : ""}`}
+                      className={`absolute left-[-30px] rounded-full w-[30px] h-[30px] 
+                        flex items-center justify-center transition-all duration-200
+                        ${
+                          isActive
+                            ? "bg-[#F79E0E] text-white"
+                            : "bg-gray-200 text-gray-400"
+                        }
+                        ${isCurrent ? "ring-4 ring-orange-100" : ""}`}
                     >
                       <step.icon className="h-4 w-4" />
                     </div>
@@ -108,34 +123,6 @@ export const OrderTrackingTimeline = ({
             })}
           </div>
         </div>
-
-        {trackingInfo?.resi && (
-          <div className="mt-6 p-4 border rounded-lg bg-orange-50/50">
-            <h4 className="font-medium mb-2">Informasi Pengiriman</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Kurir</p>
-                <p className="font-medium">{trackingInfo.courier}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Nomor Resi</p>
-                <p className="font-medium">{trackingInfo.resi}</p>
-              </div>
-            </div>
-
-            <Button variant="outline" className="mt-3 text-sm h-8" asChild>
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center"
-              >
-                Lacak Pengiriman
-                <ExternalLink className="ml-2 h-3 w-3" />
-              </a>
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

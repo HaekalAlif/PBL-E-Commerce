@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Package, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { formatRupiah } from "@/lib/utils";
 
@@ -21,34 +22,46 @@ interface OrderItemsProps {
 export const OrderItems = ({ items, onRetry }: OrderItemsProps) => {
   if (!items || items.length === 0) {
     return (
-      <div className="py-8 text-center">
-        <p className="text-gray-500">Detail pesanan tidak tersedia</p>
-        {onRetry && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={onRetry}
-          >
-            Coba Muat Ulang
-          </Button>
-        )}
-      </div>
+      <Card className="border-orange-100">
+        <CardContent className="py-8">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="p-3 rounded-full bg-orange-50 mb-3">
+              <ShoppingCart className="h-6 w-6 text-[#F79E0E]" />
+            </div>
+            <p className="text-gray-500 mb-3">Detail pesanan tidak tersedia</p>
+            {onRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                className="border-[#F79E0E] text-[#F79E0E] hover:bg-orange-50"
+              >
+                Coba Muat Ulang
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle>Produk dalam Pesanan</CardTitle>
+    <Card className="border-orange-100">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <div className="rounded-lg bg-orange-50">
+            <Package className="h-4 w-4 text-[#F79E0E]" />
+          </div>
+          <span className="font-medium">Produk dalam Pesanan</span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {items.map((item) => (
           <div
             key={item.id_detail_pembelian}
-            className="flex gap-4 pb-4 last:pb-0 last:border-0 border-b"
+            className="flex gap-4 pb-4 last:pb-0 last:border-0 border-b border-orange-100"
           >
-            <div className="w-16 h-16 bg-gray-100 relative overflow-hidden rounded-md">
+            <div className="w-20 h-20 bg-orange-50/50 relative overflow-hidden rounded-lg border border-orange-100">
               {item.barang?.gambar_barang &&
               item.barang.gambar_barang.length > 0 ? (
                 <img
@@ -70,18 +83,20 @@ export const OrderItems = ({ items, onRetry }: OrderItemsProps) => {
             <div className="flex-1">
               <Link
                 href={`/katalog/detail/${item.barang?.slug || "#"}`}
-                className="hover:underline"
+                className="hover:text-[#F79E0E] transition-colors"
               >
-                <h3 className="font-medium text-gray-900">
+                <h3 className="font-medium text-gray-900 hover:text-[#F79E0E]">
                   {item.barang?.nama_barang || "Produk tidak tersedia"}
                 </h3>
               </Link>
-              <div className="flex justify-between mt-1">
-                <div className="text-sm text-gray-500">
-                  {item.jumlah} × {formatRupiah(item.harga_satuan)}
-                </div>
-                <div className="font-medium text-[#F79E0E]">
-                  {formatRupiah(item.subtotal)}
+              <div className="flex justify-between mt-2">
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-500">
+                    {formatRupiah(item.harga_satuan)} x {item.jumlah}
+                  </div>
+                  <div className="font-medium text-[#F79E0E] pt-2">
+                    Total: {formatRupiah(item.subtotal)}
+                  </div>
                 </div>
               </div>
             </div>
