@@ -14,7 +14,7 @@ export function EmptyCart() {
           </h1>
           <Card className="border-amber-100/50 shadow-xl overflow-hidden">
             <div className="relative">
-              <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-5" />
+              <div className="absolute inset-0  opacity-5" />
               <div className="relative p-12 flex flex-col items-center">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center mb-6 shadow-inner">
                   <ShoppingCart className="h-12 w-12 text-amber-500" />

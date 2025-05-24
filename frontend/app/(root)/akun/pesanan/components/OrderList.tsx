@@ -81,8 +81,8 @@ export const OrderList = ({
               onChange={(e) => onSearch(e.target.value)}
             />
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={refetchOrders}
             className="h-11 gap-2 border-[#F79E0E] text-[#F79E0E] hover:bg-orange-50"
           >
@@ -92,47 +92,59 @@ export const OrderList = ({
         </div>
 
         {/* Tabs Section */}
-        <Tabs 
-          defaultValue={activeTab} 
+        <Tabs
+          defaultValue={activeTab}
           onValueChange={onTabChange}
           className="w-full"
         >
           <TabsList className="bg-gray-50/80 p-1 border border-gray-100 rounded-lg">
-            <TabsTrigger 
+            <TabsTrigger
               value="all"
               className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
             >
               Semua Pesanan
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="Menunggu Pembayaran"
               className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
             >
               Belum Dibayar
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="Dibayar"
               className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
             >
               Sudah Dibayar
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="Diproses"
               className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
             >
               Diproses
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="Dikirim"
               className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
             >
               Dikirim
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
+              value="Diterima"
+              className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
+            >
+              Diterima
+            </TabsTrigger>
+            <TabsTrigger
               value="Selesai"
               className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
             >
               Selesai
+            </TabsTrigger>
+            <TabsTrigger
+              value="Dibatalkan"
+              className="data-[state=active]:bg-white data-[state=active]:text-[#F79E0E] data-[state=active]:shadow-sm"
+            >
+              Dibatalkan
             </TabsTrigger>
           </TabsList>
 
@@ -150,7 +162,7 @@ export const OrderList = ({
                   isSearch={!!searchQuery}
                 />
               ) : (
-                <motion.div 
+                <motion.div
                   className="space-y-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -160,7 +172,9 @@ export const OrderList = ({
                     <OrderCard
                       key={order.id_pembelian}
                       order={order}
-                      onOrderClick={(kode) => router.push(`/akun/pesanan/${kode}`)}
+                      onOrderClick={(kode) =>
+                        router.push(`/akun/pesanan/${kode}`)
+                      }
                     />
                   ))}
                 </motion.div>

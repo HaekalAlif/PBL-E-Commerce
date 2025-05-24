@@ -142,7 +142,7 @@ export default function ProdukUnggulan() {
       variants={containerVariants}
       className="bg-gradient-to-br from-[#F79E0E] to-[#FFB648] py-12 px-4 sm:px-6 relative shadow-lg"
     >
-      <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+      <div className="absolute inset-0 opacity-10" />
 
       <motion.h2
         variants={itemVariants}
@@ -222,7 +222,10 @@ export default function ProdukUnggulan() {
                         className="px-3 bg-white border border-[#F79E0E] text-[#F79E0E] rounded-lg hover:bg-[#F79E0E]/5"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAddToCart(product.id_barang, product.nama_barang);
+                          handleAddToCart(
+                            product.id_barang,
+                            product.nama_barang
+                          );
                         }}
                         disabled={addingToCart === product.id_barang}
                       >

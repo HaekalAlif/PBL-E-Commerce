@@ -99,37 +99,48 @@ class PembelianController extends Controller
             ], 404);
         }
         
-        // Load the purchase with all its related data
-        $completeData = Pembelian::with([
-            'detailPembelian',
-            'detailPembelian.barang',
-            'detailPembelian.barang.gambarBarang',
-            'detailPembelian.pengiriman_pembelian', // Add shipping info for each detail
-            'tagihan', // Keep the invoice data
-            'pengiriman', // Add main shipping info
-            'alamat.province',
-            'alamat.regency',
-            'alamat.district',
-            'alamat.village',
-            'review', // Add review relationship
-            'review.user' // Include user data for the review
-        ])
-        ->where('kode_pembelian', $kode)
-        ->where('id_pembeli', $user->id_user)
-        ->where('is_deleted', false)
-        ->first();
-        
-        if (!$completeData) {
+        try {
+            // Load the purchase with all its related data
+            $completeData = Pembelian::with([
+                'detailPembelian',
+                'detailPembelian.barang',
+                'detailPembelian.barang.gambarBarang',
+                'detailPembelian.pengiriman_pembelian',
+                'tagihan',
+                'pengiriman',
+                'alamat.province',
+                'alamat.regency',
+                'alamat.district',
+                'alamat.village',
+                'review',
+                'komplain' => function($query) {
+                    $query->with('retur'); // Eager load retur relationship
+                }
+            ])
+            ->where('kode_pembelian', $kode)
+            ->where('id_pembeli', $user->id_user)
+            ->where('is_deleted', false)
+            ->first();
+
+            if (!$completeData) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Pesanan tidak ditemukan'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $completeData
+            ]);
+        }
+        catch (\Exception $e) {
+            \Log::error('Error fetching purchase details: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Pesanan tidak ditemukan'
-            ], 404);
+                'message' => 'Failed to fetch purchase details'
+            ], 500);
         }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $completeData
-        ]);
     }
     
     /**
@@ -705,12 +716,10 @@ class PembelianController extends Controller
         
         DB::beginTransaction();
         try {
-            // Update purchase status to 'Selesai'
-            $pembelian->status_pembelian = 'Selesai';
+            // Update purchase status to 'Diterima' instead of 'Selesai'
+            $pembelian->status_pembelian = 'Diterima';
             $pembelian->updated_by = $user->id_user;
             $pembelian->save();
-            
-            // You could add more logic here like triggering seller notification, etc.
             
             DB::commit();
             
@@ -728,6 +737,49 @@ class PembelianController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat mengonfirmasi pengiriman: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete a purchase after confirmation
+     */
+    public function completePurchase($kode)
+    {
+        $user = Auth::user();
+        
+        $pembelian = Pembelian::where('kode_pembelian', $kode)
+                           ->where('id_pembeli', $user->id_user)
+                           ->where('status_pembelian', 'Diterima')
+                           ->first();
+        
+        if (!$pembelian) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pembelian tidak ditemukan atau tidak dapat diselesaikan'
+            ], 404);
+        }
+        
+        DB::beginTransaction();
+        try {
+            $pembelian->status_pembelian = 'Selesai';
+            $pembelian->updated_by = $user->id_user;
+            $pembelian->save();
+            
+            DB::commit();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Pesanan berhasil diselesaikan',
+                'data' => [
+                    'status_pembelian' => $pembelian->status_pembelian
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyelesaikan pesanan'
             ], 500);
         }
     }

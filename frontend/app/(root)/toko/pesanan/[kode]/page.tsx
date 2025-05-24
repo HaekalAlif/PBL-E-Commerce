@@ -27,6 +27,13 @@ import { ShippingDialog } from "./components/ShippingDialog";
 import { formatDate } from "@/lib/utils";
 import { StatusBadge } from "../components/StatusBadge";
 import { OrderDetailHeader } from "./components/OrderDetailHeader";
+import { KomplainDetails } from "./components/KomplainDetails"; // Import the new component
+import { OrderDetail } from "./types";
+
+// Define the OrderDetail type with komplain property
+interface OrderDetailType extends OrderDetail {
+  komplain?: any; // Adjust 'any' to your actual Komplain type
+}
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -157,6 +164,13 @@ export default function OrderDetailPage() {
             />
           </motion.div>
         </div>
+      </div>
+
+      <div className="pt-6">
+        {/* Display Retur Details if order is cancelled due to retur */}
+        {order?.status_pembelian === "Dibatalkan" && order?.komplain?.retur && (
+          <KomplainDetails komplain={order.komplain} kodePembelian={""} />
+        )}
       </div>
 
       <ConfirmDialog

@@ -68,13 +68,14 @@ export const OrderTrackingTimeline = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Display tracking info if available */}
-
         <div className="relative">
           <div className="ml-6 mt-3 space-y-8">
             {steps.map((step, idx) => {
               const isActive = idx <= currentStep;
               const isCurrent = idx === currentStep;
+
+              // Only show completed state up to current step
+              const isCompleted = idx < currentStep;
 
               return (
                 <motion.div
@@ -87,7 +88,7 @@ export const OrderTrackingTimeline = ({
                   {idx < steps.length - 1 && (
                     <div
                       className={`absolute left-[-24px] top-6 w-0.5 h-full 
-                        ${idx < currentStep ? "bg-[#F79E0E]" : "bg-gray-200"}`}
+                        ${isCompleted ? "bg-[#F79E0E]" : "bg-gray-200"}`}
                     />
                   )}
 
@@ -113,7 +114,11 @@ export const OrderTrackingTimeline = ({
                       >
                         {step.status}
                       </h4>
-                      <p className="text-sm text-gray-500">
+                      <p
+                        className={`text-sm ${
+                          isActive ? "text-gray-600" : "text-gray-400"
+                        }`}
+                      >
                         {step.description}
                       </p>
                     </div>

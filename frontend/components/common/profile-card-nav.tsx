@@ -242,7 +242,6 @@ const ProfileCardNav = () => {
             >
               <div className="relative">
                 <Avatar className="h-8 w-8 border-2 border-orange-200">
-                  <AvatarImage src="/placeholder.jpg" alt="Profile" />
                   <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white">
                     {loading ? "..." : getInitials(userInfo.username)}
                   </AvatarFallback>
@@ -275,7 +274,7 @@ const ProfileCardNav = () => {
             <div className="p-3 mb-2 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12 border-2 border-white shadow">
-                  <AvatarImage src="/placeholder.jpg" alt="Profile" />
+                  <AvatarImage src="/placeholder.png" alt="Profile" />
                   <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white">
                     {getInitials(userInfo.username)}
                   </AvatarFallback>

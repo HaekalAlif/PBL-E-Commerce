@@ -20,6 +20,7 @@ use App\Http\Controllers\User\KeranjangController;
 use App\Http\Controllers\User\PesananTokoController;
 use App\Http\Controllers\Admin\PesananManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
+use App\Http\Controllers\Admin\KomplainManagementController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -129,6 +130,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{kode}/multi-checkout', [PembelianController::class, 'multiCheckout']); // Add multi-checkout route here
         Route::put('/{kode}/cancel', [PembelianController::class, 'cancel']);
         Route::put('/{kode}/confirm-delivery', [PembelianController::class, 'confirmDelivery']); // Add this new route
+        Route::put('/{kode}/complete', [PembelianController::class, 'completePurchase']);
         
         // Purchase Details Management
         Route::get('/{kode}/items', [DetailPembelianController::class, 'index']);
@@ -181,6 +183,26 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'show']);
         Route::delete('/{id_review}', [App\Http\Controllers\User\ReviewController::class, 'destroy']);
         Route::get('/purchase/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'getByPembelian']);
+    });
+
+    // Complaint Management
+    Route::middleware('auth:sanctum')->group(function () {
+        // Make sure these routes are not nested under another group
+        Route::prefix('komplain')->group(function() {
+            Route::post('/{id_pembelian}', [App\Http\Controllers\User\KomplainController::class, 'store']);
+            Route::get('/{id_pembelian}', [App\Http\Controllers\User\KomplainController::class, 'show']);
+            Route::put('/{id_komplain}', [App\Http\Controllers\User\KomplainController::class, 'update']);
+            Route::get('/user/list', [App\Http\Controllers\User\KomplainController::class, 'getByUser']);
+        });
+    });
+
+    // User Retur Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('retur')->group(function() {
+            Route::post('/', [App\Http\Controllers\User\ReturBarangController::class, 'store']);
+            Route::get('/{id_retur}', [App\Http\Controllers\User\ReturBarangController::class, 'show']);
+            Route::get('/user/list', [App\Http\Controllers\User\ReturBarangController::class, 'getByUser']);
+        });
     });
 
     // Admin routes
@@ -242,6 +264,23 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{kode}/status', [PaymentManagementController::class, 'updateStatus']);
             Route::post('/{kode}/refund', [PaymentManagementController::class, 'processRefund']);
             Route::post('/{kode}/verify', [PaymentManagementController::class, 'verifyManually']);
+        });
+        
+        // Admin complaint management
+        Route::prefix('admin/komplain')->group(function() {
+            Route::get('/', [KomplainManagementController::class, 'index']);
+            Route::get('/stats', [KomplainManagementController::class, 'getComplaintStats']);
+            Route::get('/{id_komplain}', [KomplainManagementController::class, 'show']);
+            Route::post('/{id_komplain}/process', [KomplainManagementController::class, 'processComplaint']);
+            Route::post('/{id_komplain}/comment', [KomplainManagementController::class, 'addComment']);
+        });
+
+        // Admin retur management
+        Route::prefix('admin/retur')->group(function() {
+            Route::get('/', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'index']);
+            Route::get('/stats', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'getReturStats']);
+            Route::get('/{id_retur}', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'show']);
+            Route::post('/{id_retur}/process', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'processRetur']);
         });
     });
 

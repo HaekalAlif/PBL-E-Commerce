@@ -11,6 +11,7 @@ export const useOrderDetail = (kode: string) => {
   const [isConfirmDeliveryOpen, setIsConfirmDeliveryOpen] = useState(false);
   const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const updateCurrentStep = (status: string) => {
     let step = 0;
@@ -54,12 +55,12 @@ export const useOrderDetail = (kode: string) => {
         setOrder(orderData);
         updateCurrentStep(orderData.status_pembelian);
 
-        if (
-          !orderData.detailPembelian ||
-          !Array.isArray(orderData.detailPembelian)
-        ) {
-          await fetchOrderItems(orderData.id_pembelian);
-        }
+        // Log order details for debugging
+        console.log("Order Response:", {
+          orderData,
+          detailPembelian: orderData.detail_pembelian?.[0],
+          detailPembelianId: orderData.detail_pembelian?.[0]?.id_detail,
+        });
       } else {
         throw new Error(
           response.data.message || "Failed to load order details"
@@ -106,7 +107,7 @@ export const useOrderDetail = (kode: string) => {
         toast.success("Delivery confirmed successfully!");
         setOrder({
           ...order,
-          status_pembelian: "Selesai",
+          status_pembelian: "Diterima",
         });
         setCurrentStep(5);
       } else {
@@ -117,6 +118,38 @@ export const useOrderDetail = (kode: string) => {
     } finally {
       setIsConfirming(false);
       setIsConfirmDeliveryOpen(false);
+    }
+  };
+
+  const completePurchase = async () => {
+    if (!order) return;
+
+    setIsCompleting(true);
+    try {
+      const response = await axiosInstance.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/purchases/${kode}/complete`
+      );
+
+      if (response.data.status === "success") {
+        toast.success("Pesanan berhasil diselesaikan");
+        setOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                status_pembelian: "Selesai",
+              }
+            : null
+        );
+        updateCurrentStep("Selesai");
+      } else {
+        throw new Error(response.data.message);
+      }
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Gagal menyelesaikan pesanan"
+      );
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -134,9 +167,11 @@ export const useOrderDetail = (kode: string) => {
     isConfirmDeliveryOpen,
     isComplaintDialogOpen,
     isConfirming,
+    isCompleting,
     setIsConfirmDeliveryOpen,
     setIsComplaintDialogOpen,
     confirmDelivery,
+    completePurchase,
     refetch: fetchOrderDetail,
   };
 };

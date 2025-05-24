@@ -1,14 +1,14 @@
 "use client";
 
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { OrderDetailHeader } from "./components/OrderDetailHeader";
 import { OrderTrackingTimeline } from "./components/OrderTrackingTimeline";
 import { OrderItems } from "./components/OrderItems";
 import { ShippingInfo } from "./components/ShippingInfo";
 import { PaymentSummary } from "./components/PaymentSummary";
-import { ConfirmationDialogs } from "./components/ConfirmationDialogs";
 import { useOrderDetail } from "./hooks/useOrderDetail";
-import { trackingSteps } from "./types";
+import { trackingSteps, statusToStepMap } from "./types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +17,17 @@ import { getStatusIcon, getStatusBadge } from "@/lib/status-utils";
 import { OrderDetailSkeleton } from "./components/OrderDetailSkeleton";
 import { ReviewForm } from "./components/ReviewForm";
 import { ReviewDetails } from "./components/ReviewDetails";
-import { useState } from "react";
+import { KomplainForm } from "./components/KomplainForm";
+import { KomplainDetails } from "./components/KomplainDetails";
+
+import { getCsrfToken } from "@/lib/axios";
+import { toast } from "sonner";
+
+interface OrderDetailPageProps {}
 
 export default function OrderDetailPage() {
   const params = useParams();
-  const kode = params?.kode as string;
-
+  const kode = (params?.kode ?? "") as string;
   const {
     order,
     loading,
@@ -31,16 +36,19 @@ export default function OrderDetailPage() {
     isConfirmDeliveryOpen,
     isComplaintDialogOpen,
     isConfirming,
+    isCompleting,
     setIsConfirmDeliveryOpen,
     setIsComplaintDialogOpen,
     confirmDelivery,
+    completePurchase,
     refetch,
   } = useOrderDetail(kode);
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isKomplainFormOpen, setIsKomplainFormOpen] = useState(false);
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
 
   const handleReview = () => {
-    // Additional check to prevent opening modal if already reviewed
     if (order?.review?.id_review) {
       return;
     }
@@ -79,6 +87,10 @@ export default function OrderDetailPage() {
     );
   }
 
+  const currentStatus =
+    statusToStepMap[order.status_pembelian as keyof typeof statusToStepMap] ||
+    0;
+
   return (
     <div className="space-y-6">
       <OrderDetailHeader
@@ -91,7 +103,7 @@ export default function OrderDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <OrderTrackingTimeline
-            currentStep={currentStep}
+            currentStep={currentStatus}
             steps={trackingSteps}
             trackingInfo={{
               resi: order.detail_pembelian[0]?.pengiriman_pembelian?.nomor_resi,
@@ -121,23 +133,9 @@ export default function OrderDetailPage() {
                 ...order.detail_pembelian[0].pengiriman_pembelian,
                 catatan_pengiriman:
                   order.detail_pembelian[0].pengiriman_pembelian
-                    .catatan_pengiriman || undefined,
+                    .catatan_pengiriman ?? undefined,
               }}
-              address={{
-                nama_penerima: order.alamat.nama_penerima,
-                no_telepon: order.alamat.no_telepon,
-                alamat_lengkap: order.alamat.alamat_lengkap,
-                kode_pos: order.alamat.kode_pos,
-                district: {
-                  name: order.alamat.district.name,
-                },
-                regency: {
-                  name: order.alamat.regency.name,
-                },
-                province: {
-                  name: order.alamat.province.name,
-                },
-              }}
+              address={order.alamat}
               shippingMethod={order.tagihan?.opsi_pengiriman}
               notes={order.catatan_pembeli || undefined}
               showBukti={true}
@@ -148,49 +146,48 @@ export default function OrderDetailPage() {
         <div className="space-y-6">
           <PaymentSummary
             order={{
-              status_pembelian: order.status_pembelian,
-              id_pembelian: order.id_pembelian,
-              review: order.review,
-              tagihan: {
-                total_harga: order.tagihan?.total_harga || 0,
-                biaya_kirim: order.tagihan?.biaya_kirim || 0,
-                biaya_admin: order.tagihan?.biaya_admin || 0,
-                total_tagihan: order.tagihan?.total_tagihan || 0,
-                status_pembayaran: order.tagihan?.status_pembayaran || "",
-                metode_pembayaran: order.tagihan?.metode_pembayaran || "",
-                midtrans_payment_type:
-                  order.tagihan?.midtrans_payment_type || undefined,
-                tanggal_pembayaran: order.tagihan?.tanggal_pembayaran,
-                kode_tagihan: order.tagihan?.kode_tagihan,
-              },
+              ...order,
+              tagihan: order.tagihan
+                ? {
+                    ...order.tagihan,
+                    midtrans_payment_type:
+                      order.tagihan.midtrans_payment_type ?? undefined,
+                  }
+                : undefined,
             }}
-            onConfirmDelivery={() => setIsConfirmDeliveryOpen(true)}
-            onReportIssue={() => setIsComplaintDialogOpen(true)}
+            onConfirmDelivery={confirmDelivery}
+            onReportIssue={() => setIsKomplainFormOpen(true)}
             onPayNow={() =>
               (window.location.href = `/payments/${order.tagihan?.kode_tagihan}`)
             }
             onReview={handleReview}
+            onComplete={completePurchase}
+            isConfirming={isConfirming}
+            isCompleting={isCompleting}
           />
 
-          {/* Add ReviewDetails component when review exists */}
           {order.review && <ReviewDetails review={order.review} />}
+          {order.komplain && (
+            <KomplainDetails
+              komplain={order.komplain}
+              kodePembelian={order.kode_pembelian} // Pass kodePembelian here
+            />
+          )}
         </div>
       </div>
-
-      <ConfirmationDialogs
-        confirmDeliveryOpen={isConfirmDeliveryOpen}
-        setConfirmDeliveryOpen={setIsConfirmDeliveryOpen}
-        complaintDialogOpen={isComplaintDialogOpen}
-        setComplaintDialogOpen={setIsComplaintDialogOpen}
-        onConfirmDelivery={confirmDelivery}
-        isConfirming={isConfirming}
-      />
 
       <ReviewForm
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
         purchaseId={order.id_pembelian}
         onSuccess={handleReviewSuccess}
+      />
+
+      <KomplainForm
+        isOpen={isKomplainFormOpen}
+        onClose={() => setIsKomplainFormOpen(false)}
+        purchaseId={order?.id_pembelian || 0}
+        onSuccess={refetch}
       />
     </div>
   );

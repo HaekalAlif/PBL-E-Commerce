@@ -90,4 +90,10 @@ class User extends Authenticatable
     {
         return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPERADMIN]);
     }
+    
+    // Relationship with complaints
+    public function komplain()
+    {
+        return $this->hasMany(Komplain::class, 'id_user', 'id_user');
+    }
 }

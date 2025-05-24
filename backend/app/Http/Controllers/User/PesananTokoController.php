@@ -160,7 +160,10 @@ class PesananTokoController extends Controller
                     'alamat.province',
                     'alamat.regency',
                     'alamat.district',
-                    'alamat.village'
+                    'alamat.village',
+                    'komplain' => function($query) {
+                        $query->with('retur');
+                    }
                 ])
                 ->first();
             
@@ -194,7 +197,8 @@ class PesananTokoController extends Controller
                 'pembeli' => $pembelian->pembeli,
                 'items' => $pembelian->detailPembelian,
                 'total' => $total,
-                'pengiriman' => $pembelian->detailPembelian->first()->pengirimanPembelian ?? null
+                'pengiriman' => $pembelian->detailPembelian->first()->pengirimanPembelian ?? null,
+                'komplain' => $pembelian->komplain
             ];
             
             return response()->json([

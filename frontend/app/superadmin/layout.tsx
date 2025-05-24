@@ -68,7 +68,7 @@ function getBreadcrumbs(path: string) {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const breadcrumbs = getBreadcrumbs(pathname);
+  const breadcrumbs = getBreadcrumbs(pathname ?? "");
 
   return (
     <SidebarProvider>

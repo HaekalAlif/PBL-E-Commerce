@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { FaTag, FaComments, FaShieldAlt, FaCheckCircle } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import React from "react";
+import { FaTag, FaComments, FaShieldAlt, FaCheckCircle } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 const features = [
   {
     icon: <FaTag />,
-    title: 'Transparansi Harga',
-    description: 'Harga yang jelas dan transparan untuk semua pembeli.',
+    title: "Transparansi Harga",
+    description: "Harga yang jelas dan transparan untuk semua pembeli.",
   },
   {
     icon: <FaComments />,
-    title: 'Dukungan Live Chat & Penawaran',
-    description: 'Ajukan pertanyaan langsung dan dapatkan penawaran terbaik.',
+    title: "Dukungan Live Chat & Penawaran",
+    description: "Ajukan pertanyaan langsung dan dapatkan penawaran terbaik.",
   },
   {
     icon: <FaCheckCircle />,
-    title: '100% Keamanan',
-    description: 'Sistem transaksi aman dan terpercaya.',
+    title: "100% Keamanan",
+    description: "Sistem transaksi aman dan terpercaya.",
   },
   {
     icon: <FaShieldAlt />,
-    title: 'Garansi Keamanan Transaksi',
-    description: 'Garansi uang kembali jika transaksi tidak sesuai.',
+    title: "Garansi Keamanan Transaksi",
+    description: "Garansi uang kembali jika transaksi tidak sesuai.",
   },
 ];
 
@@ -34,8 +34,8 @@ const containerVariants = {
     transition: {
       staggerChildren: 0.2,
       delayChildren: 0.3,
-    }
-  }
+    },
+  },
 };
 
 const itemVariants = {
@@ -46,9 +46,9 @@ const itemVariants = {
     transition: {
       type: "spring",
       stiffness: 100,
-      damping: 12
-    }
-  }
+      damping: 12,
+    },
+  },
 };
 
 const iconVariants = {
@@ -58,16 +58,16 @@ const iconVariants = {
     transition: {
       type: "spring",
       stiffness: 200,
-      damping: 10
-    }
-  }
+      damping: 10,
+    },
+  },
 };
 
 const Kelebihan = () => {
   return (
     <section className="bg-amber-50 py-16 px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/pattern-light.png')] opacity-5" />
-      
+      <div className="absolute inset-0 opacity-5" />
+
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -75,7 +75,7 @@ const Kelebihan = () => {
         variants={containerVariants}
         className="max-w-6xl mx-auto"
       >
-        <motion.h2 
+        <motion.h2
           className="text-center text-2xl md:text-3xl font-bold text-gray-800 mb-12"
           variants={itemVariants}
         >
@@ -94,7 +94,7 @@ const Kelebihan = () => {
                 rounded-xl lg:rounded-none shadow-sm hover:shadow-md
                 relative overflow-hidden"
             >
-              <motion.div 
+              <motion.div
                 variants={iconVariants}
                 className="mb-4 text-[#F79E0E] group-hover:text-white transition-colors duration-300"
               >
