@@ -24,6 +24,13 @@ import { FaMoneyBill } from "react-icons/fa";
 interface PaymentSummaryProps {
   order: {
     status_pembelian: string;
+    id_pembelian: number;
+    review?: {
+      id_review: number;
+      rating: number;
+      komentar: string;
+      image_review?: string;
+    };
     tagihan?: {
       total_harga: number;
       biaya_kirim: number;
@@ -39,6 +46,7 @@ interface PaymentSummaryProps {
   onConfirmDelivery: () => void;
   onReportIssue: () => void;
   onPayNow?: () => void;
+  onReview?: () => void;
 }
 
 export const PaymentSummary = ({
@@ -46,12 +54,25 @@ export const PaymentSummary = ({
   onConfirmDelivery,
   onReportIssue,
   onPayNow,
+  onReview,
 }: PaymentSummaryProps) => {
   const canPayNow = () => {
     return (
       order.tagihan?.status_pembayaran === "Menunggu" &&
       order.status_pembelian === "Menunggu Pembayaran"
     );
+  };
+
+  const hasReview = !!order.review;
+
+  // Modified showReviewButton to only check status
+  const showReviewButton = () => {
+    return order.status_pembelian === "Selesai";
+  };
+
+  const handleReviewClick = (e: React.MouseEvent) => {
+    if (hasReview) return;
+    onReview?.();
   };
 
   return (
@@ -160,6 +181,38 @@ export const PaymentSummary = ({
               Laporkan Masalah
             </Button>
           </>
+        )}
+
+        {showReviewButton() && (
+          <div className="w-full space-y-1.5">
+            <Button
+              variant="outline"
+              className={`w-full ${
+                hasReview
+                  ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+                  : "border-[#F79E0E] text-[#F79E0E] hover:border-[#F79E0E] hover:text-[#F79E0E] hover:bg-orange-100"
+              }`}
+              onClick={handleReviewClick}
+              disabled={hasReview}
+            >
+              {hasReview ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  <span className="text-gray-500">Sudah Direview</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Beri Review
+                </>
+              )}
+            </Button>
+            {hasReview && (
+              <p className="text-xs text-center text-gray-500">
+                Anda telah memberikan penilaian untuk pesanan ini
+              </p>
+            )}
+          </div>
         )}
 
         <Button

@@ -175,6 +175,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{kode}/ship', [PesananTokoController::class, 'shipOrder']);
     });
 
+    // Review Management
+    Route::prefix('reviews')->group(function() {
+        Route::post('/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'store']);
+        Route::get('/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'show']);
+        Route::delete('/{id_review}', [App\Http\Controllers\User\ReviewController::class, 'destroy']);
+        Route::get('/purchase/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'getByPembelian']);
+    });
+
     // Admin routes
     Route::middleware('role:admin,superadmin')->group(function() {  
         // User management (admin only)

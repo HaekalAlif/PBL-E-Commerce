@@ -110,7 +110,9 @@ class PembelianController extends Controller
             'alamat.province',
             'alamat.regency',
             'alamat.district',
-            'alamat.village'
+            'alamat.village',
+            'review', // Add review relationship
+            'review.user' // Include user data for the review
         ])
         ->where('kode_pembelian', $kode)
         ->where('id_pembeli', $user->id_user)

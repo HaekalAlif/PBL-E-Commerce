@@ -7,6 +7,24 @@ import {
   ThumbsUp,
 } from "lucide-react";
 
+export interface Review {
+  id_review: number;
+  id_user: number;
+  id_pembelian: number;
+  rating: number;
+  komentar: string;
+  image_review?: string;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id_user: number;
+    name: string;
+    username: string;
+    foto_profil?: string;
+  };
+}
+
+// Update OrderDetail interface to include review
 export interface OrderDetail {
   id_pembelian: number;
   id_pembeli: number;
@@ -123,6 +141,7 @@ export interface OrderDetail {
     village: null;
   };
   pengiriman: null;
+  review?: Review;
 }
 
 export const trackingSteps = [

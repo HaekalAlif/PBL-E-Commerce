@@ -81,14 +81,10 @@ export const OrderItems = ({ items, onRetry }: OrderItemsProps) => {
             </div>
 
             <div className="flex-1">
-              <Link
-                href={`/katalog/detail/${item.barang?.slug || "#"}`}
-                className="hover:text-[#F79E0E] transition-colors"
-              >
-                <h3 className="font-medium text-gray-900 hover:text-[#F79E0E]">
-                  {item.barang?.nama_barang || "Produk tidak tersedia"}
-                </h3>
-              </Link>
+              <h3 className="font-medium text-gray-900 hover:text-[#F79E0E]">
+                {item.barang?.nama_barang || "Produk tidak tersedia"}
+              </h3>
+
               <div className="flex justify-between mt-2">
                 <div className="space-y-1">
                   <div className="text-sm text-gray-500">

@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getStatusIcon, getStatusBadge } from "@/lib/status-utils";
 import { OrderDetailSkeleton } from "./components/OrderDetailSkeleton";
+import { ReviewForm } from "./components/ReviewForm";
+import { ReviewDetails } from "./components/ReviewDetails";
+import { useState } from "react";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -33,6 +36,20 @@ export default function OrderDetailPage() {
     confirmDelivery,
     refetch,
   } = useOrderDetail(kode);
+
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const handleReview = () => {
+    // Additional check to prevent opening modal if already reviewed
+    if (order?.review?.id_review) {
+      return;
+    }
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewSuccess = () => {
+    refetch();
+  };
 
   if (loading) {
     return <OrderDetailSkeleton />;
@@ -132,6 +149,8 @@ export default function OrderDetailPage() {
           <PaymentSummary
             order={{
               status_pembelian: order.status_pembelian,
+              id_pembelian: order.id_pembelian,
+              review: order.review,
               tagihan: {
                 total_harga: order.tagihan?.total_harga || 0,
                 biaya_kirim: order.tagihan?.biaya_kirim || 0,
@@ -150,7 +169,11 @@ export default function OrderDetailPage() {
             onPayNow={() =>
               (window.location.href = `/payments/${order.tagihan?.kode_tagihan}`)
             }
+            onReview={handleReview}
           />
+
+          {/* Add ReviewDetails component when review exists */}
+          {order.review && <ReviewDetails review={order.review} />}
         </div>
       </div>
 
@@ -161,6 +184,13 @@ export default function OrderDetailPage() {
         setComplaintDialogOpen={setIsComplaintDialogOpen}
         onConfirmDelivery={confirmDelivery}
         isConfirming={isConfirming}
+      />
+
+      <ReviewForm
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        purchaseId={order.id_pembelian}
+        onSuccess={handleReviewSuccess}
       />
     </div>
   );
