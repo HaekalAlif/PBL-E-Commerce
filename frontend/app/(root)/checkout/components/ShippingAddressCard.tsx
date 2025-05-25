@@ -67,7 +67,7 @@ export const ShippingAddressCard = ({
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">{address.no_telp}</div>
+                  <div className="text-sm text-gray-500">{address.no_telepon}</div>
                   <div className="text-sm mt-1">
                     {address.alamat_lengkap}, {address.district?.name},{" "}
                     {address.regency?.name}, {address.province?.name},{" "}

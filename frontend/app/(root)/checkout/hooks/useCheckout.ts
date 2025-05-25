@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
-import { Address, StoreCheckout } from "../types";
+import { Address, DetailPembelianAPI, ProductInCheckout, StoreCheckout } from "../types";
 
-export const useCheckout = () => {
+export const useCheckout = (
+  code: string | null,
+  multiStore: boolean = false,
+  fromOffer: boolean = false
+) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   // States for checkout data
-  const [purchaseCode, setPurchaseCode] = useState<string>("");
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [storeCheckouts, setStoreCheckouts] = useState<StoreCheckout[]>([]);
   const [defaultAddressId, setDefaultAddressId] = useState<number | null>(null);
@@ -23,12 +25,17 @@ export const useCheckout = () => {
   const [totalShipping, setTotalShipping] = useState(0);
   const [adminFee] = useState(1000); // Fixed admin fee
   const [total, setTotal] = useState(0);
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [isFromOffer, setIsFromOffer] = useState(fromOffer);
 
-  // Add flag to track if this is a multi-store checkout
-  const [isMultiStoreCheckout, setIsMultiStoreCheckout] = useState(false);
+  // Fetch purchase details by code
+  const fetchPurchaseDetails = async () => {
+    if (!code) {
+      toast.error("No purchase code provided");
+      router.push("/");
+      return;
+    }
 
-  // Fetch existing purchase details with custom axios instance
-  const fetchPurchaseDetails = async (code: string) => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(
@@ -40,91 +47,129 @@ export const useCheckout = () => {
 
         if (!purchaseData) {
           toast.error("Failed to load purchase details");
+          router.push("/");
           return;
         }
 
-        if (!purchaseData.detailPembelian) {
-          try {
-            const detailsResponse = await axiosInstance.get(
-              `${process.env.NEXT_PUBLIC_API_URL}/purchases/${code}/items`
-            );
-
-            if (
-              detailsResponse.data.status === "success" &&
-              Array.isArray(detailsResponse.data.data) &&
-              detailsResponse.data.data.length > 0
-            ) {
-              processProductsIntoStores(detailsResponse.data.data);
-
-              if (purchaseData.id_alamat) {
-                setDefaultAddressId(purchaseData.id_alamat);
-              }
-
-              if (purchaseData.catatan_pembeli) {
-                try {
-                  const metadata = JSON.parse(purchaseData.catatan_pembeli);
-                  if (metadata && metadata.is_multi_store) {
-                    setIsMultiStoreCheckout(true);
-                  }
-                } catch (e) {}
-              }
-              return;
-            }
-          } catch (fallbackError) {}
-
-          toast.error("Purchase has no product details");
-          router.push("/user/katalog");
-          return;
+        // Check if this is from an offer (either from URL param or purchase metadata)
+        if (
+          fromOffer ||
+          (purchaseData.catatan_pembeli &&
+            purchaseData.catatan_pembeli.includes("from accepted offer"))
+        ) {
+          setIsFromOffer(true);
         }
 
         if (
-          Array.isArray(purchaseData.detailPembelian) &&
-          purchaseData.detailPembelian.length > 0
+          !purchaseData.detail_pembelian ||
+          purchaseData.detail_pembelian.length === 0
         ) {
-          processProductsIntoStores(purchaseData.detailPembelian);
+          toast.error("Purchase has no product details");
+          router.push("/");
+          return;
+        }
 
-          if (purchaseData.id_alamat) {
-            setDefaultAddressId(purchaseData.id_alamat);
-          }
+        processProductsIntoStores(purchaseData.detail_pembelian);
 
-          if (purchaseData.catatan_pembeli) {
-            try {
-              const metadata = JSON.parse(purchaseData.catatan_pembeli);
-              if (metadata && metadata.is_multi_store) {
-                setIsMultiStoreCheckout(true);
-              }
-            } catch (e) {}
-          }
-        } else {
-          toast.error("Purchase has no valid products");
-          router.push("/user/katalog");
+        if (purchaseData.id_alamat) {
+          setDefaultAddressId(purchaseData.id_alamat);
         }
       } else {
         toast.error(response.data.message || "Failed to load purchase details");
+        router.push("/");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error fetching purchase:", error);
       toast.error("Failed to load purchase details");
+      router.push("/");
     } finally {
       setLoading(false);
     }
   };
 
-  const processProductsIntoStores = (detailItems: any[]) => {
+  const processProductsIntoStores = (detailItems: DetailPembelianAPI[]) => {
     const storeMap = new Map<number, StoreCheckout>();
+    let offerSavings = 0;
+
+    console.log("Processing detail items:", detailItems);
 
     detailItems.forEach((detail) => {
       if (!detail.barang) {
+        console.warn("Detail item missing barang:", detail);
         return;
       }
 
-      const toko = detail.toko ||
-        detail.barang.toko || { id_toko: 0, nama_toko: "Unknown Shop" };
-      const tokoId = toko.id_toko;
+      // Get store info - with improved priority logic
+      let storeData = null;
+      let tokoId = 0;
+      let tokoName = "Unknown Shop";
+      let storeAddress = "";
+
+      // Priority 1: Get from detail.toko (most complete data)
+      if (detail.toko?.id_toko) {
+        storeData = detail.toko;
+        tokoId = detail.toko.id_toko;
+        tokoName = detail.toko.nama_toko || `Store ${detail.toko.id_toko}`;
+
+        // Get store address from alamat_toko
+        if (detail.toko.alamat_toko && detail.toko.alamat_toko.length > 0) {
+          const primaryAddress =
+            detail.toko.alamat_toko.find((addr) => addr.is_primary) ||
+            detail.toko.alamat_toko[0];
+          const addressParts = [
+            primaryAddress.alamat_lengkap,
+            primaryAddress.district?.name,
+            primaryAddress.regency?.name,
+            primaryAddress.province?.name,
+          ].filter(Boolean);
+          storeAddress = addressParts.join(", ");
+        }
+      }
+      // Priority 2: Get from detail.barang.toko
+      else if (detail.barang.toko?.id_toko) {
+        storeData = detail.barang.toko;
+        tokoId = detail.barang.toko.id_toko;
+        tokoName =
+          detail.barang.toko.nama_toko || `Store ${detail.barang.toko.id_toko}`;
+
+        // Get store address from alamat_toko
+        if (
+          detail.barang.toko.alamat_toko &&
+          detail.barang.toko.alamat_toko.length > 0
+        ) {
+          const primaryAddress =
+            detail.barang.toko.alamat_toko.find((addr) => addr.is_primary) ||
+            detail.barang.toko.alamat_toko[0];
+          const addressParts = [
+            primaryAddress.alamat_lengkap,
+            primaryAddress.district?.name,
+            primaryAddress.regency?.name,
+            primaryAddress.province?.name,
+          ].filter(Boolean);
+          storeAddress = addressParts.join(", ");
+        }
+      }
+      // Priority 3: Fallback to ID only
+      else {
+        tokoId = detail.id_toko || detail.barang.id_toko || 0;
+        tokoName = `Store ${tokoId}`;
+      }
+
+      console.log("Store processing result:", {
+        tokoId,
+        tokoName,
+        storeAddress,
+        hasStoreData: !!storeData,
+        addressCount: storeData?.alamat_toko?.length || 0,
+      });
 
       if (!storeMap.has(tokoId)) {
         storeMap.set(tokoId, {
           id_toko: tokoId,
-          nama_toko: toko.nama_toko,
+          nama_toko: tokoName,
+          alamat_toko: storeAddress,
+          kontak: storeData?.kontak || "",
+          deskripsi: storeData?.deskripsi || "",
           products: [],
           subtotal: 0,
           selectedAddressId: defaultAddressId,
@@ -138,92 +183,55 @@ export const useCheckout = () => {
 
       const storeGroup = storeMap.get(tokoId)!;
 
+      // Get product images
       const productImages = detail.barang.gambar_barang || [];
 
-      const product = {
+      // Check if this item is from an offer and calculate savings
+      const isItemFromOffer =
+        detail.is_from_offer ||
+        (detail.id_pesan !== null && detail.id_pesan !== undefined);
+      let itemSavings = detail.savings || 0;
+
+      if (isItemFromOffer && !itemSavings && detail.barang.harga) {
+        itemSavings =
+          (detail.barang.harga - detail.harga_satuan) * detail.jumlah;
+      }
+
+      if (itemSavings > 0) {
+        offerSavings += itemSavings;
+        setIsFromOffer(true);
+      }
+
+      const product: ProductInCheckout = {
         id_barang: detail.barang.id_barang,
         nama_barang: detail.barang.nama_barang,
         harga: detail.harga_satuan,
         jumlah: detail.jumlah,
         subtotal: detail.subtotal,
         gambar_barang: productImages,
-        toko: toko,
+        toko: {
+          id_toko: tokoId,
+          nama_toko: tokoName,
+        },
+        is_from_offer: isItemFromOffer,
+        offer_price: isItemFromOffer ? detail.harga_satuan : undefined,
+        original_price:
+          detail.original_price || detail.barang.harga || undefined,
+        savings: itemSavings,
       };
 
       storeGroup.products.push(product);
       storeGroup.subtotal += detail.subtotal;
     });
 
-    setStoreCheckouts(Array.from(storeMap.values()));
-  };
-
-  const createNewPurchaseFromSlug = async (
-    productSlug: string,
-    quantity: number
-  ) => {
-    setLoading(true);
-    try {
-      const addressesResponse = await axiosInstance.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/user/addresses`
-      );
-
-      if (addressesResponse.data.status === "success") {
-        const addressList = addressesResponse.data.data;
-
-        const primaryAddress = addressList.find(
-          (addr: Address) => addr.is_primary
-        );
-
-        if (!primaryAddress && addressList.length === 0) {
-          toast.error("Please add a shipping address first");
-          router.push("/user/alamat");
-          return;
-        }
-
-        const addressId = primaryAddress
-          ? primaryAddress.id_alamat
-          : addressList[0].id_alamat;
-
-        setDefaultAddressId(addressId);
-
-        const response = await axiosInstance.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/purchases`,
-          {
-            product_slug: productSlug,
-            jumlah: quantity,
-            id_alamat: addressId,
-          }
-        );
-
-        if (response.data.status === "success") {
-          const { kode_pembelian } = response.data.data;
-          setPurchaseCode(kode_pembelian);
-
-          toast.success("Purchase created, loading details...");
-
-          setTimeout(() => {
-            fetchPurchaseDetails(kode_pembelian);
-          }, 1500);
-        } else {
-          toast.error(response.data.message || "Failed to create purchase");
-          router.push("/user/katalog");
-        }
-      }
-    } catch (error: any) {
-      if (error.response) {
-        toast.error(
-          `Failed to create purchase: ${
-            error.response.data.message || "Unknown error"
-          }`
-        );
-      } else {
-        toast.error("Failed to create purchase: Network error");
-      }
-
-      router.push("/user/katalog");
-    } finally {
-      setLoading(false);
+    if (offerSavings > 0) {
+      setTotalSavings(offerSavings);
+      setIsFromOffer(true);
     }
+
+    const storeArray = Array.from(storeMap.values());
+    console.log("Final store checkouts:", storeArray);
+    setStoreCheckouts(storeArray);
   };
 
   const fetchUserAddresses = async () => {
@@ -394,7 +402,7 @@ export const useCheckout = () => {
         const newStores = [...prevStores];
         newStores[storeIndex] = {
           ...newStores[storeIndex],
-          selectedShipping: value,
+          selectedShipping: value, // Store just the service name (e.g., "REG", "OKE", "YES")
           shippingCost: option.cost,
         };
         return newStores;
@@ -445,56 +453,124 @@ export const useCheckout = () => {
     setProcessingCheckout(true);
 
     try {
-      const storeConfigs = storeCheckouts.map((store) => ({
-        id_toko: store.id_toko,
-        id_alamat: store.selectedAddressId,
-        opsi_pengiriman: `JNE ${store.selectedShipping}`,
-        biaya_kirim: store.shippingCost,
-        catatan_pembeli: store.notes,
-      }));
+      console.log("🛒 Starting checkout process...");
+      console.log("📊 Checkout data:", {
+        code,
+        multiStore,
+        fromOffer,
+        storeCheckouts: storeCheckouts.map((store) => ({
+          id_toko: store.id_toko,
+          nama_toko: store.nama_toko,
+          selectedAddressId: store.selectedAddressId,
+          selectedShipping: store.selectedShipping,
+          shippingCost: store.shippingCost,
+          notes: store.notes,
+        })),
+      });
 
-      const response = await axiosInstance.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/purchases/${purchaseCode}/multi-checkout`,
-        {
+      // For single store checkout, use direct format (not stores array)
+      if (!multiStore) {
+        const store = storeCheckouts[0];
+        const requestData = {
+          id_alamat: store.selectedAddressId,
+          opsi_pengiriman: store.selectedShipping, // Remove "JNE " prefix
+          biaya_kirim: store.shippingCost,
+          catatan_pembeli: store.notes || "",
+          metode_pembayaran: "midtrans",
+          from_offer: isFromOffer || fromOffer,
+        };
+
+        console.log("📤 Single store request data:", requestData);
+
+        const checkoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/purchases/${code}/checkout`;
+        console.log("🔗 Checkout URL:", checkoutUrl);
+
+        const response = await axiosInstance.post(checkoutUrl, requestData);
+
+        console.log("✅ Checkout response:", response.data);
+
+        if (response.data.status === "success") {
+          const { kode_tagihan } = response.data.data;
+          toast.success("Checkout successful! Redirecting to payment page...");
+          router.push(`/payments/${kode_tagihan}`);
+        } else {
+          console.error("❌ Checkout failed:", response.data);
+          toast.error(response.data.message || "Checkout failed");
+        }
+      } else {
+        // Multi-store checkout
+        const storeConfigs = storeCheckouts.map((store) => ({
+          id_toko: store.id_toko,
+          id_alamat: store.selectedAddressId,
+          opsi_pengiriman: store.selectedShipping, // Remove "JNE " prefix
+          biaya_kirim: store.shippingCost,
+          catatan_pembeli: store.notes || "",
+        }));
+
+        const requestData = {
           stores: storeConfigs,
           metode_pembayaran: "midtrans",
-        }
-      );
+          from_offer: isFromOffer || fromOffer,
+        };
 
-      if (response.data.status === "success") {
-        const { kode_tagihan } = response.data.data;
-        toast.success("Checkout successful! Redirecting to payment page...");
-        router.push(`/payments/${kode_tagihan}`);
+        console.log("📤 Multi-store request data:", requestData);
+
+        const checkoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/purchases/${code}/multi-checkout`;
+        console.log("🔗 Multi-store checkout URL:", checkoutUrl);
+
+        const response = await axiosInstance.post(checkoutUrl, requestData);
+
+        if (response.data.status === "success") {
+          const { kode_tagihan } = response.data.data;
+          toast.success("Checkout successful! Redirecting to payment page...");
+          router.push(`/payments/${kode_tagihan}`);
+        } else {
+          console.error("❌ Multi-store checkout failed:", response.data);
+          toast.error(response.data.message || "Multi-store checkout failed");
+        }
       }
-    } catch (error) {
-      toast.error("Failed to process checkout. Please try again.");
+    } catch (error: any) {
+      console.error("❌ Checkout error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data,
+        },
+      });
+
+      let errorMessage = "Failed to process checkout. Please try again.";
+
+      if (error.response?.status === 422) {
+        console.error("🔍 Validation errors:", error.response.data.errors);
+
+        if (error.response.data.errors) {
+          const validationErrors = Object.values(
+            error.response.data.errors
+          ).flat();
+          errorMessage = `Validation failed: ${validationErrors.join(", ")}`;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      toast.error(errorMessage);
     } finally {
       setProcessingCheckout(false);
     }
   };
 
   useEffect(() => {
-    if (!searchParams) return;
-
-    const productSlug = searchParams.get("product_slug");
-    const quantity = searchParams.get("quantity") || "1";
-    const code = searchParams.get("code");
-    const multiStore = searchParams.get("multi_store") === "true";
-
-    setIsMultiStoreCheckout(multiStore);
-
     if (code) {
-      setPurchaseCode(code);
-      fetchPurchaseDetails(code);
-    } else if (productSlug) {
-      createNewPurchaseFromSlug(productSlug, parseInt(quantity));
-    } else {
-      toast.error("No product or purchase details provided");
-      router.push("/user/katalog");
+      fetchPurchaseDetails();
+      fetchUserAddresses();
     }
-
-    fetchUserAddresses();
-  }, [searchParams]);
+  }, [code]);
 
   useEffect(() => {
     calculateTotals();
@@ -509,6 +585,8 @@ export const useCheckout = () => {
     totalShipping,
     adminFee,
     total,
+    totalSavings,
+    isFromOffer,
     handleShippingChange,
     handleAddressChange,
     handleNotesChange,

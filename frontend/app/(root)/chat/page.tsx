@@ -9,6 +9,7 @@ import axios from "../../../lib/axios";
 import { MessageCircle, ArrowLeft } from "lucide-react";
 import { ChatRoomSkeleton } from "./components/ChatRoomSkeleton";
 import { Button } from "@/components/ui/button";
+import { ChatRoomListSkeleton } from "./components/ChatRoomListSkeleton";
 
 interface User {
   id_user: number;
@@ -111,7 +112,7 @@ function ChatPage() {
             >
               {/* Chat List Skeleton */}
               <div className="w-80 border-r border-orange-100">
-                <ChatRoomSkeleton />
+                <ChatRoomListSkeleton />
               </div>
 
               {/* Chat Room Skeleton */}
@@ -216,7 +217,10 @@ function ChatPage() {
           <div
             className="bg-white rounded-2xl shadow-xl border border-orange-100 overflow-hidden flex"
             style={{
-              height: isOfferMode && quantity ? "calc(100vh - 200px)" : "calc(100vh - 140px)",
+              height:
+                isOfferMode && quantity
+                  ? "calc(100vh - 200px)"
+                  : "calc(100vh - 140px)",
               minHeight: "500px",
               maxHeight: "calc(100vh - 120px)", // Ensure minimum margin
             }}

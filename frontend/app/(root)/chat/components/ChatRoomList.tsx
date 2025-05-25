@@ -7,6 +7,7 @@ import axios from "../../../../lib/axios";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import echo from "../libs/echo";
+import { ChatRoomListSkeleton } from "./ChatRoomListSkeleton";
 
 interface ChatRoom {
   id_ruang_chat: number;
@@ -252,37 +253,7 @@ export function ChatRoomList({
   );
 
   if (loading) {
-    return (
-      <div className="h-full bg-white border-r border-orange-100 flex flex-col lg:w-80 w-full">
-        {/* Header Skeleton */}
-        <div className="flex-shrink-0 p-4 border-b border-orange-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-orange-100 rounded-full animate-pulse" />
-            <div className="h-6 w-32 bg-orange-100 rounded animate-pulse" />
-          </div>
-          <div className="h-10 bg-orange-50 rounded-lg animate-pulse" />
-        </div>
-
-        {/* Room List Skeleton */}
-        <div className="flex-1 overflow-hidden">
-          {[...Array(5)].map((_, index) => (
-            <div
-              key={index}
-              className="p-4 border-b border-orange-50 animate-pulse"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-100 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-24 bg-orange-100 rounded" />
-                  <div className="h-3 w-32 bg-orange-50 rounded" />
-                </div>
-                <div className="h-3 w-12 bg-orange-50 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <ChatRoomListSkeleton />;
   }
 
   return (

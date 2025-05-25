@@ -48,9 +48,10 @@ export const useProductActions = (product: ProductDetail | null) => {
 
       if (response.data.status === "success") {
         const { kode_pembelian } = response.data.data;
+        // Use the correct route pattern with code parameter
         router.push(`/checkout?code=${kode_pembelian}`);
       } else {
-        toast.error(response.data.message || "Failed to process your purchase");
+        toast.error(response.data.message || "Failed to create purchase");
       }
     } catch (error: any) {
       console.error("Error processing buy now:", error);

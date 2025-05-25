@@ -1,6 +1,7 @@
 <?php
-use App\Models\RuangChat;
+
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\RuangChat;
 
 /*
 |--------------------------------------------------------------------------

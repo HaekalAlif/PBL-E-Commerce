@@ -1,27 +1,42 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Package, MessageSquare, X, AlertCircle } from "lucide-react";
+import {
+  DollarSign,
+  Package,
+  MessageSquare,
+  X,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-interface OfferFormProps {
+interface OfferDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
   quantity: number;
   onSendOffer: (
     price: number,
     quantity: number,
     message: string
   ) => Promise<void>;
-  onCancel: () => void;
   productPrice?: number;
   productName?: string;
 }
 
-export default function OfferForm({
+export default function OfferDialog({
+  isOpen,
+  onClose,
   quantity,
   onSendOffer,
-  onCancel,
   productPrice,
   productName,
-}: OfferFormProps) {
+}: OfferDialogProps) {
   const [offerPrice, setOfferPrice] = useState<string>("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,6 +73,12 @@ export default function OfferForm({
       const price = parseInt(offerPrice.replace(/[^0-9]/g, ""));
       await onSendOffer(price, quantity, message);
       toast.success("Penawaran berhasil dikirim!");
+
+      // Reset form
+      setOfferPrice("");
+      setMessage("");
+      setErrors({});
+      onClose();
     } catch (error: any) {
       console.error("Error sending offer:", error);
       toast.error(error.response?.data?.message || "Gagal mengirim penawaran");
@@ -89,50 +110,46 @@ export default function OfferForm({
 
   const savings = calculateSavings();
 
+  // Reset form when dialog closes
+  const handleClose = () => {
+    setOfferPrice("");
+    setMessage("");
+    setErrors({});
+    onClose();
+  };
+
   return (
-    <div className="border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-sm max-h-96 overflow-y-auto">
-      {/* Header - Fixed */}
-      <div className="p-3 border-b border-amber-200 bg-amber-50/80 sticky top-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-800">
             <div className="p-1.5 rounded-lg bg-amber-100">
               <DollarSign className="h-4 w-4 text-amber-600" />
             </div>
-            <span className="font-medium text-amber-800 text-sm">
-              Buat Penawaran
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onCancel}
-            className="h-6 w-6 text-amber-600 hover:text-amber-800 hover:bg-amber-100"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Content - Scrollable */}
-      <div className="p-3">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Product Info - Compact */}
+            Buat Penawaran
+          </DialogTitle>
           {productName && (
-            <div className="p-2 bg-white rounded-lg border border-amber-200">
-              <div className="text-sm font-medium text-gray-700 truncate">
+            <DialogDescription>
+              Buat penawaran untuk <strong>{productName}</strong>
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Product Info */}
+          {productPrice && (
+            <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+              <div className="text-sm font-medium text-gray-700">
                 📦 {productName}
               </div>
-              {productPrice && (
-                <div className="text-xs text-gray-500">
-                  Harga: Rp{" "}
-                  {productPrice.toLocaleString("id-ID")}
-                </div>
-              )}
+              <div className="text-xs text-gray-500 mt-1">
+                Harga asli: Rp {productPrice.toLocaleString("id-ID")}
+              </div>
             </div>
           )}
 
-          {/* Quantity Display - Compact */}
-          <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-amber-200">
+          {/* Quantity Display */}
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
             <Package className="h-4 w-4 text-amber-600" />
             <span className="text-sm font-medium text-gray-700">
               Jumlah: {quantity} item
@@ -140,8 +157,8 @@ export default function OfferForm({
           </div>
 
           {/* Price Input */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-amber-800">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
               Harga Penawaran <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -154,10 +171,10 @@ export default function OfferForm({
                 onChange={handlePriceChange}
                 placeholder="0"
                 required
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/50 bg-white text-sm transition-all ${
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/50 bg-white text-sm transition-all ${
                   errors.price
                     ? "border-red-300 focus:border-red-400"
-                    : "border-amber-200 focus:border-amber-400"
+                    : "border-gray-300 focus:border-amber-400"
                 }`}
               />
             </div>
@@ -168,29 +185,29 @@ export default function OfferForm({
               </div>
             )}
 
-            {/* Savings Display - Compact */}
+            {/* Savings Display */}
             {savings && savings.amount > 0 && (
-              <div className="text-xs text-green-600 bg-green-50 p-1.5 rounded border border-green-200">
-                💰 Hemat: Rp{" "}
-                {savings.amount.toLocaleString("id-ID")} ({savings.percentage}%)
+              <div className="text-xs text-green-600 bg-green-50 p-2 rounded border border-green-200">
+                💰 Hemat: Rp {savings.amount.toLocaleString("id-ID")} (
+                {savings.percentage}%)
               </div>
             )}
           </div>
 
-          {/* Message Input - Compact */}
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-amber-800">
+          {/* Message Input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
               Pesan Tambahan
             </label>
             <div className="relative">
-              <MessageSquare className="absolute left-3 top-2 h-4 w-4 text-gray-400" />
+              <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Tulis pesan untuk penjual..."
-                rows={2}
+                rows={3}
                 maxLength={200}
-                className="w-full pl-10 pr-4 py-2 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 bg-white resize-none text-sm"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 bg-white resize-none text-sm"
               />
             </div>
             <div className="text-xs text-gray-400 text-right">
@@ -198,13 +215,25 @@ export default function OfferForm({
             </div>
           </div>
 
-          {/* Action Buttons - Sticky at bottom */}
-          <div className="flex gap-2 pt-2 bg-gradient-to-br from-amber-50 to-orange-50 -mx-3 px-3 pb-3 mt-3 border-t border-amber-200">
+          {/* Tips */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="text-xs text-blue-700">
+              <strong>💡 Tips Penawaran:</strong>
+              <ul className="mt-1 space-y-1 list-disc list-inside text-xs">
+                <li>Berikan alasan yang masuk akal</li>
+                <li>Sesuaikan dengan kondisi barang</li>
+                <li>Bersikap sopan dan respektif</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
-              onClick={onCancel}
-              className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50 h-9 text-sm"
+              onClick={handleClose}
+              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
               disabled={loading}
             >
               Batal
@@ -212,11 +241,11 @@ export default function OfferForm({
             <Button
               type="submit"
               disabled={loading || !offerPrice.trim()}
-              className="flex-1 bg-gradient-to-r from-[#F79E0E] to-[#FFB648] hover:from-[#F79E0E]/90 hover:to-[#FFB648]/90 text-white font-medium h-9 text-sm disabled:opacity-50"
+              className="flex-1 bg-gradient-to-r from-[#F79E0E] to-[#FFB648] hover:from-[#F79E0E]/90 hover:to-[#FFB648]/90 text-white font-medium disabled:opacity-50"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Mengirim...
                 </div>
               ) : (
@@ -225,7 +254,7 @@ export default function OfferForm({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

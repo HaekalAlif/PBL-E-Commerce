@@ -21,6 +21,7 @@ use App\Http\Controllers\User\PesananTokoController;
 use App\Http\Controllers\Admin\PesananManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
 use App\Http\Controllers\Admin\KomplainManagementController;
+use App\Http\Controllers\User\ChatOfferController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -427,21 +428,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
     });
 
-    // Chat Routes
-    Route::prefix('chat')->group(function() {
+    // Chat and Offers Routes
+    Route::middleware('auth:sanctum')->group(function () {
         // Chat room management
-        Route::get('/', [App\Http\Controllers\User\RuangChatController::class, 'index']);
-        Route::post('/', [App\Http\Controllers\User\RuangChatController::class, 'store']);
-        Route::get('/{id}', [App\Http\Controllers\User\RuangChatController::class, 'show']);
-        Route::put('/{id}', [App\Http\Controllers\User\RuangChatController::class, 'update']);
-        Route::delete('/{id}', [App\Http\Controllers\User\RuangChatController::class, 'destroy']);
-        Route::patch('/{id}/mark-read', [App\Http\Controllers\User\RuangChatController::class, 'markAsRead']);
+        Route::get('/chat', [App\Http\Controllers\User\RuangChatController::class, 'index']);
+        Route::post('/chat', [App\Http\Controllers\User\RuangChatController::class, 'store']);
+        Route::get('/chat/{id}', [App\Http\Controllers\User\RuangChatController::class, 'show']);
+        Route::put('/chat/{id}', [App\Http\Controllers\User\RuangChatController::class, 'update']);
+        Route::delete('/chat/{id}', [App\Http\Controllers\User\RuangChatController::class, 'destroy']);
+        Route::patch('/chat/{id}/mark-read', [App\Http\Controllers\User\RuangChatController::class, 'markAsRead']);
         
         // Messages within chat rooms
-        Route::get('/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'index']);
-        Route::post('/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'store']);
-        Route::put('/messages/{id}', [App\Http\Controllers\User\PesanController::class, 'update']);
-        Route::patch('/messages/{id}/read', [App\Http\Controllers\User\PesanController::class, 'markAsRead']);
+        Route::get('/chat/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'index']);
+        Route::post('/chat/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'store']);
+        Route::put('/chat/messages/{id}', [App\Http\Controllers\User\PesanController::class, 'update']);
+        Route::patch('/chat/messages/{id}/read', [App\Http\Controllers\User\PesanController::class, 'markAsRead']);
+        
+        // Offer routes
+        Route::post('/chat/{roomId}/offers', [ChatOfferController::class, 'store']);
+        Route::post('/chat/offers/{messageId}/respond', [ChatOfferController::class, 'respond']);
+        Route::get('/chat/offers/{messageId}/check-purchase', [ChatOfferController::class, 'checkExistingPurchase']);
+        Route::post('/chat/offers/{messageId}/purchase', [ChatOfferController::class, 'createPurchaseFromOffer']);
     });
 });
 

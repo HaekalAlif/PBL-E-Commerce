@@ -1,15 +1,26 @@
-import { useState } from "react";
-import { Send, Paperclip, Smile } from "lucide-react";
+import { useState, useRef } from "react";
+import { Send, Paperclip, Smile, DollarSign, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  onSendImage?: (file: File) => void;
+  onOpenOfferForm?: () => void;
+  canMakeOffer?: boolean;
   disabled?: boolean;
 }
 
-function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
+function ChatInput({
+  onSendMessage,
+  onSendImage,
+  onOpenOfferForm,
+  canMakeOffer = false,
+  disabled = false,
+}: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
@@ -39,10 +50,7 @@ function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
         }, 100);
       } catch (error) {
         console.error("Failed to send message:", error);
-        // Show error feedback
-        const errorMessage =
-          error instanceof Error ? error.message : "Gagal mengirim pesan";
-        // You could add a toast notification here
+        toast.error("Gagal mengirim pesan");
       } finally {
         setIsSending(false);
       }
@@ -56,21 +64,70 @@ function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onSendImage) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Hanya file gambar yang diperbolehkan");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Ukuran file maksimal 5MB");
+        return;
+      }
+
+      onSendImage(file);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="p-4 bg-white">
-      <div className="flex items-end gap-3">
-        {/* Attachment Button */}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
+      <div className="flex items-end gap-2">
+        {/* Offer Button - Only show for buyers */}
+        {canMakeOffer && onOpenOfferForm && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onOpenOfferForm}
+            className="h-10 w-10 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-full flex-shrink-0"
+            disabled={disabled || isSending}
+            title="Buat Penawaran"
+          >
+            <DollarSign className="h-5 w-5" />
+          </Button>
+        )}
+
+        {/* Image Upload Button */}
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => fileInputRef.current?.click()}
           className="h-10 w-10 text-gray-400 hover:text-[#F79E0E] hover:bg-orange-50 rounded-full flex-shrink-0"
           disabled={disabled || isSending}
+          title="Kirim Gambar"
         >
-          <Paperclip className="h-5 w-5" />
+          <Image className="h-5 w-5" />
         </Button>
 
         {/* Input Container */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative ">
           <textarea
             id="chat-input"
             value={message}
@@ -97,6 +154,7 @@ function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
             size="icon"
             className="absolute right-2 bottom-1 h-8 w-8 text-gray-400 hover:text-[#F79E0E] hover:bg-orange-50 rounded-full"
             disabled={disabled || isSending}
+            title="Emoji"
           >
             <Smile className="h-4 w-4" />
           </Button>
@@ -111,6 +169,7 @@ function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
                    disabled:opacity-50 disabled:cursor-not-allowed
                    shadow-lg hover:shadow-xl transition-all duration-200
                    disabled:shadow-none flex-shrink-0"
+          title="Kirim Pesan"
         >
           {isSending ? (
             <div className="relative">

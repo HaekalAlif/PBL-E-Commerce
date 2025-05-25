@@ -5,6 +5,7 @@ import MessageBubble from "./MessageBubble";
 import axios from "../../../../lib/axios";
 import { Message } from "../types";
 import OfferForm from "./OfferForm";
+import OfferDialog from "./OfferDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageCircle, Users } from "lucide-react";
 import { MessagesSkeleton } from "./MessagesSkeleton";
@@ -34,8 +35,9 @@ function ChatRoom({
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showOfferForm, setShowOfferForm] = useState(offerMode);
+  const [showOfferDialog, setShowOfferDialog] = useState(false); // Changed from showOfferForm
   const [isConnected, setIsConnected] = useState(false);
+  const [chatRoomData, setChatRoomData] = useState<any>(null); // Add chat room data state
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,15 @@ function ChatRoom({
         setLoading(true);
         setLoadingMessages(true);
         setError(null);
+
+        // Fetch chat room data first
+        const roomResponse = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`
+        );
+
+        if (roomResponse.data.success) {
+          setChatRoomData(roomResponse.data.data);
+        }
 
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}/messages`
@@ -86,7 +97,9 @@ function ChatRoom({
       try {
         // Use different channel name for ChatRoom to avoid conflicts
         const channelName = `chat-room.${roomId}`;
-        console.log(`🔗 ChatRoom subscribing to private channel: ${channelName}`);
+        console.log(
+          `🔗 ChatRoom subscribing to private channel: ${channelName}`
+        );
         channel = echo.private(channelName);
 
         // Listen for new messages
@@ -94,19 +107,28 @@ function ChatRoom({
           console.log("📨 ChatRoom received MessageSent event:", data);
 
           setMessages((prevMessages) => {
-            const exists = prevMessages.some(
+            // Check if message already exists
+            const existingIndex = prevMessages.findIndex(
               (msg) => msg.id_pesan === data.id_pesan
             );
-            if (exists) {
+
+            if (existingIndex !== -1) {
+              // Update existing message (for status changes like offer responses)
               console.log(
-                "⚠️ ChatRoom: Message already exists, skipping:",
+                "📝 ChatRoom: Updating existing message:",
                 data.id_pesan
               );
-              return prevMessages;
+              const updatedMessages = [...prevMessages];
+              updatedMessages[existingIndex] = {
+                ...updatedMessages[existingIndex],
+                ...data,
+              };
+              return updatedMessages;
+            } else {
+              // Add new message
+              console.log("✅ ChatRoom: Adding new message:", data.id_pesan);
+              return [...prevMessages, data];
             }
-
-            console.log("✅ ChatRoom: Adding new message:", data.id_pesan);
-            return [...prevMessages, data];
           });
         });
 
@@ -131,7 +153,10 @@ function ChatRoom({
           }
         });
       } catch (error) {
-        console.error("❌ ChatRoom error setting up real-time connection:", error);
+        console.error(
+          "❌ ChatRoom error setting up real-time connection:",
+          error
+        );
         setIsConnected(false);
       }
     };
@@ -171,9 +196,6 @@ function ChatRoom({
       if (!response.data.success && response.data.status !== "success") {
         throw new Error(response.data.message || "Failed to send message");
       }
-
-      // Remove the temporary message addition - let broadcasting handle it
-      // This ensures consistent behavior for both sender and receiver
     } catch (error: any) {
       console.error("❌ Error sending message:", error);
       throw error;
@@ -187,13 +209,11 @@ function ChatRoom({
   ) => {
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}/messages`,
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}/offers`,
         {
-          tipe_pesan: "Penawaran",
-          isi_pesan: message,
           harga_tawar: offerPrice,
-          status_penawaran: "Menunggu",
-          // You might want to include product ID if available
+          isi_pesan: message || `Penawaran untuk ${quantity} item`,
+          quantity: quantity,
         }
       );
 
@@ -201,38 +221,131 @@ function ChatRoom({
         throw new Error(response.data.message || "Failed to send offer");
       }
 
-      setShowOfferForm(false);
+      // Dialog will close automatically after successful submission
     } catch (error: any) {
       console.error("Error sending offer:", error);
       throw error;
     }
   };
 
+  const handleOfferResponse = async (
+    messageId: number,
+    status: string,
+    responseMessage?: string
+  ) => {
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/offers/${messageId}/respond`,
+        {
+          status_penawaran: status,
+          response_message: responseMessage,
+        }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Failed to respond to offer");
+      }
+
+      // Update the local state immediately for better UX
+      setMessages((prevMessages) => {
+        return prevMessages.map((msg) => {
+          if (msg.id_pesan === messageId) {
+            return {
+              ...msg,
+              status_penawaran: status,
+            };
+          }
+          return msg;
+        });
+      });
+    } catch (error: any) {
+      console.error("Error responding to offer:", error);
+      throw error;
+    }
+  };
+
+  const handleSendImage = async (imageFile: File) => {
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("tipe_pesan", "Gambar");
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}/messages`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (!response.data.success && response.data.status !== "success") {
+        throw new Error(response.data.message || "Failed to send image");
+      }
+    } catch (error: any) {
+      console.error("Error sending image:", error);
+      throw error;
+    }
+  };
+
+  // Determine if current user can make offers (only buyers can make offers)
+  const canMakeOffer = () => {
+    return (
+      chatRoomData?.id_pembeli === session?.user?.id && chatRoomData?.barang
+    );
+  };
+
   if (loading) {
     return (
-      <Card className="border-orange-100 h-full">
-        <CardContent className="flex justify-center items-center h-96">
-          <div className="flex flex-col items-center gap-6">
-            {/* Multi-layer spinner */}
+      <div className="h-full flex flex-col bg-white rounded-xl border border-orange-100">
+        <div className="flex-1 flex justify-center items-center p-8">
+          <div className="flex flex-col items-center gap-6 max-w-sm">
+            {/* Enhanced multi-layer spinner */}
             <div className="relative">
-              <div className="w-16 h-16 border-4 border-orange-100 rounded-full"></div>
-              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-orange-400 rounded-full animate-spin"></div>
+              {/* Outer ring */}
+              <div className="w-20 h-20 border-4 border-orange-100/60 rounded-full"></div>
+
+              {/* Main spinning ring */}
+              <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-orange-400 border-r-orange-300 rounded-full animate-spin"></div>
+
+              {/* Middle ring - reverse spin */}
               <div
-                className="absolute inset-2 w-12 h-12 border-4 border-transparent border-t-amber-400 rounded-full animate-spin animation-delay-150"
-                style={{ animationDirection: "reverse" }}
+                className="absolute inset-3 w-14 h-14 border-4 border-transparent border-t-amber-400 border-l-amber-300 rounded-full animate-spin"
+                style={{
+                  animationDirection: "reverse",
+                  animationDuration: "1.5s",
+                }}
               ></div>
-              <div className="absolute inset-4 w-8 h-8 border-4 border-transparent border-t-orange-300 rounded-full animate-spin animation-delay-300"></div>
+
+              {/* Inner ring */}
+              <div
+                className="absolute inset-6 w-8 h-8 border-4 border-transparent border-t-orange-300 border-b-amber-300 rounded-full animate-spin"
+                style={{ animationDuration: "0.8s" }}
+              ></div>
+
+              {/* Center dot with pulse */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+              </div>
             </div>
 
-            {/* Loading text with typewriter effect */}
-            <div className="text-center space-y-3">
+            {/* Loading text with enhanced animation */}
+            <div className="text-center space-y-4">
               <div className="relative">
                 <h3 className="text-lg font-semibold text-gray-800 inline-block">
                   Menghubungkan ke server
-                  <span className="animate-pulse">...</span>
+                  <span className="inline-block animate-bounce ml-1">.</span>
+                  <span className="inline-block animate-bounce animation-delay-100 ml-0.5">
+                    .
+                  </span>
+                  <span className="inline-block animate-bounce animation-delay-200 ml-0.5">
+                    .
+                  </span>
                 </h3>
               </div>
-              <div className="flex items-center justify-center gap-2">
+
+              <div className="flex items-center justify-center gap-3">
                 <div className="flex space-x-1">
                   <div
                     className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
@@ -247,17 +360,38 @@ function ChatRoom({
                     style={{ animationDelay: "0.2s" }}
                   ></div>
                 </div>
-                <p className="text-sm text-gray-500">Menyiapkan chat room</p>
+                <p className="text-sm text-gray-500 font-medium">
+                  Menyiapkan chat room
+                </p>
               </div>
 
-              {/* Progress bar */}
-              <div className="w-48 bg-orange-100 rounded-full h-1.5 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-orange-400 to-amber-400 rounded-full animate-pulse"></div>
+              {/* Enhanced progress bar */}
+              <div className="w-56 bg-orange-100/80 rounded-full h-2 overflow-hidden shadow-inner">
+                <div
+                  className="h-full bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400 rounded-full animate-pulse shadow-sm"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, #fb923c, #fbbf24, #fb923c)",
+                    backgroundSize: "200% 100%",
+                    animation: "shimmer 2s infinite, pulse 1.5s infinite",
+                  }}
+                ></div>
+              </div>
+
+              {/* Status messages */}
+              <div className="text-xs text-gray-400 space-y-1">
+                <p className="animate-pulse">🔐 Mengamankan koneksi</p>
+                <p className="animate-pulse animation-delay-300">
+                  💬 Memuat riwayat chat
+                </p>
+                <p className="animate-pulse animation-delay-600">
+                  ⚡ Menyiapkan real-time sync
+                </p>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
@@ -304,7 +438,9 @@ function ChatRoom({
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">
-                Chat Room #{roomId}
+                {chatRoomData?.barang
+                  ? chatRoomData.barang.nama_barang
+                  : `Chat Room #${roomId}`}
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <div
@@ -324,22 +460,26 @@ function ChatRoom({
           </div>
         </div>
 
-        {/* Offer Mode Banner */}
-        {showOfferForm && (
-          <div className="mt-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+        {/* Product Info Banner */}
+        {chatRoomData?.barang && (
+          <div className="mt-3 p-3 bg-white/60 border border-amber-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-amber-800">Mode Penawaran</h4>
-                <p className="text-sm text-amber-600">
-                  Jumlah: {offerQuantity} item
+                <h4 className="font-medium text-gray-800">
+                  {chatRoomData.barang.nama_barang}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Harga: Rp {chatRoomData.barang.harga?.toLocaleString("id-ID")}
                 </p>
               </div>
-              <button
-                onClick={() => setShowOfferForm(false)}
-                className="text-amber-600 hover:text-amber-800 text-lg font-bold transition-colors"
-              >
-                ✕
-              </button>
+              {canMakeOffer() && (
+                <button
+                  onClick={() => setShowOfferDialog(true)}
+                  className="px-3 py-1 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 transition-colors"
+                >
+                  💰 Tawar
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -362,12 +502,10 @@ function ChatRoom({
                 <MessageCircle className="h-12 w-12 text-[#F79E0E]" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-3 text-lg">
-                {offerMode ? "Mulai dengan Penawaran!" : "Belum Ada Pesan"}
+                Belum Ada Pesan
               </h3>
               <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
-                {offerMode
-                  ? "Buat penawaran Anda menggunakan tombol di bawah untuk memulai negosiasi"
-                  : "Mulai percakapan dengan mengirim pesan pertama Anda"}
+                Mulai percakapan dengan mengirim pesan pertama Anda
               </p>
             </div>
           ) : (
@@ -377,6 +515,9 @@ function ChatRoom({
                   key={message.id_pesan}
                   message={message}
                   isOwnMessage={message.id_user === session?.user?.id}
+                  onOfferResponse={handleOfferResponse}
+                  currentUserId={session?.user?.id}
+                  chatRoomData={chatRoomData}
                 />
               ))}
               <div ref={messagesEndRef} className="h-1" />
@@ -387,30 +528,23 @@ function ChatRoom({
 
       {/* Input Area - Fixed at bottom */}
       <div className="flex-shrink-0 border-t border-orange-100 bg-white">
-        {showOfferForm ? (
-          <div className="p-3">
-            <OfferForm
-              quantity={offerQuantity || 1}
-              onSendOffer={handleSendOffer}
-              onCancel={() => setShowOfferForm(false)}
-            />
-          </div>
-        ) : (
-          <>
-            <ChatInput onSendMessage={handleSendMessage} />
-            {offerMode && (
-              <div className="p-3 bg-gradient-to-r from-orange-50 to-amber-50 border-t border-orange-100">
-                <button
-                  onClick={() => setShowOfferForm(true)}
-                  className="w-full py-2 bg-gradient-to-r from-[#F79E0E] to-[#FFB648] text-white rounded-lg hover:from-[#F79E0E]/90 hover:to-[#FFB648]/90 transition-all font-medium shadow-sm"
-                >
-                  💰 Buat Penawaran
-                </button>
-              </div>
-            )}
-          </>
-        )}
+        <ChatInput
+          onSendMessage={handleSendMessage}
+          onSendImage={handleSendImage}
+          onOpenOfferForm={() => setShowOfferDialog(true)}
+          canMakeOffer={canMakeOffer()}
+        />
       </div>
+
+      {/* Offer Dialog */}
+      <OfferDialog
+        isOpen={showOfferDialog}
+        onClose={() => setShowOfferDialog(false)}
+        quantity={offerQuantity || 1}
+        onSendOffer={handleSendOffer}
+        productPrice={chatRoomData?.barang?.harga}
+        productName={chatRoomData?.barang?.nama_barang}
+      />
     </div>
   );
 }

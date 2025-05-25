@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AlamatToko extends Model
 {
+    use HasFactory;
+
     /**
      * The table associated with the model.
      *
@@ -34,7 +37,7 @@ class AlamatToko extends Model
         'kota',
         'kecamatan',
         'kode_pos',
-        'is_primary',
+        'is_primary'
     ];
 
     /**
@@ -43,7 +46,7 @@ class AlamatToko extends Model
      * @var array
      */
     protected $casts = [
-        'is_primary' => 'boolean',
+        'is_primary' => 'boolean'
     ];
 
     /**
@@ -82,8 +85,8 @@ class AlamatToko extends Model
      * Get the village associated with the address based on district.
      * This requires the district_id to be properly set.
      */
-    public function villages()
+    public function village()
     {
-        return $this->hasMany(Village::class, 'district_id', 'kecamatan');
+        return $this->belongsTo(Village::class, 'kelurahan', 'id');
     }
 }

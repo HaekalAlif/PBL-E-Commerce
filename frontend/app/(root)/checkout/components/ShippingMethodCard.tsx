@@ -11,7 +11,10 @@ interface ShippingMethodCardProps {
   onShippingChange: (storeIndex: number, value: string) => void;
 }
 
-export const ShippingMethodCard = ({ store, ...props }: ShippingMethodCardProps) => {
+export const ShippingMethodCard = ({
+  store,
+  ...props
+}: ShippingMethodCardProps) => {
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-none shadow-lg">
       <CardHeader className="bg-white border-b border-amber-100/30">
@@ -20,7 +23,9 @@ export const ShippingMethodCard = ({ store, ...props }: ShippingMethodCardProps)
             <Truck className="h-5 w-5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[#F79E0E] font-semibold">Shipping Method</span>
+            <span className="text-[#F79E0E] font-semibold">
+              Shipping Method
+            </span>
             <span className="text-sm font-normal text-gray-500">
               Choose your preferred delivery option
             </span>
@@ -31,7 +36,9 @@ export const ShippingMethodCard = ({ store, ...props }: ShippingMethodCardProps)
       <CardContent className="p-6">
         <RadioGroup
           value={store.selectedShipping || ""}
-          onValueChange={(value) => props.onShippingChange(props.storeIndex, value)}
+          onValueChange={(value) =>
+            props.onShippingChange(props.storeIndex, value)
+          }
           className="space-y-4"
         >
           {store.shippingOptions.map((option) => (

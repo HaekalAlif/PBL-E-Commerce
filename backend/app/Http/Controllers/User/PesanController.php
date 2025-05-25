@@ -98,14 +98,29 @@ class PesanController extends Controller
                 ], 403);
             }
             
-            // Validate the message data
-            $validated = $request->validate([
+            // Validate the message data based on message type
+            $rules = [
                 'tipe_pesan' => 'required|in:Text,Penawaran,Gambar,System',
                 'isi_pesan' => 'nullable|string',
                 'harga_tawar' => 'nullable|numeric|min:1',
                 'status_penawaran' => 'nullable|in:Menunggu,Diterima,Ditolak',
                 'id_barang' => 'nullable|exists:barang,id_barang',
-            ]);
+            ];
+
+            // Add image validation for Gambar type
+            if ($request->input('tipe_pesan') === 'Gambar') {
+                $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif|max:5120'; // 5MB max
+            }
+
+            $validated = $request->validate($rules);
+            
+            // Handle image upload for Gambar type messages
+            $imagePath = null;
+            if ($validated['tipe_pesan'] === 'Gambar' && $request->hasFile('image')) {
+                $image = $request->file('image');
+                $imagePath = $image->store('chat-images', 'public');
+                $validated['isi_pesan'] = $imagePath; // Store the image path in isi_pesan
+            }
             
             // Create the message
             $message = new Pesan();
@@ -145,17 +160,19 @@ class PesanController extends Controller
                 
                 // Also try direct pusher broadcast for debugging
                 $pusher = app('pusher');
-                $channelName = "private-chat.{$chatRoomId}";
+                $chatRoomChannelName = "private-chat-room.{$chatRoomId}";
+                $chatListChannelName = "private-chat-list.{$chatRoomId}";
                 $eventName = 'MessageSent';
                 $eventData = $event->broadcastWith();
                 
                 Log::info("📡 Direct Pusher broadcast attempt", [
-                    'channel' => $channelName,
+                    'chat_room_channel' => $chatRoomChannelName,
+                    'chat_list_channel' => $chatListChannelName,
                     'event' => $eventName,
                     'data_keys' => array_keys($eventData)
                 ]);
                 
-                $pusher->trigger($channelName, $eventName, $eventData);
+                $pusher->trigger([$chatRoomChannelName, $chatListChannelName], $eventName, $eventData);
                 
                 Log::info("✅ MessageSent event broadcasted IMMEDIATELY via both methods");
             } catch (\Exception $e) {
@@ -208,23 +225,55 @@ class PesanController extends Controller
                 ], 400);
             }
             
+            // Check if offer is still pending
+            if ($message->status_penawaran !== 'Menunggu') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This offer has already been responded to'
+                ], 400);
+            }
+            
             $validated = $request->validate([
-                'status_penawaran' => 'required|in:Menunggu,Diterima,Ditolak',
+                'status_penawaran' => 'required|in:Diterima,Ditolak',
+                'response_message' => 'nullable|string|max:200'
             ]);
             
             $message->status_penawaran = $validated['status_penawaran'];
             $message->save();
             
+            // Create a system response message
+            $responseText = $validated['status_penawaran'] === 'Diterima' 
+                ? "✅ Penawaran diterima" 
+                : "❌ Penawaran ditolak";
+            
+            if (!empty($validated['response_message'])) {
+                $responseText .= ": " . $validated['response_message'];
+            }
+            
+            $responseMessage = new Pesan();
+            $responseMessage->id_ruang_chat = $message->id_ruang_chat;
+            $responseMessage->id_user = $user->id_user;
+            $responseMessage->tipe_pesan = 'System';
+            $responseMessage->isi_pesan = $responseText;
+            $responseMessage->is_read = false;
+            $responseMessage->save();
+            
             // Update the room's updated_at timestamp
             $chatRoom->touch();
             
-            // Broadcast the update
+            // Broadcast both messages
             $message->load('user');
+            $responseMessage->load('user');
+            
             event(new MessageSent($message));
+            event(new MessageSent($responseMessage));
             
             return response()->json([
                 'success' => true,
-                'data' => $message,
+                'data' => [
+                    'updated_offer' => $message,
+                    'response_message' => $responseMessage
+                ],
                 'message' => 'Offer status updated successfully'
             ]);
         } catch (\Exception $e) {
