@@ -19,6 +19,7 @@ export interface ProductDetail {
   };
   toko: {
     id_toko: number;
+    id_user: number; // Add this field for seller ID
     nama_toko: string;
     slug: string;
     alamat_toko?: Array<{
@@ -50,7 +51,9 @@ export function useProductDetail(slug: string) {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`/api/products/${slug}`);
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/products/${slug}`
+        );
         if (response.data.status === "success") {
           setProduct(response.data.data);
         } else {
@@ -68,8 +71,6 @@ export function useProductDetail(slug: string) {
       fetchProduct();
     }
   }, [slug]);
-
-  
 
   return { product, loading, error };
 }

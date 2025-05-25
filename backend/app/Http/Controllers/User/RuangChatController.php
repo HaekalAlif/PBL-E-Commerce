@@ -26,13 +26,38 @@ class RuangChatController extends Controller
             // Get all rooms where the user is either buyer or seller
             $chatRooms = RuangChat::where('id_pembeli', $user->id_user)
                 ->orWhere('id_penjual', $user->id_user)
-                ->with(['pembeli', 'penjual', 'barang'])
+                ->with([
+                    'pembeli', 
+                    'penjual', 
+                    'barang',
+                    // Load the last message with user information
+                    'pesan' => function($query) {
+                        $query->latest('created_at')
+                              ->with('user')
+                              ->limit(1);
+                    }
+                ])
                 ->withCount(['pesan as unread_messages' => function (Builder $query) use ($user) {
                     $query->where('is_read', false)
                         ->where('id_user', '!=', $user->id_user);
                 }])
                 ->latest('updated_at')
                 ->get();
+            
+            // Transform the data to include last_message for easier frontend access
+            $chatRooms->transform(function ($room) {
+                // Get the last message
+                $lastMessage = $room->pesan->first();
+                
+                // Add last_message as a separate property
+                $room->last_message = $lastMessage;
+                
+                // Keep the pesan relationship as is for backward compatibility
+                // but limit it to just the last message for performance
+                $room->setRelation('pesan', $room->pesan->take(1));
+                
+                return $room;
+            });
             
             return response()->json([
                 'success' => true,
@@ -79,12 +104,10 @@ class RuangChatController extends Controller
                 $existingRoom = RuangChat::where('id_pembeli', $buyerId)
                     ->where('id_penjual', $sellerId)
                     ->where('id_barang', $validated['id_barang'])
+                    ->with(['pembeli', 'penjual', 'barang'])
                     ->first();
                 
                 if ($existingRoom) {
-                    // Load the relationships
-                    $existingRoom->load(['pembeli', 'penjual', 'barang']);
-                    
                     // Update timestamp
                     $existingRoom->touch();
                     
@@ -99,8 +122,9 @@ class RuangChatController extends Controller
             // Check if any chat room exists between these users
             $existingRoom = RuangChat::where('id_pembeli', $buyerId)
                 ->where('id_penjual', $sellerId)
+                ->with(['pembeli', 'penjual', 'barang'])
                 ->first();
-            
+        
             if ($existingRoom) {
                 // Update product if provided
                 if (isset($validated['id_barang']) && $existingRoom->id_barang !== $validated['id_barang']) {
@@ -109,8 +133,8 @@ class RuangChatController extends Controller
                     
                     // Create a system message
                     if ($validated['id_barang']) {
-                        $product = Barang::find($validated['id_barang']);
-                        $systemMessage = new Pesan();
+                        $product = \App\Models\Barang::find($validated['id_barang']);
+                        $systemMessage = new \App\Models\Pesan();
                         $systemMessage->id_ruang_chat = $existingRoom->id_ruang_chat;
                         $systemMessage->id_user = $user->id_user;
                         $systemMessage->tipe_pesan = 'System';
@@ -119,9 +143,6 @@ class RuangChatController extends Controller
                         $systemMessage->save();
                     }
                 }
-                
-                // Load the relationships
-                $existingRoom->load(['pembeli', 'penjual', 'barang']);
                 
                 // Update timestamp
                 $existingRoom->touch();
@@ -142,11 +163,17 @@ class RuangChatController extends Controller
             $chatRoom->save();
             
             // Create welcome message
-            $systemMessage = new Pesan();
+            $welcomeText = 'Chat room created';
+            if (isset($validated['id_barang'])) {
+                $product = \App\Models\Barang::find($validated['id_barang']);
+                $welcomeText = "Chat room created for discussing: {$product->nama_barang}";
+            }
+            
+            $systemMessage = new \App\Models\Pesan();
             $systemMessage->id_ruang_chat = $chatRoom->id_ruang_chat;
             $systemMessage->id_user = $user->id_user;
             $systemMessage->tipe_pesan = 'System';
-            $systemMessage->isi_pesan = 'Chat room created';
+            $systemMessage->isi_pesan = $welcomeText;
             $systemMessage->is_read = false;
             $systemMessage->save();
             

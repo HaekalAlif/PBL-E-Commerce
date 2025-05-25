@@ -38,6 +38,84 @@ Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request
 // Auth routes are imported from another file
 require __DIR__.'/auth.php';
 
+// Broadcasting authentication - make sure this works properly
+Route::post('/broadcasting/auth', function (Request $request) {
+    try {
+        \Log::info('Broadcasting auth request received', [
+            'has_auth_header' => $request->hasHeader('Authorization'),
+            'has_cookie' => $request->hasHeader('Cookie'),
+            'has_csrf_token' => $request->hasHeader('X-XSRF-TOKEN'),
+            'session_id' => session()->getId(),
+            'auth_check' => auth()->check(),
+            'user_id' => auth()->check() ? auth()->user()->id_user : null,
+            'body' => $request->all(),
+            'cookies' => $request->cookies->all(),
+            'headers' => [
+                'cookie' => $request->header('Cookie'),
+                'authorization' => $request->header('Authorization'),
+                'x-xsrf-token' => $request->header('X-XSRF-TOKEN'),
+                'user-agent' => $request->header('User-Agent'),
+                'referer' => $request->header('Referer'),
+                'origin' => $request->header('Origin'),
+            ]
+        ]);
+        
+        // Start the session manually if needed
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+        
+        // First check if user is authenticated
+        if (!auth()->check()) {
+            \Log::warning('User not authenticated for broadcasting', [
+                'session_id' => session()->getId(),
+                'session_data' => session()->all(),
+                'guard' => config('auth.defaults.guard'),
+                'provider' => config('auth.defaults.provider')
+            ]);
+            
+            return response()->json([
+                'error' => 'Unauthenticated',
+                'message' => 'User session not found or expired',
+                'debug' => [
+                    'session_id' => session()->getId(),
+                    'session_started' => session()->isStarted(),
+                    'has_cookies' => !empty($request->cookies->all())
+                ]
+            ], 401);
+        }
+        
+        $user = auth()->user();
+        \Log::info('User authenticated for broadcasting', [
+            'user_id' => $user->id_user,
+            'user_name' => $user->name
+        ]);
+        
+        // Use Laravel's built-in broadcast auth
+        $result = \Illuminate\Support\Facades\Broadcast::auth($request);
+        \Log::info('Broadcast auth successful', ['result' => $result]);
+        
+        return $result;
+    } catch (\Exception $e) {
+        \Log::error('Broadcasting auth exception', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ]);
+        
+        return response()->json([
+            'error' => 'Authentication failed', 
+            'message' => $e->getMessage(),
+            'debug' => config('app.debug') ? [
+                'exception' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ] : null
+        ], 403);
+    }
+})->middleware(['auth:sanctum'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
 // Public routes - no auth required
 Route::prefix('toko')->group(function() {
     // Public store access by slug
@@ -68,6 +146,7 @@ Route::post('/payments/callback', [TagihanController::class, 'callback']);
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user/profile', [UserController::class, 'getCurrentUser']);
+    Route::get('/auth/me', [UserController::class, 'getCurrentUser']); // Alternative endpoint
     
     // Toko (Store) management for regular users
     Route::prefix('toko')->group(function() {
@@ -346,6 +425,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Debug routes for payment
         Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
+    });
+
+    // Chat Routes
+    Route::prefix('chat')->group(function() {
+        // Chat room management
+        Route::get('/', [App\Http\Controllers\User\RuangChatController::class, 'index']);
+        Route::post('/', [App\Http\Controllers\User\RuangChatController::class, 'store']);
+        Route::get('/{id}', [App\Http\Controllers\User\RuangChatController::class, 'show']);
+        Route::put('/{id}', [App\Http\Controllers\User\RuangChatController::class, 'update']);
+        Route::delete('/{id}', [App\Http\Controllers\User\RuangChatController::class, 'destroy']);
+        Route::patch('/{id}/mark-read', [App\Http\Controllers\User\RuangChatController::class, 'markAsRead']);
+        
+        // Messages within chat rooms
+        Route::get('/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'index']);
+        Route::post('/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'store']);
+        Route::put('/messages/{id}', [App\Http\Controllers\User\PesanController::class, 'update']);
+        Route::patch('/messages/{id}/read', [App\Http\Controllers\User\PesanController::class, 'markAsRead']);
     });
 });
 

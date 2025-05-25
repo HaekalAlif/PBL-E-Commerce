@@ -214,7 +214,7 @@ const ProfileCardNav = () => {
         {
           icon: MessageSquare,
           label: "Messages",
-          onClick: () => router.push("/user/messages"),
+          onClick: () => router.push("/chat"),
         },
         {
           icon: HelpCircle,

@@ -18,6 +18,14 @@ class RuangChat extends Model
         return $this->hasMany(Pesan::class, 'id_ruang_chat', 'id_ruang_chat');
     }
 
+    // Add a relationship for getting the last message
+    public function lastMessage()
+    {
+        return $this->hasOne(Pesan::class, 'id_ruang_chat', 'id_ruang_chat')
+                    ->latest('created_at')
+                    ->with('user');
+    }
+
     public function pembeli()
     {
         return $this->belongsTo(User::class, 'id_pembeli', 'id_user');

@@ -23,7 +23,14 @@ class PesanController extends Controller
             Log::info("Fetching messages for room {$chatRoomId}");
             
             // Check if the chat room exists
-            $chatRoom = RuangChat::findOrFail($chatRoomId);
+            $chatRoom = RuangChat::find($chatRoomId);
+            
+            if (!$chatRoom) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Chat room with ID {$chatRoomId} not found"
+                ], 404);
+            }
             
             // Ensure user is a participant in this chat room
             if ($chatRoom->id_pembeli != $user->id_user && $chatRoom->id_penjual != $user->id_user) {
@@ -69,13 +76,22 @@ class PesanController extends Controller
     {
         try {
             $user = Auth::user();
-            Log::info("User {$user->id_user} sending message to room {$chatRoomId}");
+            Log::info("📤 User {$user->id_user} sending message to room {$chatRoomId}", $request->all());
             
             // Verify that the chat room exists
-            $chatRoom = RuangChat::findOrFail($chatRoomId);
+            $chatRoom = RuangChat::find($chatRoomId);
+            
+            if (!$chatRoom) {
+                Log::error("❌ Chat room {$chatRoomId} not found");
+                return response()->json([
+                    'success' => false,
+                    'message' => "Chat room with ID {$chatRoomId} not found"
+                ], 404);
+            }
             
             // Ensure user is a participant in this chat room
             if ($chatRoom->id_pembeli != $user->id_user && $chatRoom->id_penjual != $user->id_user) {
+                Log::error("❌ User {$user->id_user} not authorized for room {$chatRoomId}");
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not authorized to access this chat room'
@@ -103,14 +119,49 @@ class PesanController extends Controller
             $message->is_read = false;
             $message->save();
             
+            Log::info("💾 Message created with ID: {$message->id_pesan}");
+            
             // Load the user relation for the broadcast
             $message->load('user');
             
             // Update the room's updated_at timestamp
             $chatRoom->touch();
             
-            // Broadcast the message event for real-time updates
-            event(new MessageSent($message));
+            // Debug: Check if Reverb is running and broadcast config
+            Log::info("🔧 Broadcasting configuration check", [
+                'broadcast_driver' => config('broadcasting.default'),
+                'reverb_config' => config('broadcasting.connections.reverb'),
+                'app_env' => config('app.env')
+            ]);
+            
+            // Force immediate broadcast
+            try {
+                Log::info("📡 Broadcasting MessageSent event IMMEDIATELY for room {$chatRoomId}");
+                
+                $event = new MessageSent($message);
+                
+                // Try multiple broadcast methods
+                broadcast($event);
+                
+                // Also try direct pusher broadcast for debugging
+                $pusher = app('pusher');
+                $channelName = "private-chat.{$chatRoomId}";
+                $eventName = 'MessageSent';
+                $eventData = $event->broadcastWith();
+                
+                Log::info("📡 Direct Pusher broadcast attempt", [
+                    'channel' => $channelName,
+                    'event' => $eventName,
+                    'data_keys' => array_keys($eventData)
+                ]);
+                
+                $pusher->trigger($channelName, $eventName, $eventData);
+                
+                Log::info("✅ MessageSent event broadcasted IMMEDIATELY via both methods");
+            } catch (\Exception $e) {
+                Log::error("❌ Failed to broadcast MessageSent event: " . $e->getMessage());
+                Log::error("❌ Broadcast error trace: " . $e->getTraceAsString());
+            }
             
             return response()->json([
                 'success' => true,
@@ -118,7 +169,7 @@ class PesanController extends Controller
                 'message' => 'Message sent successfully'
             ], 201);
         } catch (\Exception $e) {
-            Log::error("Error sending message to room {$chatRoomId}: {$e->getMessage()}");
+            Log::error("❌ Error sending message to room {$chatRoomId}: {$e->getMessage()}");
             
             return response()->json([
                 'success' => false,
