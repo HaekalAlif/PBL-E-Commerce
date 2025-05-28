@@ -1,12 +1,34 @@
 "use client";
 
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import {
-  SidebarProvider,
-  Sidebar,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/superadmin/superadmin-sidebar";
+  LayoutDashboard,
+  Users,
+  Store,
+  Tags,
+  Package,
+  ClipboardList,
+  CreditCard,
+  Wallet,
+  LineChart,
+  Activity,
+  BarChart,
+  Truck,
+  ShieldCheck,
+  Megaphone,
+  Bell,
+  Settings,
+  LogOut,
+  ChevronRight,
+  Home,
+  Menu,
+  ChevronDown,
+  X,
+} from "lucide-react";
+import ProfileCardSuperadmin from "@/components/common/profile-card-superadmin";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,108 +37,287 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { usePathname } from "next/navigation";
-import { ChevronRight, Home } from "lucide-react";
 
-// Define a more comprehensive label mapping
-const routeLabels: { [key: string]: string } = {
-  superadmin: "Super Admin",
-  user: "User Management",
-  toko: "Store Management",
-  barang: "Product Management",
-  kategori: "Category Management",
-  lelang: "Auction Management",
-  penawaran: "Bid Management",
-  transaksi: "Transaction Management",
-  edit: "Edit",
-  create: "Create",
-  detail: "Detail",
-};
+const sidebarLinks = [
+  {
+    label: "Overview",
+    icon: LayoutDashboard,
+    href: "/superadmin",
+  },
+  {
+    label: "Management",
+    icon: Settings,
+    children: [
+      { label: "Users", href: "/superadmin/user", icon: Users },
+      { label: "Stores", href: "/superadmin/toko", icon: Store },
+      { label: "Categories", href: "/superadmin/kategori", icon: Tags },
+      { label: "Products", href: "/superadmin/barang", icon: Package },
+    ],
+  },
+  {
+    label: "Transaction",
+    icon: ClipboardList,
+    children: [
+      { label: "Orders", href: "/transaction/orders", icon: ClipboardList },
+      { label: "Payments", href: "/transaction/payments", icon: CreditCard },
+      { label: "Withdrawals", href: "/transaction/withdrawals", icon: Wallet },
+      { label: "Balances", href: "/transaction/balances", icon: LineChart },
+      { label: "Financial Audit", href: "/transaction/audit", icon: Activity },
+    ],
+  },
+  {
+    label: "Operations",
+    icon: BarChart,
+    children: [
+      {
+        label: "Transactions",
+        href: "/operations/transactions",
+        icon: CreditCard,
+      },
+      { label: "Escrow", href: "/operations/escrow", icon: ShieldCheck },
+      { label: "Shipping", href: "/operations/shipping", icon: Truck },
+      { label: "Complaints", href: "/operations/complaints", icon: Megaphone },
+      {
+        label: "Notifications",
+        href: "/operations/notifications",
+        icon: Bell,
+      },
+    ],
+  },
+];
 
-function getBreadcrumbs(path: string) {
-  const parts = path.split("/").filter(Boolean);
-  const cleanParts = parts
-    .map((part) => {
-      // Filter out dynamic route parameters (any numeric values)
-      return /^\d+$/.test(part) ? null : part;
-    })
-    .filter(Boolean) as string[];
-
-  return cleanParts.map((part, index) => {
-    // Get the base label from our mapping or capitalize the part
-    let label =
-      routeLabels[part] || part.charAt(0).toUpperCase() + part.slice(1);
-
-    // If this is an action (edit/create/detail) and there's a previous part,
-    // combine them for better context
-    if (["edit", "create", "detail"].includes(part) && index > 0) {
-      const parentLabel =
-        routeLabels[cleanParts[index - 1]]?.split(" ")[0] ||
-        cleanParts[index - 1].charAt(0).toUpperCase() +
-          cleanParts[index - 1].slice(1);
-      label = `${label} ${parentLabel}`;
-    }
-
-    return {
-      label,
-      href: "/" + cleanParts.slice(0, index + 1).join("/"),
-      current: index === cleanParts.length - 1,
-    };
-  });
-}
-
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function AccountLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
-  const breadcrumbs = getBreadcrumbs(pathname);
+  const isUserPath = pathname?.startsWith("/user") ?? false;
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
+
+  const toggleDropdown = (label: string) => {
+    setOpenDropdowns((prev) =>
+      prev.includes(label)
+        ? prev.filter((item) => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  // Get current page name for breadcrumb
+  const lastPath = pathname?.split("/").pop();
+  const currentPage =
+    lastPath && lastPath.length > 0
+      ? lastPath.charAt(0).toUpperCase() + lastPath.slice(1)
+      : "Dashboard";
 
   return (
-    <SidebarProvider>
-      {/* Sidebar */}
-      <Sidebar>
-        <AppSidebar />
-      </Sidebar>
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Mobile Sidebar Toggle */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md text-gray-700 hover:bg-gray-100"
+      >
+        {isSidebarOpen ? (
+          <X className="w-6 h-6" />
+        ) : (
+          <Menu className="w-6 h-6" />
+        )}
+      </button>
 
-      {/* Main content */}
-      <SidebarInset>
-        <div className="min-h-screen bg-gray-50/30">
-          {/* Header */}
-          <header className="sticky pl-2 top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-14 items-center">
-              {/* Sidebar trigger */}
-              <SidebarTrigger className="mr-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/superadmin">
-                      <Home className="h-4 w-4" />
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  {breadcrumbs.map((breadcrumb) => (
-                    <BreadcrumbItem key={breadcrumb.href}>
-                      <BreadcrumbSeparator>
-                        <ChevronRight className="h-4 w-4" />
-                      </BreadcrumbSeparator>
-                      {breadcrumb.current ? (
-                        <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink href={breadcrumb.href}>
-                          {breadcrumb.label}
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  ))}
-                </BreadcrumbList>
-              </Breadcrumb>
+      {/* Overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Responsive Sidebar */}
+      <aside
+        className={`
+        w-72 bg-white border-r border-gray-200 fixed left-0 top-0 z-40 h-full
+        transform transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        lg:translate-x-0
+      `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Profile Section */}
+          <div className="p-4 border-b border-gray-200 bg-gradient-to-b from-white to-orange-50/30">
+            <ProfileCardSuperadmin />
+          </div>
+
+          {/* Scrollable Navigation */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Menu Header */}
+            <div className="p-4 bg-gradient-to-r from-[#F79E0E] to-[#FFB648] text-white">
+              <h2 className="text-lg font-semibold">Menu Akun</h2>
             </div>
-          </header>
 
-          {/* Main content area */}
-          <ScrollArea className="h-[calc(100vh-4.5rem)]">
-            <main className="container px-6">{children}</main>
-          </ScrollArea>
+            {/* Scrollable Menu Items */}
+            <motion.nav
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-transparent"
+            >
+              <div className="p-4 space-y-2">
+                {sidebarLinks.map((item, index) => (
+                  <div key={index} className="mb-2 ">
+                    {item.children ? (
+                      <div>
+                        <button
+                          onClick={() => toggleDropdown(item.label)}
+                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-50/80 text-gray-700"
+                        >
+                          <div className="flex items-center gap-3">
+                            <item.icon className="w-5 h-5 text-[#F79E0E]" />
+                            <span className="text-sm font-medium">{item.label}</span>
+                          </div>
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${
+                              openDropdowns.includes(item.label) ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {/* Dropdown Content */}
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{
+                            height: openDropdowns.includes(item.label) ? "auto" : 0,
+                            opacity: openDropdowns.includes(item.label) ? 1 : 0,
+                          }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-1 ml-7 space-y-1 border-l-2 border-orange-100 pl-4">
+                            {item.children.map((child) => {
+                              const isActive = pathname === child.href;
+                              return (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  onClick={() => setIsSidebarOpen(false)}
+                                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                                    isActive
+                                      ? "bg-orange-50 text-[#F79E0E] font-medium"
+                                      : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900"
+                                  }`}
+                                >
+                                  <child.icon
+                                    className={`w-4 h-4 ${
+                                      isActive ? "text-[#F79E0E]" : "text-gray-400"
+                                    }`}
+                                  />
+                                  <span>{child.label}</span>
+                                  {isActive && (
+                                    <ChevronRight className="w-4 h-4 text-[#F79E0E] ml-auto" />
+                                  )}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      </div>
+                    ) : (
+                      <Link
+                        href={item.href!}
+                        onClick={() => setIsSidebarOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                          pathname === item.href
+                            ? "bg-orange-50 text-[#F79E0E] font-medium"
+                            : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900"
+                        }`}
+                      >
+                        <item.icon className="w-5 h-5 text-[#F79E0E]" />
+                        <span className="text-sm">{item.label}</span>
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.nav>
+          </div>
+
+          {/* Logout Button */}
+          <div className="p-4 border-t border-gray-200 bg-gradient-to-t from-white to-orange-50/30">
+            <button
+              onClick={() => {
+                /* Logout handler */
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg
+                bg-gradient-to-r from-red-500/10 to-red-500/5
+                hover:from-red-500/20 hover:to-red-500/10
+                text-red-600 transition-all duration-200
+                border border-red-100 shadow-sm
+                hover:shadow-md hover:-translate-y-0.5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-1 bg-red-100 rounded">
+                  <LogOut className="w-4 h-4" />
+                </div>
+                <span className="font-medium text-sm">Keluar</span>
+              </div>
+            </button>
+          </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </aside>
+
+      {/* Main Content - Update margin for responsive design */}
+      <div className="flex-1 lg:ml-72">
+        {/* Breadcrumb */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-20 h-24 pt-4">
+          <div className="mx-auto px-4 sm:px-6">
+            <div className="py-4">
+              {!isUserPath && (
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href="/" className="flex items-center gap-2 text-[#F79E0E] hover:text-[#FFB648] transition-colors duration-200 ">
+                         <div className="p-1 bg-orange-100 rounded-lg">
+                          <Home className="h-4 w-4" />
+                          </div>
+                          <span className="font-medium">Beranda</span>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-black" />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink className="flex items-center text-[#F79E0E] hover:text-[#FFB648] transition-colors duration-200 font-medium" href="/superadmin">
+                        Superadmin
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    {pathname !== "/superadmin" && (
+                      <>
+                        <BreadcrumbSeparator className="text-black" />
+                        <BreadcrumbItem>
+                          <BreadcrumbPage className="bg-orange-100 px-3 py-1 rounded-lg text-[#F79E0E] font-medium">
+                            {currentPage}
+                          </BreadcrumbPage>
+                        </BreadcrumbItem>
+                      </>
+                    )}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100"
+          >
+            <div className="p-6">{children}</div>
+          </motion.div>
+        </main>
+      </div>
+    </div>
   );
 }
