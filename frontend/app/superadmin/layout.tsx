@@ -93,8 +93,6 @@ export default function AccountLayout({
 }) {
   const pathname = usePathname();
   const isUserPath = pathname?.startsWith("/user") ?? false;
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
 
   const toggleDropdown = (label: string) => {
@@ -114,35 +112,7 @@ export default function AccountLayout({
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Mobile Sidebar Toggle */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md text-gray-700 hover:bg-gray-100"
-      >
-        {isSidebarOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <Menu className="w-6 h-6" />
-        )}
-      </button>
-
-      {/* Overlay for mobile */}
-      {isSidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Responsive Sidebar */}
-      <aside
-        className={`
-        w-72 bg-white border-r border-gray-200 fixed left-0 top-0 z-40 h-full
-        transform transition-transform duration-300 ease-in-out
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0
-      `}
-      >
+      <aside className="w-72 bg-white border-r border-gray-200 fixed left-0 top-0 z-40 h-full">
         <div className="flex flex-col h-full">
           {/* Profile Section */}
           <div className="p-4 border-b border-gray-200 bg-gradient-to-b from-white to-orange-50/30">
@@ -165,21 +135,28 @@ export default function AccountLayout({
             >
               <div className="p-4 space-y-2">
                 {sidebarLinks.map((item, index) => (
-                  <div key={index} className="mb-2 ">
+                  <div key={index} className="mb-2 font-medium">
                     {item.children ? (
                       <div>
                         <button
                           onClick={() => toggleDropdown(item.label)}
-                          className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-50/80 text-gray-700"
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200
+                            ${openDropdowns.includes(item.label)
+                              ? "bg-orange-50 text-[#F79E0E]"
+                              : "text-gray-700 hover:bg-orange-50/50 hover:text-[#F79E0E]"
+                            }`}
                         >
                           <div className="flex items-center gap-3">
-                            <item.icon className="w-5 h-5 text-[#F79E0E]" />
+                            <item.icon className={`w-5 h-5 ${
+                              openDropdowns.includes(item.label)
+                                ? "text-[#F79E0E]"
+                                : "text-[#F79E0E]"
+                            }`} />
                             <span className="text-sm font-medium">{item.label}</span>
                           </div>
                           <ChevronDown
-                            className={`w-4 h-4 transition-transform duration-200 ${
-                              openDropdowns.includes(item.label) ? "rotate-180" : ""
-                            }`}
+                            className={`w-4 h-4 transition-transform duration-200 
+                              ${openDropdowns.includes(item.label) ? "rotate-180 text-[#F79E0E]" : "text-[#F79E0E]"}`}
                           />
                         </button>
 
@@ -193,23 +170,22 @@ export default function AccountLayout({
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="mt-1 ml-7 space-y-1 border-l-2 border-orange-100 pl-4">
+                          <div className="mt-1 ml-7 space-y-1 border-l-2 border-orange-200 pl-4">
                             {item.children.map((child) => {
                               const isActive = pathname === child.href;
                               return (
                                 <Link
                                   key={child.href}
                                   href={child.href}
-                                  onClick={() => setIsSidebarOpen(false)}
-                                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
-                                    isActive
+                                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm
+                                    ${isActive
                                       ? "bg-orange-50 text-[#F79E0E] font-medium"
-                                      : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900"
-                                  }`}
+                                      : "text-gray-600 hover:bg-orange-50/50 hover:text-[#F79E0E]"
+                                    }`}
                                 >
                                   <child.icon
                                     className={`w-4 h-4 ${
-                                      isActive ? "text-[#F79E0E]" : "text-gray-400"
+                                      isActive ? "text-[#F79E0E]" : "text-[#F79E0E]"
                                     }`}
                                   />
                                   <span>{child.label}</span>
@@ -225,12 +201,11 @@ export default function AccountLayout({
                     ) : (
                       <Link
                         href={item.href!}
-                        onClick={() => setIsSidebarOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                          pathname === item.href
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200
+                          ${pathname === item.href
                             ? "bg-orange-50 text-[#F79E0E] font-medium"
-                            : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-900"
-                        }`}
+                            : "text-gray-700 hover:bg-orange-50/50 hover:text-[#F79E0E]"
+                          }`}
                       >
                         <item.icon className="w-5 h-5 text-[#F79E0E]" />
                         <span className="text-sm">{item.label}</span>
@@ -266,8 +241,8 @@ export default function AccountLayout({
         </div>
       </aside>
 
-      {/* Main Content - Update margin for responsive design */}
-      <div className="flex-1 lg:ml-72">
+      {/* Main Content */}
+      <div className="flex-1 ml-72">
         {/* Breadcrumb */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-20 h-24 pt-4">
           <div className="mx-auto px-4 sm:px-6">
@@ -276,7 +251,7 @@ export default function AccountLayout({
                 <Breadcrumb>
                   <BreadcrumbList>
                     <BreadcrumbItem>
-                      <BreadcrumbLink href="/" className="flex items-center gap-2 text-[#F79E0E] hover:text-[#FFB648] transition-colors duration-200 ">
+                      <BreadcrumbLink href="/superadmin" className="flex items-center gap-2 text-[#F79E0E] hover:text-[#FFB648] transition-colors duration-200 ">
                          <div className="p-1 bg-orange-100 rounded-lg">
                           <Home className="h-4 w-4" />
                           </div>
