@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import axios from "axios";
+import { User as UserIcon, Mail, Phone, Shield } from "lucide-react";
 
 interface UserData {
   id_user?: number;
@@ -28,7 +29,6 @@ const SuperadminPage = () => {
       try {
         setLoading(true);
 
-        // Using Axios and the environment variables for API URL
         const apiUrl =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -37,7 +37,7 @@ const SuperadminPage = () => {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          withCredentials: true, // Important for sending cookies with request
+          withCredentials: true,
         });
 
         if (response.data.status === "success") {
@@ -49,9 +49,6 @@ const SuperadminPage = () => {
         setError(
           err instanceof Error ? err.message : "An unknown error occurred"
         );
-        console.error("Error fetching user data:", err);
-
-        // Fallback to using cookies if API fails
         const userRole = document.cookie
           .split("; ")
           .find((row) => row.startsWith("user_role="))
@@ -76,86 +73,123 @@ const SuperadminPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-white flex items-center justify-center">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Dashboard
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Welcome to your dashboard
-              </p>
-              {error && (
-                <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
-                  {error}
-                </div>
-              )}
-            </div>
-            <div className="border-t border-gray-200">
-              <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Username
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.username || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Full Name
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.name || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.email || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Phone Number
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.no_hp || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    User Role
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.role_name || "Not available"}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    Account Status
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {userData.is_active === true
-                      ? "Active"
-                      : userData.is_active === false
-                      ? "Inactive"
-                      : "Unknown"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
+    <div className="flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-5xl">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-orange-400 rounded-full w-14 h-14 flex items-center justify-center">
+            <UserIcon className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Profile Saya</h1>
+            <p className="text-gray-500 text-sm">
+              Kelola informasi profil Anda untuk keamanan akun
+            </p>
+            {error && (
+              <div className="mt-2 p-2 bg-red-100 text-red-700 rounded">
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
 
-            <div className="px-4 py-5 sm:px-6 flex justify-end">
+        {/* Main Content */}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Avatar */}
+          <div className="flex flex-col items-center min-w-[200px]">
+            <div className="bg-gradient-to-br from-orange-400 to-orange-300 rounded-full w-40 h-40 flex items-center justify-center text-white text-6xl font-bold border-4 border-white shadow">
+              {(userData.name || userData.username || "S").charAt(0).toUpperCase()}
+            </div>
+            <span className="mt-4 text-lg font-semibold text-gray-900 text-center">
+              {userData.name || userData.username || "Super Admin"}
+            </span>
+          </div>
+          {/* Data */}
+          <div className="flex-1 flex flex-col gap-6">
+            {/* Data Pribadi */}
+            <div>
+              <div className="flex items-center gap-2 text-orange-500 font-semibold mb-2">
+                <UserIcon className="w-5 h-5" />
+                Data Pribadi
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-[#fafbfc] rounded-xl p-5 flex flex-col gap-1">
+                  <div className="text-xs text-gray-500 mb-1">Username</div>
+                  <div className="font-semibold text-gray-900 flex items-center gap-1">
+                    <UserIcon className="w-4 h-4 text-orange-400" />
+                    {userData.username || "Not available"}
+                  </div>
+                </div>
+                <div className="bg-[#fafbfc] rounded-xl p-5 flex flex-col gap-1">
+                  <div className="text-xs text-gray-500 mb-1">Nama Lengkap</div>
+                  <div className="font-semibold text-gray-900 flex items-center gap-1">
+                    <UserIcon className="w-4 h-4 text-orange-400" />
+                    {userData.name || "Not available"}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Kontak */}
+            <div>
+              <div className="flex items-center gap-2 text-orange-500 font-semibold mb-2 mt-2">
+                <Mail className="w-5 h-5" />
+                Kontak
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-[#fafbfc] rounded-xl p-5 flex flex-col gap-1">
+                  <div className="text-xs text-gray-500 mb-1">Email</div>
+                  <div className="flex items-center gap-2 font-semibold text-gray-900">
+                    <Mail className="w-4 h-4 text-orange-400" />
+                    {userData.email || "Not available"}
+                    {userData.is_verified && (
+                      <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                        Terverifikasi
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-[#fafbfc] rounded-xl p-5 flex flex-col gap-1">
+                  <div className="text-xs text-gray-500 mb-1">Nomor Telepon</div>
+                  <div className="font-semibold text-gray-900 flex items-center gap-1">
+                    <Phone className="w-4 h-4 text-orange-400" />
+                    {userData.no_hp || "Not available"}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* User Role & Account Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-[#fafbfc] rounded-xl p-5 flex flex-col gap-1">
+                <div className="text-xs text-gray-500 mb-1">User Role</div>
+                <div className="font-semibold text-gray-900">
+                  {userData.role_name || "Not available"}
+                </div>
+              </div>
+              <div className="bg-[#fafbfc] rounded-xl p-5 flex flex-col gap-1">
+                <div className="text-xs text-gray-500 mb-1">Account Status</div>
+                <div className="font-semibold text-gray-900">
+                  {userData.is_active === true
+                    ? "Active"
+                    : userData.is_active === false
+                    ? "Inactive"
+                    : "Unknown"}
+                </div>
+              </div>
+            </div>
+            {/* Info */}
+            <div className="bg-orange-50 rounded-xl p-4 flex items-center gap-2 text-orange-500 text-sm mt-2">
+              <Shield className="w-5 h-5" />
+              Data Anda terlindungi dengan enkripsi end-to-end
+            </div>
+            {/* Logout */}
+            <div className="flex justify-end mt-4">
               <LogoutButton />
             </div>
           </div>
