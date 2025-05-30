@@ -20,6 +20,8 @@ use App\Http\Controllers\User\KeranjangController;
 use App\Http\Controllers\User\PesananTokoController;
 use App\Http\Controllers\Admin\PesananManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
+use App\Http\Controllers\Admin\KomplainManagementController;
+use App\Http\Controllers\User\ChatOfferController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -36,6 +38,84 @@ Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request
 
 // Auth routes are imported from another file
 require __DIR__.'/auth.php';
+
+// Broadcasting authentication - make sure this works properly
+Route::post('/broadcasting/auth', function (Request $request) {
+    try {
+        \Log::info('Broadcasting auth request received', [
+            'has_auth_header' => $request->hasHeader('Authorization'),
+            'has_cookie' => $request->hasHeader('Cookie'),
+            'has_csrf_token' => $request->hasHeader('X-XSRF-TOKEN'),
+            'session_id' => session()->getId(),
+            'auth_check' => auth()->check(),
+            'user_id' => auth()->check() ? auth()->user()->id_user : null,
+            'body' => $request->all(),
+            'cookies' => $request->cookies->all(),
+            'headers' => [
+                'cookie' => $request->header('Cookie'),
+                'authorization' => $request->header('Authorization'),
+                'x-xsrf-token' => $request->header('X-XSRF-TOKEN'),
+                'user-agent' => $request->header('User-Agent'),
+                'referer' => $request->header('Referer'),
+                'origin' => $request->header('Origin'),
+            ]
+        ]);
+        
+        // Start the session manually if needed
+        if (!session()->isStarted()) {
+            session()->start();
+        }
+        
+        // First check if user is authenticated
+        if (!auth()->check()) {
+            \Log::warning('User not authenticated for broadcasting', [
+                'session_id' => session()->getId(),
+                'session_data' => session()->all(),
+                'guard' => config('auth.defaults.guard'),
+                'provider' => config('auth.defaults.provider')
+            ]);
+            
+            return response()->json([
+                'error' => 'Unauthenticated',
+                'message' => 'User session not found or expired',
+                'debug' => [
+                    'session_id' => session()->getId(),
+                    'session_started' => session()->isStarted(),
+                    'has_cookies' => !empty($request->cookies->all())
+                ]
+            ], 401);
+        }
+        
+        $user = auth()->user();
+        \Log::info('User authenticated for broadcasting', [
+            'user_id' => $user->id_user,
+            'user_name' => $user->name
+        ]);
+        
+        // Use Laravel's built-in broadcast auth
+        $result = \Illuminate\Support\Facades\Broadcast::auth($request);
+        \Log::info('Broadcast auth successful', ['result' => $result]);
+        
+        return $result;
+    } catch (\Exception $e) {
+        \Log::error('Broadcasting auth exception', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ]);
+        
+        return response()->json([
+            'error' => 'Authentication failed', 
+            'message' => $e->getMessage(),
+            'debug' => config('app.debug') ? [
+                'exception' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ] : null
+        ], 403);
+    }
+})->middleware(['auth:sanctum'])->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 // Public routes - no auth required
 Route::prefix('toko')->group(function() {
@@ -67,6 +147,7 @@ Route::post('/payments/callback', [TagihanController::class, 'callback']);
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user/profile', [UserController::class, 'getCurrentUser']);
+    Route::get('/auth/me', [UserController::class, 'getCurrentUser']); // Alternative endpoint
     
     // Toko (Store) management for regular users
     Route::prefix('toko')->group(function() {
@@ -129,6 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{kode}/multi-checkout', [PembelianController::class, 'multiCheckout']); // Add multi-checkout route here
         Route::put('/{kode}/cancel', [PembelianController::class, 'cancel']);
         Route::put('/{kode}/confirm-delivery', [PembelianController::class, 'confirmDelivery']); // Add this new route
+        Route::put('/{kode}/complete', [PembelianController::class, 'completePurchase']);
         
         // Purchase Details Management
         Route::get('/{kode}/items', [DetailPembelianController::class, 'index']);
@@ -173,6 +255,34 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Ship an order and add shipping information
         Route::post('/orders/{kode}/ship', [PesananTokoController::class, 'shipOrder']);
+    });
+
+    // Review Management
+    Route::prefix('reviews')->group(function() {
+        Route::post('/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'store']);
+        Route::get('/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'show']);
+        Route::delete('/{id_review}', [App\Http\Controllers\User\ReviewController::class, 'destroy']);
+        Route::get('/purchase/{id_pembelian}', [App\Http\Controllers\User\ReviewController::class, 'getByPembelian']);
+    });
+
+    // Complaint Management
+    Route::middleware('auth:sanctum')->group(function () {
+        // Make sure these routes are not nested under another group
+        Route::prefix('komplain')->group(function() {
+            Route::post('/{id_pembelian}', [App\Http\Controllers\User\KomplainController::class, 'store']);
+            Route::get('/{id_pembelian}', [App\Http\Controllers\User\KomplainController::class, 'show']);
+            Route::put('/{id_komplain}', [App\Http\Controllers\User\KomplainController::class, 'update']);
+            Route::get('/user/list', [App\Http\Controllers\User\KomplainController::class, 'getByUser']);
+        });
+    });
+
+    // User Retur Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('retur')->group(function() {
+            Route::post('/', [App\Http\Controllers\User\ReturBarangController::class, 'store']);
+            Route::get('/{id_retur}', [App\Http\Controllers\User\ReturBarangController::class, 'show']);
+            Route::get('/user/list', [App\Http\Controllers\User\ReturBarangController::class, 'getByUser']);
+        });
     });
 
     // Admin routes
@@ -234,6 +344,23 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{kode}/status', [PaymentManagementController::class, 'updateStatus']);
             Route::post('/{kode}/refund', [PaymentManagementController::class, 'processRefund']);
             Route::post('/{kode}/verify', [PaymentManagementController::class, 'verifyManually']);
+        });
+        
+        // Admin complaint management
+        Route::prefix('admin/komplain')->group(function() {
+            Route::get('/', [KomplainManagementController::class, 'index']);
+            Route::get('/stats', [KomplainManagementController::class, 'getComplaintStats']);
+            Route::get('/{id_komplain}', [KomplainManagementController::class, 'show']);
+            Route::post('/{id_komplain}/process', [KomplainManagementController::class, 'processComplaint']);
+            Route::post('/{id_komplain}/comment', [KomplainManagementController::class, 'addComment']);
+        });
+
+        // Admin retur management
+        Route::prefix('admin/retur')->group(function() {
+            Route::get('/', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'index']);
+            Route::get('/stats', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'getReturStats']);
+            Route::get('/{id_retur}', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'show']);
+            Route::post('/{id_retur}/process', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'processRetur']);
         });
     });
 
@@ -299,6 +426,29 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Debug routes for payment
         Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
+    });
+
+    // Chat and Offers Routes
+    Route::middleware('auth:sanctum')->group(function () {
+        // Chat room management
+        Route::get('/chat', [App\Http\Controllers\User\RuangChatController::class, 'index']);
+        Route::post('/chat', [App\Http\Controllers\User\RuangChatController::class, 'store']);
+        Route::get('/chat/{id}', [App\Http\Controllers\User\RuangChatController::class, 'show']);
+        Route::put('/chat/{id}', [App\Http\Controllers\User\RuangChatController::class, 'update']);
+        Route::delete('/chat/{id}', [App\Http\Controllers\User\RuangChatController::class, 'destroy']);
+        Route::patch('/chat/{id}/mark-read', [App\Http\Controllers\User\RuangChatController::class, 'markAsRead']);
+        
+        // Messages within chat rooms
+        Route::get('/chat/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'index']);
+        Route::post('/chat/{chatRoomId}/messages', [App\Http\Controllers\User\PesanController::class, 'store']);
+        Route::put('/chat/messages/{id}', [App\Http\Controllers\User\PesanController::class, 'update']);
+        Route::patch('/chat/messages/{id}/read', [App\Http\Controllers\User\PesanController::class, 'markAsRead']);
+        
+        // Offer routes
+        Route::post('/chat/{roomId}/offers', [ChatOfferController::class, 'store']);
+        Route::post('/chat/offers/{messageId}/respond', [ChatOfferController::class, 'respond']);
+        Route::get('/chat/offers/{messageId}/check-purchase', [ChatOfferController::class, 'checkExistingPurchase']);
+        Route::post('/chat/offers/{messageId}/purchase', [ChatOfferController::class, 'createPurchaseFromOffer']);
     });
 });
 

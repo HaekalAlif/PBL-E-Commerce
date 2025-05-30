@@ -56,7 +56,7 @@ export function LoginForm({
 
       {/* Decorative Pattern */}
       <div className="absolute inset-0 overflow-hidden rounded-2xl">
-        <div className="absolute inset-0 bg-[url('/pattern-light.png')] opacity-[0.03]" />
+        <div className="absolute inset-0 opacity-[0.03]" />
       </div>
 
       {/* Main content */}

@@ -42,10 +42,37 @@ export interface OrderDetail {
     bukti_pengiriman?: string;
     catatan_pengiriman?: string;
   };
+  komplain?: Komplain;
 }
 
 export interface ShippingFormData {
   nomor_resi: string;
   catatan_pengiriman?: string;
   bukti_pengiriman: File | null;
+}
+
+export interface Komplain {
+  id_komplain: number;
+  id_user: number;
+  id_pembelian: number;
+  alasan_komplain: string;
+  isi_komplain: string;
+  bukti_komplain: string;
+  status_komplain: string;
+  admin_notes?: string;
+  processed_by?: number;
+  processed_at?: string;
+  created_at: string;
+  updated_at: string;
+  retur?: {
+    id_retur: number;
+    alasan_retur: string;
+    deskripsi_retur: string;
+    foto_bukti: string;
+    status_retur: string;
+    admin_notes?: string;
+    tanggal_pengajuan: string;
+    tanggal_disetujui?: string;
+    tanggal_selesai?: string;
+  };
 }

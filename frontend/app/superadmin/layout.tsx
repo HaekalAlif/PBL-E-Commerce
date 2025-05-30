@@ -119,13 +119,6 @@ export default function AccountLayout({
             <ProfileCardSuperadmin />
           </div>
 
-          {/* Scrollable Navigation */}
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Menu Header */}
-            <div className="p-4 bg-gradient-to-r from-[#F79E0E] to-[#FFB648] text-white">
-              <h2 className="text-lg font-semibold">Menu Akun</h2>
-            </div>
-
             {/* Scrollable Menu Items */}
             <motion.nav
               initial={{ opacity: 0, x: -20 }}

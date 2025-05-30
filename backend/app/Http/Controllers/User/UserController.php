@@ -31,6 +31,7 @@ class UserController extends Controller
                 
                 return response()->json([
                     'status' => 'error',
+                    'success' => false,
                     'message' => 'User not authenticated',
                     'data' => null
                 ], 401);
@@ -60,6 +61,7 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => 'success',
+                'success' => true,
                 'message' => 'User data retrieved successfully',
                 'data' => $userData
             ], 200);
@@ -70,6 +72,7 @@ class UserController extends Controller
             
             return response()->json([
                 'status' => 'error',
+                'success' => false,
                 'message' => 'Failed to retrieve user data: ' . $e->getMessage(),
                 'data' => null
             ], 500);

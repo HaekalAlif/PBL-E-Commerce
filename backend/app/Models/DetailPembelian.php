@@ -8,19 +8,21 @@ use Illuminate\Database\Eloquent\Model;
 class DetailPembelian extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'detail_pembelian';
-    protected $primaryKey = 'id_detail'; // This is the actual column name in DB
+    protected $primaryKey = 'id_detail';
     
     protected $fillable = [
         'id_pembelian',
         'id_barang',
         'id_toko',
-        'jumlah',
+        'id_keranjang',
+        'id_pesan', // Add this for offer message reference
         'harga_satuan',
+        'jumlah',
         'subtotal'
     ];
-    
+
     /**
      * Relationship with Pembelian
      */
@@ -46,11 +48,60 @@ class DetailPembelian extends Model
     }
 
     /**
+     * Relationship with Keranjang
+     */
+    public function keranjang()
+    {
+        return $this->belongsTo(Keranjang::class, 'id_keranjang', 'id_keranjang');
+    }
+
+    // Relationship to offer message
+    public function pesanPenawaran()
+    {
+        return $this->belongsTo(Pesan::class, 'id_pesan', 'id_pesan');
+    }
+
+    /**
      * Get the shipping information record associated with this purchase detail
      */
     public function pengiriman_pembelian()
     {
         return $this->hasOne(PengirimanPembelian::class, 'id_detail_pembelian', 'id_detail');
+    }
+
+    // Check if this detail was created from an offer
+    public function isFromOffer()
+    {
+        return !is_null($this->id_pesan);
+    }
+
+    // Get the offer price if this was from an offer
+    public function getOfferPrice()
+    {
+        if ($this->isFromOffer() && $this->pesanPenawaran) {
+            return $this->pesanPenawaran->harga_tawar;
+        }
+        return null;
+    }
+
+    // Get the original product price
+    public function getOriginalPrice()
+    {
+        return $this->barang ? $this->barang->harga : null;
+    }
+
+    // Calculate savings if this was from an offer
+    public function getSavings()
+    {
+        if ($this->isFromOffer()) {
+            $originalPrice = $this->getOriginalPrice();
+            $offerPrice = $this->getOfferPrice();
+            
+            if ($originalPrice && $offerPrice) {
+                return ($originalPrice - $offerPrice) * $this->jumlah;
+            }
+        }
+        return 0;
     }
 
     // Keep the camelCase relationship for backwards compatibility

@@ -18,5 +18,8 @@ class VerifyCsrfToken extends Middleware
         '/api/forgot-password',
         '/api/reset-password',
         '/api/email/verification-notification',
+        'api/broadcasting/auth',
+        'api/payments/callback',
+        // Add other routes that should be excluded from CSRF
     ];
 }

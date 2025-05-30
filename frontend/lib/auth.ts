@@ -26,6 +26,9 @@ export const logout = async () => {
     Cookies.remove("laravel_session", { path: "/" });
     Cookies.remove("XSRF-TOKEN", { path: "/" });
 
+    // Clear any chat-related cookies
+    Cookies.remove("chat_session", { path: "/" });
+
     // Redirect to login page
     window.location.href = "/login";
   }
@@ -48,10 +51,25 @@ export const getUserRole = (): string | null => {
 };
 
 export async function getCurrentUser() {
-  const res = await fetch('/api/user', { credentials: 'include' })
+  try {
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_URL}/user/profile`,
+      {
+        withCredentials: true,
+      }
+    );
 
-  if (!res.ok) return null
+    if (response.data.status === "success") {
+      return {
+        id_user: response.data.data.id_user,
+        name: response.data.data.name,
+        email: response.data.data.email,
+      };
+    }
 
-  const user = await res.json()
-  return user
+    return null;
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    return null;
+  }
 }

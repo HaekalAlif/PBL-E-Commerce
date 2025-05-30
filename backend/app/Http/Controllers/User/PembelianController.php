@@ -12,8 +12,10 @@ use App\Models\DetailPembelian;
 use App\Models\Tagihan;
 use App\Models\Barang;
 use App\Models\AlamatUser;
+use App\Models\Toko;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
 
 class PembelianController extends Controller
 {
@@ -61,73 +63,143 @@ class PembelianController extends Controller
     }
     
     /**
-     * Show purchase details by code
+     * Get purchase by code
      */
-    public function show($kode)
+    public function show(string $kode): JsonResponse
     {
-        $user = Auth::user();
-        
-        // Debug the incoming code parameter
-        \Log::debug('Fetching purchase with code: ' . $kode);
-        
-        // First, check if the purchase exists with this code
-        $pembelian = Pembelian::where('kode_pembelian', $kode)
+        try {
+            $user = Auth::user();
+            
+            $purchase = Pembelian::with([
+                'pembeli',
+                'alamat.province',
+                'alamat.regency', 
+                'alamat.district',
+                'alamat.village',
+                'detailPembelian.barang.gambar_barang',
+                'detailPembelian.barang.toko.alamat_toko.province',
+                'detailPembelian.barang.toko.alamat_toko.regency',
+                'detailPembelian.barang.toko.alamat_toko.district',
+                'detailPembelian.toko.alamat_toko.province',
+                'detailPembelian.toko.alamat_toko.regency',
+                'detailPembelian.toko.alamat_toko.district',
+                'detailPembelian.pesanPenawaran',
+                'detailPembelian.pengiriman_pembelian',
+                'tagihan',
+                'review',
+                'komplain' => function($query) {
+                    $query->with('retur'); // Eager load retur relationship
+                }
+            ])
+            ->where('kode_pembelian', $kode)
             ->where('id_pembeli', $user->id_user)
-            ->where('is_deleted', false)
             ->first();
-        
-        if (!$pembelian) {
-            \Log::error('Purchase not found with code: ' . $kode);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pembelian tidak ditemukan'
-            ], 404);
-        }
-        
-        // Now that we confirmed it exists, get all related data
-        \Log::debug('Found purchase with ID: ' . $pembelian->id_pembelian);
-        
-        // Check if detail pembelian exists for this purchase
-        $detailCount = DetailPembelian::where('id_pembelian', $pembelian->id_pembelian)->count();
-        \Log::debug('Detail pembelian count in database: ' . $detailCount);
-        
-        if ($detailCount === 0) {
-            \Log::error('No detail pembelian found for purchase ID: ' . $pembelian->id_pembelian);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Data detail pembelian tidak ditemukan'
-            ], 404);
-        }
-        
-        // Load the purchase with all its related data
-        $completeData = Pembelian::with([
-            'detailPembelian',
-            'detailPembelian.barang',
-            'detailPembelian.barang.gambarBarang',
-            'detailPembelian.pengiriman_pembelian', // Add shipping info for each detail
-            'tagihan', // Keep the invoice data
-            'pengiriman', // Add main shipping info
-            'alamat.province',
-            'alamat.regency',
-            'alamat.district',
-            'alamat.village'
-        ])
-        ->where('kode_pembelian', $kode)
-        ->where('id_pembeli', $user->id_user)
-        ->where('is_deleted', false)
-        ->first();
-        
-        if (!$completeData) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pesanan tidak ditemukan'
-            ], 404);
-        }
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $completeData
-        ]);
+            if (!$purchase) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Purchase not found'
+                ], 404);
+            }
+
+            // Convert to array for processing
+            $purchaseData = $purchase->toArray();
+            
+            // Process each detail_pembelian to ensure we have complete store information
+            if ($purchaseData['detail_pembelian']) {
+                foreach ($purchaseData['detail_pembelian'] as &$detail) {
+                    // Mark if this item is from an offer
+                    $detail['is_from_offer'] = !is_null($detail['id_pesan']);
+                    
+                    // Calculate savings if from offer
+                    if ($detail['is_from_offer'] && isset($detail['barang']['harga'])) {
+                        $detail['offer_price'] = $detail['harga_satuan'];
+                        $detail['original_price'] = $detail['barang']['harga'];
+                        $detail['savings'] = ($detail['barang']['harga'] - $detail['harga_satuan']) * $detail['jumlah'];
+                    }
+
+                    // Ensure complete store information is available
+                    if (!isset($detail['toko']) || empty($detail['toko'])) {
+                        // Load store details manually if not loaded through relationship
+                        $storeDetails = Toko::with([
+                            'alamat_toko.province',
+                            'alamat_toko.regency',
+                            'alamat_toko.district'
+                        ])->find($detail['id_toko']);
+                        
+                        if ($storeDetails) {
+                            $detail['toko'] = [
+                                'id_toko' => $storeDetails->id_toko,
+                                'id_user' => $storeDetails->id_user,
+                                'nama_toko' => $storeDetails->nama_toko,
+                                'slug' => $storeDetails->slug,
+                                'deskripsi' => $storeDetails->deskripsi,
+                                'alamat' => $storeDetails->alamat,
+                                'kontak' => $storeDetails->kontak,
+                                'is_active' => $storeDetails->is_active,
+                                'alamat_toko' => $storeDetails->alamat_toko->map(function($alamat) {
+                                    return [
+                                        'id_alamat_toko' => $alamat->id_alamat_toko,
+                                        'nama_pengirim' => $alamat->nama_pengirim,
+                                        'no_telepon' => $alamat->no_telepon,
+                                        'alamat_lengkap' => $alamat->alamat_lengkap,
+                                        'kode_pos' => $alamat->kode_pos,
+                                        'is_primary' => $alamat->is_primary,
+                                        'province' => $alamat->province ? [
+                                            'id' => $alamat->province->id,
+                                            'name' => $alamat->province->name
+                                        ] : null,
+                                        'regency' => $alamat->regency ? [
+                                            'id' => $alamat->regency->id,
+                                            'name' => $alamat->regency->name
+                                        ] : null,
+                                        'district' => $alamat->district ? [
+                                            'id' => $alamat->district->id,
+                                            'name' => $alamat->district->name
+                                        ] : null,
+                                    ];
+                                })->toArray()
+                            ];
+                        } else {
+                            // Fallback if store not found
+                            $detail['toko'] = [
+                                'id_toko' => $detail['id_toko'],
+                                'nama_toko' => "Store {$detail['id_toko']}",
+                                'slug' => null,
+                                'deskripsi' => null,
+                                'alamat' => null,
+                                'kontak' => null,
+                                'is_active' => true,
+                                'alamat_toko' => []
+                            ];
+                        }
+                    }
+
+                    // Also ensure barang has toko data for consistency
+                    if (isset($detail['barang']) && (!isset($detail['barang']['toko']) || empty($detail['barang']['toko']))) {
+                        $detail['barang']['toko'] = $detail['toko'];
+                    }
+
+                    // Ensure barang has id_toko for consistency
+                    if (isset($detail['barang']) && !isset($detail['barang']['id_toko'])) {
+                        $detail['barang']['id_toko'] = $detail['id_toko'];
+                    }
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $purchaseData
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Error fetching purchase {$kode}: {$e->getMessage()}");
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch purchase details'
+            ], 500);
+        }
     }
     
     /**
@@ -703,12 +775,10 @@ class PembelianController extends Controller
         
         DB::beginTransaction();
         try {
-            // Update purchase status to 'Selesai'
-            $pembelian->status_pembelian = 'Selesai';
+            // Update purchase status to 'Diterima' instead of 'Selesai'
+            $pembelian->status_pembelian = 'Diterima';
             $pembelian->updated_by = $user->id_user;
             $pembelian->save();
-            
-            // You could add more logic here like triggering seller notification, etc.
             
             DB::commit();
             
@@ -726,6 +796,49 @@ class PembelianController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat mengonfirmasi pengiriman: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete a purchase after confirmation
+     */
+    public function completePurchase($kode)
+    {
+        $user = Auth::user();
+        
+        $pembelian = Pembelian::where('kode_pembelian', $kode)
+                           ->where('id_pembeli', $user->id_user)
+                           ->where('status_pembelian', 'Diterima')
+                           ->first();
+        
+        if (!$pembelian) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pembelian tidak ditemukan atau tidak dapat diselesaikan'
+            ], 404);
+        }
+        
+        DB::beginTransaction();
+        try {
+            $pembelian->status_pembelian = 'Selesai';
+            $pembelian->updated_by = $user->id_user;
+            $pembelian->save();
+            
+            DB::commit();
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Pesanan berhasil diselesaikan',
+                'data' => [
+                    'status_pembelian' => $pembelian->status_pembelian
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyelesaikan pesanan'
             ], 500);
         }
     }

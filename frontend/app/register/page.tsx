@@ -21,11 +21,11 @@ export default function Register() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-white to-amber-50 relative overflow-hidden py-6">
       {/* Decorative Elements */}
-      <div className="absolute inset-0 bg-[url('/pattern-light.png')] opacity-5" />
+      <div className="absolute inset-0 opacity-5" />
       <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-200 rounded-full blur-3xl opacity-20" />
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-orange-200 rounded-full blur-3xl opacity-20" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}

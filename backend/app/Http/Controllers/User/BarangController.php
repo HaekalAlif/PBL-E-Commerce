@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class BarangController extends Controller
 {
@@ -505,36 +506,67 @@ class BarangController extends Controller
     /**
      * Get a specific product by slug for public display
      */
-    public function getPublicProductBySlug($slug)
+    public function getPublicProductBySlug(string $slug): \Illuminate\Http\JsonResponse
     {
-        $barang = Barang::where('slug', $slug)
-                        ->where('is_deleted', false)
-                        ->with([
-                            'kategori',
-                            'toko' => function($query) {
-                                $query->with(['alamat_toko' => function($query) {
-                                    $query->where('is_primary', true)
-                                          ->with(['province:id,name', 'regency:id,name', 'district:id,name']);
-                                }]);
-                            },
-                            'gambarBarang' => function($query) {
-                                $query->orderBy('is_primary', 'desc')
-                                     ->orderBy('urutan', 'asc');
-                            }
-                        ])
-                        ->first();
-                        
-        if (!$barang) {
+        try {
+            Log::info("Fetching product by slug: {$slug}");
+            
+            // First, find the product without relationships
+            $barang = Barang::where('slug', $slug)
+                ->where('status_barang', 'Tersedia')
+                ->where('is_deleted', false)
+                ->first();
+
+            if (!$barang) {
+                Log::warning("Product not found: {$slug}");
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Product not found'
+                ], 404);
+            }
+
+            // Load relationships separately to avoid complex query issues
+            $barang->load([
+                'kategori',
+                'gambarBarang' => function($query) {
+                    $query->orderBy('is_primary', 'desc')
+                          ->orderBy('created_at', 'asc');
+                }
+            ]);
+
+            // Load store information separately
+            $toko = Toko::where('id_toko', $barang->id_toko)
+                ->where('is_deleted', false)
+                ->first();
+
+            if ($toko) {
+                // Manually add toko data to the response
+                $barang->toko = $toko;
+                
+                // Load store addresses if needed
+                $alamatToko = \App\Models\AlamatToko::where('id_toko', $toko->id_toko)
+                    ->with(['province', 'regency'])
+                    ->get();
+                
+                $barang->toko->alamat_toko = $alamatToko;
+            }
+
+            Log::info("Product found successfully: {$barang->nama_barang}");
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $barang
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error fetching product by slug {$slug}: " . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'status' => 'error',
-                'message' => 'Produk tidak ditemukan'
-            ], 404);
+                'message' => 'Failed to fetch product',
+                'debug' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-        
-        return response()->json([
-            'status' => 'success',
-            'data' => $barang
-        ]);
     }
 
     /**

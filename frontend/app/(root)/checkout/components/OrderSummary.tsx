@@ -15,6 +15,8 @@ interface OrderSummaryProps {
   totalShipping: number;
   adminFee: number;
   total: number;
+  totalSavings: number;
+  isFromOffer: boolean;
   processingCheckout: boolean;
   allStoresReadyForCheckout: () => boolean;
   handleCheckout: () => Promise<void>;
@@ -35,7 +37,7 @@ export const OrderSummary = ({ ...props }: OrderSummaryProps) => {
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-4 p-6">
+        <CardContent className="space-y-4 px-4">
           <div className="space-y-2">
             <div className="flex justify-between text-gray-600">
               <span>Products Subtotal</span>
@@ -49,6 +51,12 @@ export const OrderSummary = ({ ...props }: OrderSummaryProps) => {
               <span>Admin Fee</span>
               <span>{formatRupiah(props.adminFee)}</span>
             </div>
+            {props.isFromOffer && props.totalSavings > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Total Savings</span>
+                <span>-{formatRupiah(props.totalSavings)}</span>
+              </div>
+            )}
             <Separator className="my-2 bg-amber-100" />
             <div className="flex justify-between font-semibold">
               <span className="text-gray-800">Total</span>

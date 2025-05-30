@@ -2,7 +2,15 @@
 
 import React from "react";
 import { useKategori } from "./hooks/useKategori";
-import { FaThLarge, FaRecycle, FaLeaf, FaHeart, FaSync, FaTree, FaShieldAlt } from "react-icons/fa";
+import {
+  FaThLarge,
+  FaRecycle,
+  FaLeaf,
+  FaHeart,
+  FaSync,
+  FaTree,
+  FaShieldAlt,
+} from "react-icons/fa";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
@@ -23,7 +31,7 @@ export default function Kategori() {
   if (loading) {
     return (
       <section className="relative py-16 bg-gradient-to-b from-[#FFF8EF] to-white">
-        <div className="absolute inset-0 bg-[url('/pattern-light.png')] opacity-5" />
+        <div className="absolute inset-0 opacity-5" />
         <div className="relative">
           <h2 className="text-2xl md:text-3xl text-center font-bold text-[#F79E0E] mb-3">
             Jelajahi Kategori
@@ -53,7 +61,7 @@ export default function Kategori() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.05 }}
         transition={{ duration: 1 }}
-        className="absolute inset-0 bg-[url('/pattern-light.png')]"
+        className="absolute inset-0 "
       />
 
       {/* Left Decorative Elements */}
@@ -114,7 +122,9 @@ export default function Kategori() {
           </h2>
           <div className="flex items-center justify-center gap-2 text-gray-600 text-sm px-4">
             <FaShieldAlt className="w-4 h-4 text-orange-400 flex-shrink-0" />
-            <p className="text-center">Temukan barang bekas berkualitas dari berbagai kategori</p>
+            <p className="text-center">
+              Temukan barang bekas berkualitas dari berbagai kategori
+            </p>
           </div>
         </motion.div>
 

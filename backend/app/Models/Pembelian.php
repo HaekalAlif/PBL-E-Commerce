@@ -55,6 +55,12 @@ class Pembelian extends Model
         return $this->hasMany(DetailPembelian::class, 'id_pembelian', 'id_pembelian');
     }
     
+    // Add alias for detail_pembelian relationship
+    public function detail_pembelian()
+    {
+        return $this->detailPembelian();
+    }
+    
     // Additional helper method to ensure detailPembelian is loaded
     public function getDetailPembelianAttribute()
     {
@@ -100,6 +106,19 @@ class Pembelian extends Model
     public function items()
     {
         return $this->hasMany(DetailPembelian::class, 'id_pembelian', 'id_pembelian');
+    }
+    
+    // Define the relationship with the review
+    public function review()
+    {
+        return $this->hasOne(Review::class, 'id_pembelian', 'id_pembelian');
+    }
+    
+    // Define the relationship with complaints
+    public function komplain()
+    {
+        return $this->hasOne(Komplain::class, 'id_pembelian', 'id_pembelian')
+            ->with('retur');
     }
     
     // Helper method to check if purchase can be canceled

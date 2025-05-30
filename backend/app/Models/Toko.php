@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Toko extends Model
 {
+    use HasFactory;
+
     protected $table = 'toko';
     protected $primaryKey = 'id_toko';
 
@@ -18,9 +21,12 @@ class Toko extends Model
         'alamat',
         'kontak',
         'is_active',
-        'is_deleted',
-        'created_by',
-        'updated_by'
+        'is_deleted'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'is_deleted' => 'boolean'
     ];
 
     /**
@@ -83,16 +89,6 @@ class Toko extends Model
         return $this->belongsTo(User::class, 'id_user', 'id_user');
     }
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by', 'id_user');
-    }
-
-    public function updater()
-    {
-        return $this->belongsTo(User::class, 'updated_by', 'id_user');
-    }
-
     /**
      * Get the addresses for the store.
      */
@@ -100,5 +96,15 @@ class Toko extends Model
     {
         return $this->hasMany(AlamatToko::class, 'id_toko', 'id_toko')
                     ->with(['province', 'regency', 'district']);
+    }
+
+    public function barang()
+    {
+        return $this->hasMany(Barang::class, 'id_toko', 'id_toko');
+    }
+
+    public function detailPembelian()
+    {
+        return $this->hasMany(DetailPembelian::class, 'id_toko', 'id_toko');
     }
 }

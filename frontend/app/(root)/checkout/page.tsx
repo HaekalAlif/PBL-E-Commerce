@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCheckout } from "./hooks/useCheckout";
@@ -8,7 +9,7 @@ import { OrderSummary } from "./components/OrderSummary";
 import { ShippingAddressCard } from "./components/ShippingAddressCard";
 import { ShippingMethodCard } from "./components/ShippingMethodCard";
 import { StoreNotesCard } from "./components/StoreNotesCard";
-import { StoreTotalCard } from "./components/StoreTotalCard";
+import { OfferSavingsCard } from "./components/OfferSavingsCard";
 
 const CheckoutSkeleton = () => (
   <div className="min-h-screen bg-gradient-to-br from-amber-50/40 to-white">
@@ -16,7 +17,6 @@ const CheckoutSkeleton = () => (
     <div className="fixed inset-0 pointer-events-none">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-200/20 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-200/20 rounded-full blur-3xl" />
-      <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-[0.015]" />
     </div>
 
     <div className="container max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -124,7 +124,12 @@ const CheckoutSkeleton = () => (
   </div>
 );
 
-export default function Checkout() {
+export default function CheckoutPage() {
+  const searchParams = useSearchParams();
+  const code = searchParams?.get("code");
+  const multiStore = searchParams?.get("multi_store") === "true";
+  const fromOffer = searchParams?.get("from_offer") === "true";
+
   const {
     loading,
     processingCheckout,
@@ -134,13 +139,15 @@ export default function Checkout() {
     totalShipping,
     adminFee,
     total,
+    totalSavings,
+    isFromOffer,
     handleShippingChange,
     handleAddressChange,
     handleNotesChange,
     calculateShipping,
     handleCheckout,
     allStoresReadyForCheckout,
-  } = useCheckout();
+  } = useCheckout(code ?? null, multiStore, fromOffer);
 
   if (loading) {
     return <CheckoutSkeleton />;
@@ -151,16 +158,36 @@ export default function Checkout() {
       <div className="container max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 relative">
         <div className="mb-8 text-center">
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#F79E0E] to-[#FFB648] bg-clip-text text-transparent">
-            Checkout
+            Checkout Pesanan
           </h1>
+          <p className="text-gray-600 mt-2">
+            Kode: {code}
+            {fromOffer && (
+              <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                📢 Dari Penawaran
+              </span>
+            )}
+            {multiStore && (
+              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                🏪 Multi Toko
+              </span>
+            )}
+          </p>
         </div>
+
+        {/* Show offer savings banner if applicable */}
+        {(isFromOffer || fromOffer) && totalSavings > 0 && (
+          <div className="mb-8">
+            <OfferSavingsCard totalSavings={totalSavings} />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - Left Side */}
           <div className="lg:col-span-2 space-y-8">
             {storeCheckouts.map((store, storeIndex) => (
               <div key={store.id_toko} className="space-y-6">
-                <StoreCheckoutCard store={store} />
+                <StoreCheckoutCard store={store} fromOffer={fromOffer} />
                 <ShippingAddressCard
                   store={store}
                   addresses={addresses}
@@ -180,7 +207,6 @@ export default function Checkout() {
                   storeIndex={storeIndex}
                   onNotesChange={handleNotesChange}
                 />
-                <StoreTotalCard store={store} />
               </div>
             ))}
           </div>
@@ -192,6 +218,8 @@ export default function Checkout() {
               totalShipping={totalShipping}
               adminFee={adminFee}
               total={total}
+              totalSavings={totalSavings}
+              isFromOffer={isFromOffer || fromOffer}
               processingCheckout={processingCheckout}
               allStoresReadyForCheckout={allStoresReadyForCheckout}
               handleCheckout={handleCheckout}

@@ -73,9 +73,6 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
-
-  
-
 }
 
 @theme inline {
@@ -115,8 +112,6 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-
-  
 }
 
 @layer base {
@@ -135,4 +130,159 @@
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+/* Custom animations for chat loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-orange {
+  0%,
+  100% {
+    opacity: 1;
+    background-color: #fb923c;
+  }
+  50% {
+    opacity: 0.7;
+    background-color: #f97316;
+  }
+}
+
+/* Animation utilities */
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-pulse-orange {
+  animation: pulse-orange 2s infinite;
+}
+
+.animation-delay-75 {
+  animation-delay: 0.075s;
+}
+
+.animation-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animation-delay-150 {
+  animation-delay: 0.15s;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animation-delay-600 {
+  animation-delay: 0.6s;
+}
+
+/* Smooth loading states */
+.loading-gradient {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* Orange color utilities */
+.bg-orange-25 {
+  background-color: rgba(254, 215, 170, 0.1);
+}
+
+.text-orange-25 {
+  color: rgba(254, 215, 170, 0.8);
+}
+
+.border-orange-25 {
+  border-color: rgba(254, 215, 170, 0.3);
+}
+
+/* Enhanced chat scrollbar */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #fb923c #f97316;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: #fed7aa;
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #fb923c, #f97316);
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #ea580c, #ea580c);
+}
+
+/* Ensure proper layout for chat components */
+.chat-layout {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-messages-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-messages-scroll {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.chat-input-container {
+  flex-shrink: 0;
+  background: white;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Smooth transitions for mobile responsiveness */
+@media (max-width: 1024px) {
+  .chat-transition {
+    transition: transform 0.3s ease-in-out;
+  }
 }
