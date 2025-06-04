@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Komplain;
 use App\Models\Pembelian;
+use App\Http\Controllers\User\SaldoPenjualController;
 use Carbon\Carbon;
 
 class KomplainManagementController extends Controller
@@ -225,11 +226,12 @@ class KomplainManagementController extends Controller
             $complaint->admin_notes = $request->admin_notes;
             $complaint->processed_by = Auth::id();
             $complaint->processed_at = now();
-            $complaint->save();
-
-            // If complaint is rejected, update purchase status to Selesai
+            $complaint->save();            // If complaint is rejected, update purchase status to Selesai and transfer payment to sellers
             if ($request->status === 'Ditolak') {
-                $pembelian = Pembelian::where('id_pembelian', $complaint->id_pembelian)->first();
+                $pembelian = Pembelian::where('id_pembelian', $complaint->id_pembelian)
+                    ->with('detailPembelian.toko')
+                    ->first();
+                    
                 if ($pembelian) {
                     $pembelian->status_pembelian = 'Selesai';
                     $pembelian->updated_by = Auth::id();
@@ -239,6 +241,9 @@ class KomplainManagementController extends Controller
                         'pembelian_id' => $pembelian->id_pembelian,
                         'new_status' => 'Selesai'
                     ]);
+
+                    // Transfer payment amount to seller balances
+                    $this->transferPaymentToSellers($pembelian);
                 }
             }
 
@@ -285,14 +290,76 @@ class KomplainManagementController extends Controller
                 'status' => 'success',
                 'message' => 'Comment added successfully',
                 'data' => $complaint
-            ]);
-
-        } catch (\Exception $e) {
+            ]);        } catch (\Exception $e) {
             Log::error('Error adding comment to complaint: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to add comment'
             ], 500);
+        }
+    }
+
+    /**
+     * Transfer payment amount to seller balances when complaint is rejected
+     */
+    private function transferPaymentToSellers($pembelian)
+    {
+        try {
+            // Calculate total amount for each seller
+            $sellerTotals = [];
+            
+            foreach ($pembelian->detailPembelian as $detail) {
+                $sellerId = $detail->toko ? $detail->toko->id_user : null;
+                
+                if (!$sellerId) {
+                    Log::warning('Detail pembelian has no valid seller', [
+                        'detail_id' => $detail->id_detail,
+                        'id_toko' => $detail->id_toko
+                    ]);
+                    continue;
+                }
+                
+                $amount = $detail->subtotal;
+                
+                if (!isset($sellerTotals[$sellerId])) {
+                    $sellerTotals[$sellerId] = 0;
+                }
+                $sellerTotals[$sellerId] += $amount;
+            }
+            
+            // Add balance for each seller
+            $saldoController = new SaldoPenjualController();
+            foreach ($sellerTotals as $sellerId => $totalAmount) {
+                $success = $saldoController->addBalance($sellerId, $totalAmount, $pembelian->id_pembelian);
+                
+                if (!$success) {
+                    Log::error('Failed to add balance to seller after complaint rejection', [
+                        'seller_id' => $sellerId,
+                        'amount' => $totalAmount,
+                        'pembelian_id' => $pembelian->id_pembelian
+                    ]);
+                } else {
+                    Log::info('Balance transferred to seller after complaint rejection', [
+                        'seller_id' => $sellerId,
+                        'amount' => $totalAmount,
+                        'pembelian_id' => $pembelian->id_pembelian
+                    ]);
+                }
+            }
+            
+            Log::info('Seller balances updated after complaint rejection', [
+                'pembelian_id' => $pembelian->id_pembelian,
+                'kode_pembelian' => $pembelian->kode_pembelian,
+                'seller_count' => count($sellerTotals),
+                'total_sellers' => array_keys($sellerTotals)
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error transferring payment to sellers after complaint rejection', [
+                'pembelian_id' => $pembelian->id_pembelian,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 }

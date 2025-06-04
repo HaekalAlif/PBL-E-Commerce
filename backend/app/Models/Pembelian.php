@@ -228,4 +228,12 @@ class Pembelian extends Model
             ->where('is_deleted', false)
             ->orderBy('updated_at', 'desc');
     }
+    
+    /**
+     * Define the relationship with saldo perusahaan
+     */
+    public function saldoPerusahaan()
+    {
+        return $this->hasMany(SaldoPerusahaan::class, 'id_pembelian', 'id_pembelian');
+    }
 }

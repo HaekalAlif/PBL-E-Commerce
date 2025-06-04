@@ -255,6 +255,22 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Ship an order and add shipping information
         Route::post('/orders/{kode}/ship', [PesananTokoController::class, 'shipOrder']);
+
+        // Seller Balance Management
+        Route::prefix('balance')->group(function () {
+            Route::get('/', [App\Http\Controllers\User\SaldoPenjualController::class, 'index']);
+            Route::get('/history', [App\Http\Controllers\User\SaldoPenjualController::class, 'getBalanceHistory']);
+            Route::post('/hold', [App\Http\Controllers\User\SaldoPenjualController::class, 'holdBalance']);
+            Route::post('/release', [App\Http\Controllers\User\SaldoPenjualController::class, 'releaseBalance']);
+        });
+
+        // Withdrawal Request Management
+        Route::prefix('withdrawals')->group(function () {
+            Route::get('/', [App\Http\Controllers\User\PengajuanPencairanController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\User\PengajuanPencairanController::class, 'store']);
+            Route::get('/{id}', [App\Http\Controllers\User\PengajuanPencairanController::class, 'show']);
+            Route::post('/{id}/cancel', [App\Http\Controllers\User\PengajuanPencairanController::class, 'cancel']);
+        });
     });
 
     // Review Management
@@ -336,6 +352,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/{kode}/comment', [PesananManagementController::class, 'addComment']);
         });
 
+        // Admin seller balance management
+        Route::prefix('admin/seller-balance')->group(function() {
+            Route::get('/', [App\Http\Controllers\User\SaldoPenjualController::class, 'getAllBalances']);
+            Route::get('/{userId}', [App\Http\Controllers\User\SaldoPenjualController::class, 'show']);
+        });
+        
         // Admin payment management (admin only)
         Route::prefix('admin/payments')->group(function() {
             Route::get('/', [PaymentManagementController::class, 'index']);
@@ -362,72 +384,83 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{id_retur}', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'show']);
             Route::post('/{id_retur}/process', [App\Http\Controllers\Admin\ReturBarangManagementController::class, 'processRetur']);
         });
-    });
 
-    // Debug endpoints
-    Route::middleware('auth:sanctum')->group(function() {
-        // Debug endpoint to check purchase details directly
-        Route::get('/debug/purchases/{kode}', function($kode) {
-            $user = auth()->user();
-            
-            // Check if purchase exists
-            $purchase = \App\Models\Pembelian::where('kode_pembelian', $kode)
-                ->where('id_pembeli', $user->id_user)
-                ->first();
-            
-            if (!$purchase) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Purchase not found'
-                ], 404);
-            }
-            
-            // Check if detail pembelian exists
-            $details = \App\Models\DetailPembelian::where('id_pembelian', $purchase->id_pembelian)
-                ->with(['barang.gambarBarang', 'toko'])
-                ->get();
-            
-            return response()->json([
-                'status' => 'success',
-                'purchase' => $purchase,
-                'details_count' => $details->count(),
-                'details' => $details
-            ]);
+        // Admin withdrawal management
+        Route::prefix('admin/pencairan')->group(function() {
+            Route::get('/', [App\Http\Controllers\Admin\PencairanManagementController::class, 'index']);
+            Route::get('/stats', [App\Http\Controllers\Admin\PencairanManagementController::class, 'getPencairanStats']);
+            Route::get('/{id_pencairan}', [App\Http\Controllers\Admin\PencairanManagementController::class, 'show']);
+            Route::post('/{id_pencairan}/process', [App\Http\Controllers\Admin\PencairanManagementController::class, 'processPencairan']);
+            Route::post('/{id_pencairan}/comment', [App\Http\Controllers\Admin\PencairanManagementController::class, 'addComment']);
+            Route::post('/bulk-process', [App\Http\Controllers\Admin\PencairanManagementController::class, 'bulkProcess']);
         });
 
-        // New debug endpoint to fetch purchase by ID
-        Route::get('/debug/purchases/by-id/{id}', function($id) {
-            $user = auth()->user();
-            
-            // Check if purchase exists
-            $purchase = \App\Models\Pembelian::where('id_pembelian', $id)
-                ->where('id_pembeli', $user->id_user)
-                ->first();
-            
-            if (!$purchase) {
+        // Debug endpoints
+        Route::middleware('auth:sanctum')->group(function() {
+            // Debug endpoint to check purchase details directly
+            Route::get('/debug/purchases/{kode}', function($kode) {
+                $user = auth()->user();
+                
+                // Check if purchase exists
+                $purchase = \App\Models\Pembelian::where('kode_pembelian', $kode)
+                    ->where('id_pembeli', $user->id_user)
+                    ->first();
+                
+                if (!$purchase) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Purchase not found'
+                    ], 404);
+                }
+                
+                // Check if detail pembelian exists
+                $details = \App\Models\DetailPembelian::where('id_pembelian', $purchase->id_pembelian)
+                    ->with(['barang.gambarBarang', 'toko'])
+                    ->get();
+                
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'Purchase not found'
-                ], 404);
-            }
-            
-            // Check if detail pembelian exists
-            $details = \App\Models\DetailPembelian::where('id_pembelian', $purchase->id_pembelian)
-                ->with(['barang.gambarBarang', 'toko'])
-                ->get();
-            
-            return response()->json([
-                'status' => 'success',
-                'purchase' => $purchase,
-                'details_count' => $details->count(),
-                'details' => $details
-            ]);
+                    'status' => 'success',
+                    'purchase' => $purchase,
+                    'details_count' => $details->count(),
+                    'details' => $details
+                ]);
+            });
+
+            // New debug endpoint to fetch purchase by ID
+            Route::get('/debug/purchases/by-id/{id}', function($id) {
+                $user = auth()->user();
+                
+                // Check if purchase exists
+                $purchase = \App\Models\Pembelian::where('id_pembelian', $id)
+                    ->where('id_pembeli', $user->id_user)
+                    ->first();
+                
+                if (!$purchase) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Purchase not found'
+                    ], 404);
+                }
+                
+                // Check if detail pembelian exists
+                $details = \App\Models\DetailPembelian::where('id_pembelian', $purchase->id_pembelian)
+                    ->with(['barang.gambarBarang', 'toko'])
+                    ->get();
+                
+                return response()->json([
+                    'status' => 'success',
+                    'purchase' => $purchase,
+                    'details_count' => $details->count(),
+                    'details' => $details
+                ]);
+            });
+
+            // Debug routes for payment
+            Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
         });
 
-        // Debug routes for payment
-        Route::get('/debug/midtrans-config', [App\Http\Controllers\User\TagihanController::class, 'debugMidtransConfig']);
+        
     });
-
     // Chat and Offers Routes
     Route::middleware('auth:sanctum')->group(function () {
         // Chat room management

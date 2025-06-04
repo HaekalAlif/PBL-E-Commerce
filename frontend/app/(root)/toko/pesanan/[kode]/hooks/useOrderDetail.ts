@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { OrderDetail, ShippingFormData } from "../types";
 import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
@@ -7,8 +7,7 @@ export const useOrderDetail = (kode: string) => {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchOrderDetail = async () => {
     setLoading(true);
@@ -25,50 +24,43 @@ export const useOrderDetail = (kode: string) => {
         setError("Failed to load order details");
       }
     } catch (error: any) {
-      console.error("Error fetching order detail:", error);
-      setError(error.response?.data?.message || "Error loading order");
+      console.error("Error fetching order details:", error);
+      setError(error.response?.data?.message || "Error loading order details");
     } finally {
       setLoading(false);
     }
   };
 
-  const confirmReceipt = async () => {
-    if (!order) return;
-
+  const confirmOrder = async () => {
     try {
-      setIsProcessingOrder(true);
+      setIsProcessing(true);
       const response = await axiosInstance.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/seller/orders/${order.kode_pembelian}/confirm`
+        `${process.env.NEXT_PUBLIC_API_URL}/seller/orders/${kode}/confirm`
       );
 
       if (response.data.status === "success") {
-        toast.success("Pesanan sedang diproses");
-        setOrder({
-          ...order,
-          status_pembelian: "Diproses",
-        });
+        toast.success("Pesanan berhasil dikonfirmasi");
+        await fetchOrderDetail(); // Refresh order data
         return true;
       } else {
-        toast.error("Gagal memproses pesanan");
+        toast.error("Gagal mengkonfirmasi pesanan");
         return false;
       }
     } catch (error: any) {
-      console.error("Error processing order:", error);
-      toast.error(error.response?.data?.message || "Error memproses pesanan");
+      console.error("Error confirming order:", error);
+      toast.error(
+        error.response?.data?.message || "Error mengkonfirmasi pesanan"
+      );
       return false;
     } finally {
-      setIsProcessingOrder(false);
+      setIsProcessing(false);
     }
   };
 
   const shipOrder = async (formData: ShippingFormData) => {
-    if (!order || !formData.bukti_pengiriman) {
-      toast.error("Mohon lengkapi semua field yang diperlukan");
-      return false;
-    }
-
     try {
-      setIsSubmitting(true);
+      setIsProcessing(true);
+
       const data = new FormData();
       data.append("nomor_resi", formData.nomor_resi);
       if (formData.catatan_pengiriman) {
@@ -77,7 +69,7 @@ export const useOrderDetail = (kode: string) => {
       data.append("bukti_pengiriman", formData.bukti_pengiriman);
 
       const response = await axiosInstance.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/seller/orders/${order.kode_pembelian}/ship`,
+        `${process.env.NEXT_PUBLIC_API_URL}/seller/orders/${kode}/ship`,
         data,
         {
           headers: {
@@ -87,12 +79,8 @@ export const useOrderDetail = (kode: string) => {
       );
 
       if (response.data.status === "success") {
-        toast.success("Pesanan telah dikirim");
-        setOrder({
-          ...order,
-          status_pembelian: "Dikirim",
-          pengiriman: response.data.data.pengiriman,
-        });
+        toast.success("Pesanan berhasil dikirim");
+        await fetchOrderDetail(); // Refresh order data
         return true;
       } else {
         toast.error("Gagal mengirim pesanan");
@@ -103,18 +91,23 @@ export const useOrderDetail = (kode: string) => {
       toast.error(error.response?.data?.message || "Error mengirim pesanan");
       return false;
     } finally {
-      setIsSubmitting(false);
+      setIsProcessing(false);
     }
   };
+
+  useEffect(() => {
+    if (kode) {
+      fetchOrderDetail();
+    }
+  }, [kode]);
 
   return {
     order,
     loading,
     error,
-    isProcessingOrder,
-    isSubmitting,
+    isProcessing,
     fetchOrderDetail,
-    confirmReceipt,
+    confirmOrder,
     shipOrder,
   };
 };

@@ -810,6 +810,7 @@ class PembelianController extends Controller
         $pembelian = Pembelian::where('kode_pembelian', $kode)
                            ->where('id_pembeli', $user->id_user)
                            ->where('status_pembelian', 'Diterima')
+                           ->with('detailPembelian.barang.toko')
                            ->first();
         
         if (!$pembelian) {
@@ -824,6 +825,9 @@ class PembelianController extends Controller
             $pembelian->status_pembelian = 'Selesai';
             $pembelian->updated_by = $user->id_user;
             $pembelian->save();
+            
+            // Add balance to sellers automatically
+            $this->addBalanceToSellers($pembelian);
             
             DB::commit();
             
@@ -840,6 +844,55 @@ class PembelianController extends Controller
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menyelesaikan pesanan'
             ], 500);
+        }
+    }
+
+    /**
+     * Add balance to sellers when purchase is completed
+     */
+    private function addBalanceToSellers($pembelian)
+    {
+        try {
+            // Group details by seller/store
+            $sellerTotals = [];
+            
+            foreach ($pembelian->detailPembelian as $detail) {
+                $sellerId = $detail->barang->toko->id_user;
+                $amount = $detail->subtotal; // Only product price, no shipping or admin fees
+                
+                if (!isset($sellerTotals[$sellerId])) {
+                    $sellerTotals[$sellerId] = 0;
+                }
+                $sellerTotals[$sellerId] += $amount;
+            }
+            
+            // Add balance for each seller
+            $saldoController = new SaldoPenjualController();
+            foreach ($sellerTotals as $sellerId => $totalAmount) {
+                $success = $saldoController->addBalance($sellerId, $totalAmount, $pembelian->id_pembelian);
+                
+                if (!$success) {
+                    \Log::error('Failed to add balance to seller', [
+                        'seller_id' => $sellerId,
+                        'amount' => $totalAmount,
+                        'pembelian_id' => $pembelian->id_pembelian
+                    ]);
+                }
+            }
+            
+            \Log::info('Seller balances updated for completed purchase', [
+                'pembelian_id' => $pembelian->id_pembelian,
+                'kode_pembelian' => $pembelian->kode_pembelian,
+                'seller_count' => count($sellerTotals)
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error adding balance to sellers', [
+                'pembelian_id' => $pembelian->id_pembelian,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw exception here to avoid rolling back the purchase completion
         }
     }
 }

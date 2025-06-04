@@ -47,6 +47,10 @@ export function ShippingDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!bukti_pengiriman) {
+      // Optionally show an error message here
+      return;
+    }
     const success = await onShip({
       nomor_resi,
       catatan_pengiriman,

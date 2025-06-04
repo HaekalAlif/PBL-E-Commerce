@@ -12,6 +12,43 @@ export interface OrderItem {
   };
 }
 
+export interface Review {
+  id_review: number;
+  id_user: number;
+  id_pembelian: number;
+  rating: number;
+  komentar: string;
+  image_review?: string;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id_user: number;
+    name: string;
+    email: string;
+  };
+}
+
+export interface Komplain {
+  id_komplain: number;
+  id_user: number;
+  id_pembelian: number;
+  alasan_komplain: string;
+  isi_komplain: string;
+  bukti_komplain?: string;
+  status_komplain: string;
+  created_at: string;
+  updated_at: string;
+  retur?: {
+    id_retur: number;
+    alasan_retur: string;
+    deskripsi_retur: string;
+    foto_bukti?: string;
+    status_retur: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
 export interface OrderDetail {
   id_pembelian: number;
   kode_pembelian: string;
@@ -19,8 +56,8 @@ export interface OrderDetail {
   created_at: string;
   updated_at: string;
   catatan_pembeli?: string;
-  total: number;
   alamat: {
+    id_alamat: number;
     nama_penerima: string;
     no_telepon: string;
     alamat_lengkap: string;
@@ -34,45 +71,41 @@ export interface OrderDetail {
     name: string;
     email: string;
   };
-  items: OrderItem[];
+  items: Array<{
+    id_detail_pembelian: number;
+    id_barang: number;
+    jumlah: number;
+    harga_satuan: number;
+    subtotal: number;
+    barang: {
+      id_barang: number;
+      nama_barang: string;
+      slug: string;
+      deskripsi: string;
+      harga: number;
+      stok: number;
+      gambarBarang: Array<{
+        id_gambar: number;
+        nama_file: string;
+        path_file: string;
+        is_primary: boolean;
+      }>;
+    };
+  }>;
+  total: number;
   pengiriman?: {
     id_pengiriman: number;
     nomor_resi: string;
-    tanggal_pengiriman: string;
-    bukti_pengiriman?: string;
     catatan_pengiriman?: string;
+    bukti_pengiriman?: string;
+    tanggal_pengiriman: string;
   };
+  review?: Review;
   komplain?: Komplain;
 }
 
 export interface ShippingFormData {
   nomor_resi: string;
   catatan_pengiriman?: string;
-  bukti_pengiriman: File | null;
-}
-
-export interface Komplain {
-  id_komplain: number;
-  id_user: number;
-  id_pembelian: number;
-  alasan_komplain: string;
-  isi_komplain: string;
-  bukti_komplain: string;
-  status_komplain: string;
-  admin_notes?: string;
-  processed_by?: number;
-  processed_at?: string;
-  created_at: string;
-  updated_at: string;
-  retur?: {
-    id_retur: number;
-    alasan_retur: string;
-    deskripsi_retur: string;
-    foto_bukti: string;
-    status_retur: string;
-    admin_notes?: string;
-    tanggal_pengajuan: string;
-    tanggal_disetujui?: string;
-    tanggal_selesai?: string;
-  };
+  bukti_pengiriman: File;
 }

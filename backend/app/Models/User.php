@@ -96,4 +96,44 @@ class User extends Authenticatable
     {
         return $this->hasMany(Komplain::class, 'id_user', 'id_user');
     }
+
+    /**
+     * Relationship with SaldoPerusahaan as penjual
+     */
+    public function saldoPerusahaan()
+    {
+        return $this->hasMany(SaldoPerusahaan::class, 'id_penjual', 'id_user');
+    }
+
+    /**
+     * Relationship with SaldoPenjual
+     */
+    public function saldoPenjual()
+    {
+        return $this->hasOne(SaldoPenjual::class, 'id_user', 'id_user');
+    }
+
+    /**
+     * Relationship with PengajuanPencairan
+     */
+    public function pengajuanPencairan()
+    {
+        return $this->hasMany(PengajuanPencairan::class, 'id_user', 'id_user');
+    }
+
+    /**
+     * Relationship with PengajuanPencairan as creator
+     */
+    public function createdPencairan()
+    {
+        return $this->hasMany(PengajuanPencairan::class, 'created_by', 'id_user');
+    }
+
+    /**
+     * Relationship with PengajuanPencairan as updater
+     */
+    public function updatedPencairan()
+    {
+        return $this->hasMany(PengajuanPencairan::class, 'updated_by', 'id_user');
+    }
 }

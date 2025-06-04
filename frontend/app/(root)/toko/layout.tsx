@@ -44,7 +44,7 @@ const sidebarLinks = [
   {
     label: "Keuangan",
     icon: Wallet,
-    href: "/toko/pencairan",
+    href: "/toko/keuangan",
   },
 ];
 

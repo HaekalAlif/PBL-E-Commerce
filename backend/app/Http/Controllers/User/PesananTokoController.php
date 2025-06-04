@@ -161,6 +161,7 @@ class PesananTokoController extends Controller
                     'alamat.regency',
                     'alamat.district',
                     'alamat.village',
+                    'review.user', // Add user relationship to review
                     'komplain' => function($query) {
                         $query->with('retur');
                     }
@@ -198,6 +199,7 @@ class PesananTokoController extends Controller
                 'items' => $pembelian->detailPembelian,
                 'total' => $total,
                 'pengiriman' => $pembelian->detailPembelian->first()->pengirimanPembelian ?? null,
+                'review' => $pembelian->review, // Review with user relation will be included
                 'komplain' => $pembelian->komplain
             ];
             
