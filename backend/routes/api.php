@@ -485,3 +485,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
+// Shipping routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/shipping/calculate', [App\Http\Controllers\User\ShippingController::class, 'calculateShippingCost']);
+    
+    // Purchase shipping calculation route
+    Route::post('/purchases/{kode}/calculate-shipping', [App\Http\Controllers\User\PembelianController::class, 'calculateShipping']);
+});
+

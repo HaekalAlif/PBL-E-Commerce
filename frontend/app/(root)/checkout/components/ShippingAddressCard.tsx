@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, MapPin } from "lucide-react";
-import { Address, StoreCheckout } from "../types";
-import router from "next/router";
+import { Address, StoreCheckout } from "../types"; // Fixed import path
+import { useRouter } from "next/navigation";
 
 interface ShippingAddressCardProps {
   store: StoreCheckout;
@@ -18,6 +18,8 @@ export const ShippingAddressCard = ({
   store,
   ...props
 }: ShippingAddressCardProps) => {
+  const router = useRouter(); // Use the hook correctly
+
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-none shadow-lg overflow-hidden">
       <CardHeader className="bg-white border-b border-amber-100/30">
@@ -54,21 +56,23 @@ export const ShippingAddressCard = ({
                 />
                 <Label
                   htmlFor={`address-${props.storeIndex}-${address.id_alamat}`}
-                  className="flex items-start p-4 rounded-xl cursor-pointer
+                  className="flex flex-col p-4 rounded-xl cursor-pointer
                     border border-gray-200 hover:border-[#F79E0E] hover:bg-gradient-to-r hover:from-amber-50/50 hover:to-orange-50/50
                     peer-data-[state=checked]:border-[#F79E0E] peer-data-[state=checked]:bg-gradient-to-r peer-data-[state=checked]:from-amber-50/80 peer-data-[state=checked]:to-orange-50/80
                     transition-all duration-200"
                 >
-                  <div className="font-medium flex justify-between">
-                    <span>{address.nama_penerima}</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">{address.nama_penerima}</span>
                     {address.is_primary && (
-                      <span className="text-xs border border-black px-2 py-0.5 rounded-full">
+                      <span className="text-xs border border-[#F79E0E] text-[#F79E0E] px-2 py-0.5 rounded-full">
                         Primary
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">{address.no_telepon}</div>
-                  <div className="text-sm mt-1">
+                  <div className="text-sm text-gray-500 mb-1">
+                    {address.no_telepon}
+                  </div>
+                  <div className="text-sm">
                     {address.alamat_lengkap}, {address.district?.name},{" "}
                     {address.regency?.name}, {address.province?.name},{" "}
                     {address.kode_pos}

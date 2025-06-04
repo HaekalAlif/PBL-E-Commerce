@@ -296,78 +296,83 @@ export const useCheckout = () => {
         return;
       }
 
-      setTimeout(() => {
-        const basePrice = 10000 + storeIndex * 2000;
-        const sampleOptions = [
-          {
-            service: "REG",
-            description: "Layanan Regular",
-            cost: basePrice + 5000,
-            etd: "2-3",
-          },
-          {
-            service: "OKE",
-            description: "Layanan Ekonomis",
-            cost: basePrice,
-            etd: "3-6",
-          },
-          {
-            service: "YES",
-            description: "Yakin Esok Sampai",
-            cost: basePrice + 15000,
-            etd: "1",
-          },
-        ];
+      // Prepare products data for weight calculation
+      const products = store.products.map((product) => ({
+        id_barang: product.id_barang,
+        quantity: product.jumlah,
+      }));
 
-        const cheapestOption = sampleOptions.reduce(
-          (prev, curr) => (prev.cost < curr.cost ? prev : curr),
-          sampleOptions[0]
-        );
+      const response = await axiosInstance.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/shipping/calculate`,
+        {
+          id_toko: store.id_toko,
+          id_alamat: store.selectedAddressId,
+          products: products,
+        }
+      );
+
+      if (response.data.status === "success") {
+        const { shipping_options } = response.data.data;
+
+        if (!shipping_options || shipping_options.length === 0) {
+          throw new Error("No shipping options available");
+        }
+
+        // Transform API response to match our interface
+        const transformedOptions = shipping_options.map((option: any) => ({
+          service: `${option.courier_code}-${option.service}`,
+          description: option.display_name,
+          cost: option.cost,
+          etd: option.etd,
+          courier_name: option.courier_name,
+          service_code: option.service,
+        }));
+
+        // Auto-select the cheapest option
+        const cheapestOption = transformedOptions[0]; // Already sorted by cost
 
         setStoreCheckouts((prevStores) => {
           const newStores = [...prevStores];
           newStores[storeIndex] = {
             ...newStores[storeIndex],
-            shippingOptions: sampleOptions,
+            shippingOptions: transformedOptions,
             selectedShipping: cheapestOption.service,
             shippingCost: cheapestOption.cost,
             isLoadingShipping: false,
           };
           return newStores;
         });
-      }, 1000);
-    } catch (error) {
-      toast.error(
-        "Failed to calculate shipping costs. Using default options instead."
-      );
 
-      const basePrice = 10000 + storeIndex * 2000;
-      const defaultOptions = [
-        {
-          service: "REG",
-          description: "Layanan Regular",
-          cost: basePrice + 5000,
-          etd: "2-3",
-        },
-        {
-          service: "OKE",
-          description: "Layanan Ekonomis",
-          cost: basePrice,
-          etd: "3-6",
-        },
-      ];
+        toast.success("Shipping options loaded successfully");
+      } else {
+        throw new Error(
+          response.data.message || "Failed to calculate shipping"
+        );
+      }
+    } catch (error: any) {
+      console.error("Shipping calculation error:", error);
+
+      // Show detailed error message without fallback
+      let errorMessage = "Failed to fetch shipping costs.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
 
       setStoreCheckouts((prevStores) => {
         const newStores = [...prevStores];
         newStores[storeIndex] = {
           ...newStores[storeIndex],
-          shippingOptions: defaultOptions,
-          selectedShipping: "OKE",
-          shippingCost: basePrice,
+          shippingOptions: [],
+          selectedShipping: null,
+          shippingCost: 0,
           isLoadingShipping: false,
         };
         return newStores;
       });
+
+      toast.error(`Error: ${errorMessage}`);
     }
   };
 

@@ -133,8 +133,8 @@ class RuangChatController extends Controller
                     
                     // Create a system message
                     if ($validated['id_barang']) {
-                        $product = \App\Models\Barang::find($validated['id_barang']);
-                        $systemMessage = new \App\Models\Pesan();
+                        $product = Barang::find($validated['id_barang']);
+                        $systemMessage = new Pesan();
                         $systemMessage->id_ruang_chat = $existingRoom->id_ruang_chat;
                         $systemMessage->id_user = $user->id_user;
                         $systemMessage->tipe_pesan = 'System';
@@ -165,11 +165,11 @@ class RuangChatController extends Controller
             // Create welcome message
             $welcomeText = 'Chat room created';
             if (isset($validated['id_barang'])) {
-                $product = \App\Models\Barang::find($validated['id_barang']);
+                $product = Barang::find($validated['id_barang']);
                 $welcomeText = "Chat room created for discussing: {$product->nama_barang}";
             }
             
-            $systemMessage = new \App\Models\Pesan();
+            $systemMessage = new Pesan();
             $systemMessage->id_ruang_chat = $chatRoom->id_ruang_chat;
             $systemMessage->id_user = $user->id_user;
             $systemMessage->tipe_pesan = 'System';

@@ -54,10 +54,31 @@ class Barang extends Model
     protected $casts = [
         'is_deleted' => 'boolean',
         'harga' => 'float',
-        'berat_barang' => 'decimal:2',
+        'berat_barang' => 'integer', // Ubah ke integer karena sudah dalam gram
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Get product weight in grams
+     * Returns the weight as stored in database (already in grams)
+     * 
+     * @return int Weight in grams
+     */
+    public function getWeightInGrams()
+    {
+        return $this->berat_barang ?: 500; // Default 500 grams if not set
+    }
+
+    /**
+     * Get product weight in kilograms for display
+     * 
+     * @return float Weight in kilograms
+     */
+    public function getWeightInKg()
+    {
+        return ($this->berat_barang ?: 500) / 1000;
+    }
 
     /**
      * Get the kategori that owns the barang.

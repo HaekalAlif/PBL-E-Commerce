@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
-import { Address, DetailPembelianAPI, ProductInCheckout, StoreCheckout } from "../types";
+import {
+  Address,
+  DetailPembelianAPI,
+  ProductInCheckout,
+  StoreCheckout,
+} from "../types";
 
 export const useCheckout = (
   code: string | null,
@@ -167,9 +172,6 @@ export const useCheckout = (
         storeMap.set(tokoId, {
           id_toko: tokoId,
           nama_toko: tokoName,
-          alamat_toko: storeAddress,
-          kontak: storeData?.kontak || "",
-          deskripsi: storeData?.deskripsi || "",
           products: [],
           subtotal: 0,
           selectedAddressId: defaultAddressId,
@@ -304,78 +306,94 @@ export const useCheckout = (
         return;
       }
 
-      setTimeout(() => {
-        const basePrice = 10000 + storeIndex * 2000;
-        const sampleOptions = [
-          {
-            service: "REG",
-            description: "Layanan Regular",
-            cost: basePrice + 5000,
-            etd: "2-3",
-          },
-          {
-            service: "OKE",
-            description: "Layanan Ekonomis",
-            cost: basePrice,
-            etd: "3-6",
-          },
-          {
-            service: "YES",
-            description: "Yakin Esok Sampai",
-            cost: basePrice + 15000,
-            etd: "1",
-          },
-        ];
+      // Prepare products data for weight calculation
+      const products = store.products.map((product) => ({
+        id_barang: product.id_barang,
+        quantity: product.jumlah,
+      }));
 
-        const cheapestOption = sampleOptions.reduce(
-          (prev, curr) => (prev.cost < curr.cost ? prev : curr),
-          sampleOptions[0]
-        );
+      console.log("Calling RajaOngkir API with data:", {
+        id_toko: store.id_toko,
+        id_alamat: store.selectedAddressId,
+        products: products,
+      });
+
+      // Call the RajaOngkir API through our backend
+      const response = await axiosInstance.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/shipping/calculate`,
+        {
+          id_toko: store.id_toko,
+          id_alamat: store.selectedAddressId,
+          products: products,
+        }
+      );
+
+      console.log("RajaOngkir API response:", response.data);
+
+      if (response.data.status === "success") {
+        const { shipping_options } = response.data.data;
+
+        if (!shipping_options || shipping_options.length === 0) {
+          throw new Error("No shipping options available");
+        }
+
+        // Transform API response to match our interface
+        const transformedOptions = shipping_options.map((option: any) => ({
+          service: option.service, // Use just the service code (e.g., "REG", "JTR")
+          description: option.display_name,
+          cost: option.cost,
+          etd: option.etd,
+          courier_name: option.courier_name,
+          service_code: option.service,
+          courier_code: option.courier_code,
+          full_service_name: option.full_service_name, // Add this for opsi_pengiriman
+        }));
+
+        // Auto-select the cheapest option
+        const cheapestOption = transformedOptions[0]; // Already sorted by cost
 
         setStoreCheckouts((prevStores) => {
           const newStores = [...prevStores];
           newStores[storeIndex] = {
             ...newStores[storeIndex],
-            shippingOptions: sampleOptions,
-            selectedShipping: cheapestOption.service,
+            shippingOptions: transformedOptions,
+            selectedShipping: cheapestOption.service, // Store just the service code
             shippingCost: cheapestOption.cost,
             isLoadingShipping: false,
           };
           return newStores;
         });
-      }, 1000);
-    } catch (error) {
-      toast.error(
-        "Failed to calculate shipping costs. Using default options instead."
-      );
 
-      const basePrice = 10000 + storeIndex * 2000;
-      const defaultOptions = [
-        {
-          service: "REG",
-          description: "Layanan Regular",
-          cost: basePrice + 5000,
-          etd: "2-3",
-        },
-        {
-          service: "OKE",
-          description: "Layanan Ekonomis",
-          cost: basePrice,
-          etd: "3-6",
-        },
-      ];
+        toast.success("Shipping options loaded successfully");
+      } else {
+        throw new Error(
+          response.data.message || "Failed to calculate shipping"
+        );
+      }
+    } catch (error: any) {
+      console.error("Shipping calculation error:", error);
+
+      // Show detailed error message
+      let errorMessage = "Failed to fetch shipping costs.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
 
       setStoreCheckouts((prevStores) => {
         const newStores = [...prevStores];
         newStores[storeIndex] = {
           ...newStores[storeIndex],
-          shippingOptions: defaultOptions,
-          selectedShipping: "OKE",
-          shippingCost: basePrice,
+          shippingOptions: [],
+          selectedShipping: null,
+          shippingCost: 0,
           isLoadingShipping: false,
         };
         return newStores;
       });
+
+      toast.error(`Error: ${errorMessage}`);
     }
   };
 
@@ -454,26 +472,23 @@ export const useCheckout = (
 
     try {
       console.log("🛒 Starting checkout process...");
-      console.log("📊 Checkout data:", {
-        code,
-        multiStore,
-        fromOffer,
-        storeCheckouts: storeCheckouts.map((store) => ({
-          id_toko: store.id_toko,
-          nama_toko: store.nama_toko,
-          selectedAddressId: store.selectedAddressId,
-          selectedShipping: store.selectedShipping,
-          shippingCost: store.shippingCost,
-          notes: store.notes,
-        })),
-      });
 
       // For single store checkout, use direct format (not stores array)
       if (!multiStore) {
         const store = storeCheckouts[0];
+
+        // Find the full service name for opsi_pengiriman
+        const selectedOption = store.shippingOptions.find(
+          (opt) => opt.service === store.selectedShipping
+        );
+        const opsiPengiriman =
+          selectedOption?.full_service_name ||
+          store.selectedShipping ||
+          "Unknown Service";
+
         const requestData = {
           id_alamat: store.selectedAddressId,
-          opsi_pengiriman: store.selectedShipping, // Remove "JNE " prefix
+          opsi_pengiriman: opsiPengiriman, // Use full service name instead of just service code
           biaya_kirim: store.shippingCost,
           catatan_pembeli: store.notes || "",
           metode_pembayaran: "midtrans",
@@ -483,11 +498,7 @@ export const useCheckout = (
         console.log("📤 Single store request data:", requestData);
 
         const checkoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/purchases/${code}/checkout`;
-        console.log("🔗 Checkout URL:", checkoutUrl);
-
         const response = await axiosInstance.post(checkoutUrl, requestData);
-
-        console.log("✅ Checkout response:", response.data);
 
         if (response.data.status === "success") {
           const { kode_tagihan } = response.data.data;
@@ -499,13 +510,24 @@ export const useCheckout = (
         }
       } else {
         // Multi-store checkout
-        const storeConfigs = storeCheckouts.map((store) => ({
-          id_toko: store.id_toko,
-          id_alamat: store.selectedAddressId,
-          opsi_pengiriman: store.selectedShipping, // Remove "JNE " prefix
-          biaya_kirim: store.shippingCost,
-          catatan_pembeli: store.notes || "",
-        }));
+        const storeConfigs = storeCheckouts.map((store) => {
+          // Find the full service name for each store
+          const selectedOption = store.shippingOptions.find(
+            (opt) => opt.service === store.selectedShipping
+          );
+          const opsiPengiriman =
+            selectedOption?.full_service_name ||
+            store.selectedShipping ||
+            "Unknown Service";
+
+          return {
+            id_toko: store.id_toko,
+            id_alamat: store.selectedAddressId,
+            opsi_pengiriman: opsiPengiriman, // Use full service name
+            biaya_kirim: store.shippingCost,
+            catatan_pembeli: store.notes || "",
+          };
+        });
 
         const requestData = {
           stores: storeConfigs,
@@ -516,8 +538,6 @@ export const useCheckout = (
         console.log("📤 Multi-store request data:", requestData);
 
         const checkoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/purchases/${code}/multi-checkout`;
-        console.log("🔗 Multi-store checkout URL:", checkoutUrl);
-
         const response = await axiosInstance.post(checkoutUrl, requestData);
 
         if (response.data.status === "success") {

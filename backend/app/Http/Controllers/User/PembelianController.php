@@ -12,13 +12,22 @@ use App\Models\DetailPembelian;
 use App\Models\Tagihan;
 use App\Models\Barang;
 use App\Models\AlamatUser;
+use App\Models\AlamatToko;
 use App\Models\Toko;
+use App\Services\RajaOngkirService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 
 class PembelianController extends Controller
 {
+    private $rajaOngkirService;
+
+    public function __construct(RajaOngkirService $rajaOngkirService)
+    {
+        $this->rajaOngkirService = $rajaOngkirService;
+    }
+
     /**
      * Display a listing of purchases for the authenticated user
      */
@@ -893,6 +902,126 @@ class PembelianController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             // Don't throw exception here to avoid rolling back the purchase completion
+        }
+    }
+
+    /**
+     * Calculate shipping options for a purchase
+     */
+    public function calculateShipping(Request $request, $kode)
+    {
+        $user = Auth::user();
+        
+        $validator = Validator::make($request->all(), [
+            'id_alamat' => 'required|exists:alamat_user,id_alamat',
+            'id_toko' => 'required|exists:toko,id_toko'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $pembelian = Pembelian::where('kode_pembelian', $kode)
+                           ->where('id_pembeli', $user->id_user)
+                           ->with('detailPembelian.barang')
+                           ->first();
+
+        if (!$pembelian) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Purchase not found'
+            ], 404);
+        }
+
+        try {
+            // Get store address
+            $storeAddress = AlamatToko::where('id_toko', $request->id_toko)
+                ->where('is_primary', true)
+                ->first();
+
+            if (!$storeAddress) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Store address not found'
+                ], 404);
+            }
+
+            // Get user address
+            $userAddress = AlamatUser::where('id_alamat', $request->id_alamat)
+                ->where('id_user', $user->id_user)
+                ->first();
+
+            if (!$userAddress) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User address not found'
+                ], 404);
+            }
+
+            // Calculate total weight for this store - gunakan data asli
+            $totalWeight = 0;
+            $storeDetails = $pembelian->detailPembelian->where('id_toko', $request->id_toko);
+            
+            foreach ($storeDetails as $detail) {
+                // Gunakan berat_barang langsung (sudah dalam gram)
+                $weightInGrams = $detail->barang->berat_barang ? $detail->barang->berat_barang : 500;
+                $totalWeight += $weightInGrams * $detail->jumlah;
+            }
+
+            // Minimum weight 1000 grams
+            $totalWeight = max($totalWeight, 1000);
+
+            \Log::info('Purchase shipping calculation', [
+                'purchase_code' => $kode,
+                'store_id' => $request->id_toko,
+                'total_weight' => $totalWeight,
+                'product_details' => $storeDetails->map(function($detail) {
+                    return [
+                        'id_barang' => $detail->id_barang,
+                        'nama_barang' => $detail->barang->nama_barang,
+                        'quantity' => $detail->jumlah,
+                        'weight_per_item' => $detail->barang->berat_barang,
+                        'total_weight' => ($detail->barang->berat_barang ?: 500) * $detail->jumlah
+                    ];
+                })->toArray()
+            ]);
+
+            // Get shipping options dengan multiple couriers
+            $result = $this->rajaOngkirService->calculateDomesticCost(
+                $storeAddress->kode_pos,
+                $userAddress->kode_pos,
+                $totalWeight,
+                'jne:jnt:sicepat'  // Multiple couriers untuk opsi yang lebih banyak
+            );
+
+            if (!$result['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $result['message']
+                ], 500);
+            }
+
+            $shippingOptions = $this->rajaOngkirService->formatShippingOptions($result['data']);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'shipping_options' => $shippingOptions,
+                    'total_weight' => $totalWeight
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Shipping calculation error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to calculate shipping cost'
+            ], 500);
         }
     }
 }
