@@ -38,7 +38,7 @@ export function NoStoreCard() {
         </Alert>
 
         <Button
-          onClick={() => router.push("/user/toko/create")}
+          onClick={() => router.push("/toko/create")}
           className="bg-gradient-to-r from-[#F79E0E] to-[#FFB648] hover:from-[#E8890B] hover:to-[#F0A537] text-white font-medium px-6 py-3 rounded-lg shadow-lg shadow-orange-200 transition-all duration-200"
         >
           <PlusCircle className="w-5 h-5 mr-2" />

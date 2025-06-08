@@ -84,7 +84,7 @@ export function OrderStatusChart({ data }: OrderStatusChartProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="bg-white rounded-xl p-6 border border-orange-200 h-full flex flex-col"
+      className="bg-white rounded-xl p-6 border border-orange-200 shadow-sm h-full flex flex-col"
     >
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 rounded-lg bg-orange-50 text-[#F79E0E]">
@@ -99,18 +99,24 @@ export function OrderStatusChart({ data }: OrderStatusChartProps) {
       </div>
 
       {totalOrders === 0 ? (
-        <div className="text-center py-8 flex-1 flex flex-col justify-center">
-          <div className="bg-gray-50 p-4 rounded-full mx-auto w-16 h-16 flex items-center justify-center mb-4">
-            <ShoppingBag className="w-8 h-8 text-gray-400" />
+        <div className="text-center py-12 flex-1 flex flex-col justify-center">
+          <div className="bg-gray-50 p-6 rounded-full mx-auto w-20 h-20 flex items-center justify-center mb-4">
+            <ShoppingBag className="w-10 h-10 text-gray-400" />
           </div>
-          <p className="text-gray-500">Belum ada data pesanan</p>
+          <p className="text-gray-500 font-medium">Belum ada data pesanan</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Data akan muncul setelah ada pesanan masuk
+          </p>
         </div>
       ) : (
-        <div className="relative flex-1 mt-4">
-          <div className="h-64">
+        <div className="relative flex-1">
+          <div className="h-72">
             <Doughnut data={chartData} options={options} />
           </div>
-          <div className="absolute inset-0 flex items-center -mt-18 justify-center">
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ marginTop: "-40px" }}
+          >
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {totalOrders}

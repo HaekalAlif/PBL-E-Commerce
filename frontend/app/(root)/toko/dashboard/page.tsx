@@ -8,6 +8,7 @@ import { TopProductsCard } from "./components/TopProductsCard";
 import { OrderStatusChart } from "./components/OrderStatusChart";
 import { ProductPerformanceCard } from "./components/ProductPerformanceCard";
 import { RecentActivitiesCard } from "./components/RecentActivitiesCard";
+import { NoStoreDashboard } from "./components/NoStoreDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -118,18 +119,7 @@ export default function DashboardPage() {
   }
 
   if (!analytics) {
-    return (
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
-        <Alert className="max-w-2xl mx-auto">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Info</AlertTitle>
-          <AlertDescription>
-            Data analitik tidak tersedia. Pastikan Anda memiliki toko yang
-            aktif.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return <NoStoreDashboard />;
   }
 
   return (

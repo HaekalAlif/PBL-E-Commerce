@@ -31,10 +31,16 @@ export const useDashboardAnalytics = () => {
         throw new Error(response.data.message || "Failed to fetch analytics");
       }
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to load analytics data";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      if (err.response?.status === 404) {
+        // User doesn't have a store
+        setAnalytics(null);
+        setError(null);
+      } else {
+        const errorMessage =
+          err.response?.data?.message || "Failed to load analytics data";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

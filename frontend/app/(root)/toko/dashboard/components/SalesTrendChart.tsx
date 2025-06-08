@@ -170,11 +170,13 @@ export function SalesTrendChart({ data }: SalesTrendChartProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="bg-white rounded-xl p-6 border border-orange-200 h-full flex flex-col"
+      className="bg-white rounded-xl p-6 border border-orange-200 shadow-sm h-full flex flex-col"
     >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Tren Penjualan</h3>
-        <div className="text-sm text-gray-500">30 hari terakhir</div>
+        <div className="text-sm text-gray-500 bg-orange-50 px-3 py-1 rounded-full">
+          30 hari terakhir
+        </div>
       </div>
 
       <div className="flex-1 min-h-[320px]">
