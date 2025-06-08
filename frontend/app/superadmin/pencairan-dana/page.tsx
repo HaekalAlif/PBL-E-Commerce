@@ -35,7 +35,18 @@ export default function PencairanDanaPage() {
     bulkProcess,
   } = usePencairanManagement();
 
-  const [filters, setFilters] = useState({
+  type Filters = {
+    search: string;
+    status: string;
+    date_from: string;
+    date_to: string;
+    amount_min: number | undefined;
+    amount_max: number | undefined;
+    page: number;
+    per_page: number;
+  };
+
+  const [filters, setFilters] = useState<Filters>({
     search: "",
     status: "",
     date_from: "",
@@ -107,7 +118,7 @@ export default function PencairanDanaPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>

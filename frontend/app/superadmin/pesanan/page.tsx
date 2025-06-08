@@ -92,7 +92,7 @@ const OrderManagementPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
