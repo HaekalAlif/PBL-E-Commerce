@@ -241,6 +241,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Seller Order Management Routes
     Route::middleware(['auth:sanctum', 'verified'])->prefix('seller')->group(function () {
+        // Analytics Dashboard Routes - Move this to the top for better organization
+        Route::get('/analytics', [App\Http\Controllers\User\DashboardTokoController::class, 'getAnalytics']);
+        
         // List all orders for seller's shop
         Route::get('/orders', [PesananTokoController::class, 'index']);
         

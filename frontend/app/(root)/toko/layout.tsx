@@ -11,10 +11,16 @@ import {
   Wallet,
   LogOut,
   ChevronRight,
+  BarChart3
 } from "lucide-react";
 import ProfileCardStore from "@/components/common/profile-card-store";
 
 const sidebarLinks = [
+  {
+    label: "Dashboard Toko",
+    icon: BarChart3,
+    href: "/toko/dashboard",
+  },
   {
     label: "Informasi Toko",
     icon: Store,
@@ -95,7 +101,7 @@ export default function StoreLayout({
                 {/* Menu Items Container */}
                 <div className="flex flex-col h-full">
                   {/* Navigation Links */}
-                  <nav className="flex-grow p-3 space-y-1">
+                  <nav className="flex-grow space-y-1">
                     {sidebarLinks.map((item, index) => (
                       <div key={index} className="mb-2">
                         {item.children ? (

@@ -66,7 +66,7 @@ export default function KeuanganPage() {
 
   if (error || !balance) {
     return (
-      <div className="container mx-auto p-6 min-h-screen bg-gray-50/50">
+      <div className="container mx-auto min-h-screen bg-gray-50/50">
         <div className="space-y-4 mb-6">
           {/* Breadcrumb */}
           <nav className="text-sm">
@@ -128,7 +128,7 @@ export default function KeuanganPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 min-h-screen bg-gray-50/50">
+    <div className="container mx-auto px-2 min-h-screen bg-gray-50/50">
       <div className="space-y-4 mb-6">
         {/* Breadcrumb */}
         <nav className="text-sm">

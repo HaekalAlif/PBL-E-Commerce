@@ -204,7 +204,7 @@ const ProfileCardNav = () => {
         {
           icon: Store,
           label: "My Shop",
-          onClick: () => router.push("/toko/profile"),
+          onClick: () => router.push("/toko/dashboard"),
         },
       ],
     },
