@@ -37,6 +37,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import Logout from "@/components/auth/LogoutButton";
 
 const sidebarLinks = [
   {
@@ -60,7 +61,11 @@ const sidebarLinks = [
     children: [
       { label: "Orders", href: "/superadmin/pesanan", icon: ClipboardList },
       { label: "Payments", href: "/superadmin/pembayaran", icon: CreditCard },
-      { label: "Withdrawals", href: "/superadmin/pencairan-dana", icon: Wallet },
+      {
+        label: "Withdrawals",
+        href: "/superadmin/pencairan-dana",
+        icon: Wallet,
+      },
       { label: "Balances", href: "/transaction/balances", icon: LineChart },
       { label: "Financial Audit", href: "/transaction/audit", icon: Activity },
     ],
@@ -86,7 +91,7 @@ const sidebarLinks = [
   },
 ];
 
-export default function AccountLayout({
+export default function SuperAdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -109,6 +114,79 @@ export default function AccountLayout({
     lastPath && lastPath.length > 0
       ? lastPath.charAt(0).toUpperCase() + lastPath.slice(1)
       : "Dashboard";
+
+  const menuItems = [
+    {
+      title: "Dashboard",
+      href: "/superadmin/dashboard",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+    },
+    {
+      title: "User Management",
+      href: "/superadmin/user",
+      icon: <Users className="h-4 w-4" />,
+    },
+    {
+      title: "Store Management",
+      href: "/superadmin/toko",
+      icon: <Store className="h-4 w-4" />,
+    },
+    {
+      title: "Category Management",
+      href: "/superadmin/kategori",
+      icon: <Tags className="h-4 w-4" />,
+    },
+    {
+      title: "Product Management",
+      href: "/superadmin/barang",
+      icon: <Package className="h-4 w-4" />,
+    },
+    {
+      title: "Order Management",
+      href: "/superadmin/pesanan",
+      icon: <ClipboardList className="h-4 w-4" />,
+    },
+    {
+      title: "Payment Management",
+      href: "/superadmin/pembayaran",
+      icon: <CreditCard className="h-4 w-4" />,
+    },
+    {
+      title: "Withdrawal Management",
+      href: "/superadmin/pencairan-dana",
+      icon: <Wallet className="h-4 w-4" />,
+    },
+    {
+      title: "Transaction Balances",
+      href: "/transaction/balances",
+      icon: <LineChart className="h-4 w-4" />,
+    },
+    {
+      title: "Financial Audit",
+      href: "/transaction/audit",
+      icon: <Activity className="h-4 w-4" />,
+    },
+    {
+      title: "Escrow Management",
+      href: "/operations/escrow",
+      icon: <ShieldCheck className="h-4 w-4" />,
+    },
+    {
+      title: "Shipping Management",
+      href: "/operations/shipping",
+      icon: <Truck className="h-4 w-4" />,
+    },
+    {
+      title: "Complaint Management",
+      href: "/operations/complaints",
+      icon: <Megaphone className="h-4 w-4" />,
+    },
+    {
+      title: "Notification Management",
+      href: "/operations/notifications",
+      icon: <Bell className="h-4 w-4" />,
+    },
+  ];
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -226,24 +304,7 @@ export default function AccountLayout({
 
           {/* Logout Button */}
           <div className="p-4 border-t border-gray-200 bg-gradient-to-t from-white to-orange-50/30">
-            <button
-              onClick={() => {
-                /* Logout handler */
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                bg-gradient-to-r from-red-500/10 to-red-500/5
-                hover:from-red-500/20 hover:to-red-500/10
-                text-red-600 transition-all duration-200
-                border border-red-100 shadow-sm
-                hover:shadow-md hover:-translate-y-0.5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-1 bg-red-100 rounded">
-                  <LogOut className="w-4 h-4" />
-                </div>
-                <span className="font-medium text-sm">Keluar</span>
-              </div>
-            </button>
+          <Logout />
           </div>
         </div>
       </aside>

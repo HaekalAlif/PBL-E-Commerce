@@ -123,3 +123,87 @@ export function getInitials(name: string): string {
 
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
+
+/**
+ * Format percentage value
+ * @param value - Percentage value
+ * @param decimals - Number of decimal places
+ * @returns Formatted percentage string
+ */
+export const formatPercentage = (value: number, decimals = 1): string => {
+  if (isNaN(value)) return '0%';
+  return `${value.toFixed(decimals)}%`;
+};
+
+/**
+ * Format large numbers with K, M, B suffixes
+ * @param num - Number to format
+ * @returns Formatted number string
+ */
+export const formatLargeNumber = (num: number): string => {
+  if (num >= 1000000000) {
+    return (num / 1000000000).toFixed(1) + 'B';
+  }
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+};
+
+/**
+ * Format duration in milliseconds to human readable format
+ * @param ms - Duration in milliseconds
+ * @returns Human readable duration
+ */
+export const formatDuration = (ms: number): string => {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  return `${seconds}s`;
+};
+
+/**
+ * Calculate growth percentage between two values
+ * @param current - Current value
+ * @param previous - Previous value
+ * @returns Growth percentage
+ */
+export const calculateGrowthPercentage = (current: number, previous: number): number => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+};
+
+/**
+ * Format status for display
+ * @param status - Status string
+ * @returns Formatted status
+ */
+export const formatStatus = (status: string): string => {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+/**
+ * Generate color based on string hash
+ * @param str - Input string
+ * @returns Hex color code
+ */
+export const stringToColor = (str: string): string => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xFF;
+    color += ('00' + value.toString(16)).substr(-2);
+  }
+  return color;
+};

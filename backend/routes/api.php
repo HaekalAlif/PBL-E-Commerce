@@ -496,3 +496,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/purchases/{kode}/calculate-shipping', [App\Http\Controllers\User\PembelianController::class, 'calculateShipping']);
 });
 
+// Admin Dashboard Analytics Routes
+Route::prefix('admin')->middleware(['auth:sanctum', 'role:admin,superadmin'])->group(function () {
+    Route::get('/dashboard/stats', [App\Http\Controllers\Admin\DashboardController::class, 'getStats']);
+    Route::get('/dashboard/revenue-chart', [App\Http\Controllers\Admin\DashboardController::class, 'getRevenueChart']);
+    Route::get('/dashboard/user-growth', [App\Http\Controllers\Admin\DashboardController::class, 'getUserGrowth']);
+    Route::get('/dashboard/top-products', [App\Http\Controllers\Admin\DashboardController::class, 'getTopProducts']);
+    Route::get('/dashboard/recent-activities', [App\Http\Controllers\Admin\DashboardController::class, 'getRecentActivities']);
+    Route::get('/dashboard/order-status-distribution', [App\Http\Controllers\Admin\DashboardController::class, 'getOrderStatusDistribution']);
+    Route::get('/dashboard/payment-methods', [App\Http\Controllers\Admin\DashboardController::class, 'getPaymentMethods']);
+    Route::get('/dashboard/regional-data', [App\Http\Controllers\Admin\DashboardController::class, 'getRegionalData']);
+});
+
