@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\PaymentManagementController;
 use App\Http\Controllers\Admin\KomplainManagementController;
 use App\Http\Controllers\User\ChatOfferController;
 use App\Http\Controllers\User\LocationController;
+use App\Http\Controllers\User\ProfileTokoController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -150,6 +151,14 @@ Route::prefix('location')->group(function () {
     Route::get('/regencies/{province_id}', [LocationController::class, 'getRegencies']);
     Route::get('/districts/{regency_id}', [LocationController::class, 'getDistricts']);
     Route::get('/villages/{district_id}', [LocationController::class, 'getVillages']);
+});
+
+// Store profile routes
+Route::prefix('store')->group(function () {
+    Route::get('/{slug}/profile', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreProfile']);
+    Route::get('/{slug}/products', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreProducts']);
+    Route::get('/{slug}/reviews', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreReviews']);
+    Route::get('/{slug}/categories', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreCategories']);
 });
 
 // Protected routes - require authentication

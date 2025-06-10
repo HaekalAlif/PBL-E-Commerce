@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { ProductDetail } from "../hooks/useProductDetail";
 import { useProductActions } from "../hooks/useProductActions";
 import { ChevronLeft, ChevronRight, Store } from "lucide-react";
@@ -205,9 +206,11 @@ export default function DetailProduk({ product, loading }: DetailProdukProps) {
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 text-sm font-medium text-amber-500 bg-white rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors">
-                    Kunjungi Toko
-                  </button>
+                  <Link href={`/profile-toko/${product?.toko?.slug}`}>
+                    <button className="px-4 py-2 text-sm font-medium text-amber-500 bg-white rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors">
+                      Kunjungi Toko
+                    </button>
+                  </Link>
                 </div>
               </motion.div>
 
