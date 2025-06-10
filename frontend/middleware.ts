@@ -32,7 +32,8 @@ export function middleware(request: NextRequest) {
     "/assets",
     "/images",
     "/api/featured-products",
-    "/api/recommended-products"
+    "/api/recommended-products",
+    "/katalog"
   ];
 
   // Check if the path starts with any of these patterns

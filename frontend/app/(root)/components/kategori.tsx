@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useKategori } from "./hooks/useKategori";
 import {
   FaThLarge,
@@ -15,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
 export default function Kategori() {
+  const router = useRouter();
   const { kategori, loading } = useKategori();
 
   const decorElements = {
@@ -26,6 +28,14 @@ export default function Kategori() {
       { icon: FaHeart, text: "Pre-loved Items" },
       { icon: FaSync, text: "Second Chance" },
     ],
+  };
+
+  const handleCategoryClick = (
+    categoryId: number,
+    categoryName: string,
+    categorySlug: string
+  ) => {
+    router.push(`/katalog?category=${categorySlug}`);
   };
 
   if (loading) {
@@ -149,11 +159,20 @@ export default function Kategori() {
                   scale: 1.05,
                   transition: { duration: 0.2 },
                 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() =>
+                  handleCategoryClick(
+                    cat.id_kategori,
+                    cat.nama_kategori,
+                    cat.slug
+                  )
+                }
                 className="group flex-shrink-0 bg-gradient-to-br from-[#F79E0E] to-[#F7AB2E] text-white 
                   w-[90px] h-[100px] md:w-[110px] md:h-[120px] rounded-xl 
                   flex flex-col justify-center items-center gap-3
                   shadow-md hover:shadow-lg hover:shadow-orange-200
-                  border border-orange-200/20 relative overflow-hidden"
+                  border border-orange-200/20 relative overflow-hidden
+                  cursor-pointer transition-all duration-200"
               >
                 {/* Recycled Icon Watermark */}
                 <div className="absolute -right-4 -bottom-4 opacity-10">

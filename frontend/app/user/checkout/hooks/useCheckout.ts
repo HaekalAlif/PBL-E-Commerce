@@ -73,7 +73,7 @@ export const useCheckout = () => {
           } catch (fallbackError) {}
 
           toast.error("Purchase has no product details");
-          router.push("/user/katalog");
+          router.push("/katalog");
           return;
         }
 
@@ -97,7 +97,7 @@ export const useCheckout = () => {
           }
         } else {
           toast.error("Purchase has no valid products");
-          router.push("/user/katalog");
+          router.push("/katalog");
         }
       } else {
         toast.error(response.data.message || "Failed to load purchase details");
@@ -206,7 +206,7 @@ export const useCheckout = () => {
           }, 1500);
         } else {
           toast.error(response.data.message || "Failed to create purchase");
-          router.push("/user/katalog");
+          router.push("/katalog");
         }
       }
     } catch (error: any) {
@@ -220,7 +220,7 @@ export const useCheckout = () => {
         toast.error("Failed to create purchase: Network error");
       }
 
-      router.push("/user/katalog");
+      router.push("/katalog");
     } finally {
       setLoading(false);
     }
@@ -495,7 +495,7 @@ export const useCheckout = () => {
       createNewPurchaseFromSlug(productSlug, parseInt(quantity));
     } else {
       toast.error("No product or purchase details provided");
-      router.push("/user/katalog");
+      router.push("/katalog");
     }
 
     fetchUserAddresses();

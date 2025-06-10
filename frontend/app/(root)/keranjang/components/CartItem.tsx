@@ -70,7 +70,7 @@ export function CartItemCard({
       <div className="flex-1 min-w-0 space-y-2">
         <motion.div layout>
           <Link
-            href={`/user/katalog/detail/${item.barang.slug}`}
+            href={`/detail/${item.barang.slug}`}
             className="hover:text-amber-400 transition-colors inline-block"
           >
             <h3 className="font-medium text-gray-800 line-clamp-2 hover:text-amber-500 transition-colors">

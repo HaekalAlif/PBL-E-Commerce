@@ -197,7 +197,7 @@ export default function Rekomendasi() {
             className="flex justify-center mt-12"
           >
             <motion.button
-              onClick={() => router.push("/user/katalog")}
+              onClick={() => router.push("/katalog")}
               className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-400 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 hover:translate-y-[-2px]"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}

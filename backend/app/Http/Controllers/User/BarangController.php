@@ -462,13 +462,18 @@ class BarangController extends Controller
     }
 
     /**
-     * Get all products for public catalog
+     * Get all products for public catalog with enhanced filtering
      */
     public function getPublicProducts(Request $request)
     {
         // Get query parameters
         $search = $request->input('search');
-        $category = $request->input('category');
+        $category = $request->input('category'); // Now expects slug
+        $province = $request->input('province');
+        $regency = $request->input('regency');
+        $minPrice = $request->input('min_price');
+        $maxPrice = $request->input('max_price');
+        $grade = $request->input('grade');
         $sortBy = $request->input('sort_by', 'created_at');
         $sortOrder = $request->input('sort_order', 'desc');
         $perPage = $request->input('per_page', 12);
@@ -476,23 +481,66 @@ class BarangController extends Controller
         // Start building the query
         $query = Barang::where('is_deleted', false)
                       ->where('status_barang', 'Tersedia')
-                      ->with(['kategori', 'toko', 'gambarBarang' => function($query) {
-                          $query->where('is_primary', true)->orderBy('urutan', 'asc');
-                      }]);
+                      ->with([
+                          'kategori', 
+                          'toko' => function($query) {
+                              $query->with(['alamat_toko' => function($subQuery) {
+                                  $subQuery->with(['province', 'regency']);
+                              }]);
+                          }, 
+                          'gambarBarang' => function($query) {
+                              $query->where('is_primary', true)->orderBy('urutan', 'asc');
+                          }
+                      ]);
         
         // Apply search filter if provided
         if ($search) {
-            $query->where('nama_barang', 'like', "%{$search}%")
+            $query->where(function($q) use ($search) {
+                $q->where('nama_barang', 'like', "%{$search}%")
                   ->orWhere('deskripsi_barang', 'like', "%{$search}%");
+            });
         }
         
-        // Apply category filter if provided
+        // Apply category filter if provided (now using slug)
         if ($category) {
-            $query->where('id_kategori', $category);
+            $query->whereHas('kategori', function($q) use ($category) {
+                $q->where('slug', $category);
+            });
+        }
+        
+        // Apply price range filters
+        if ($minPrice) {
+            $query->where('harga', '>=', $minPrice);
+        }
+        
+        if ($maxPrice) {
+            $query->where('harga', '<=', $maxPrice);
+        }
+        
+        // Apply grade filter
+        if ($grade) {
+            $query->where('grade', $grade);
+        }
+        
+        // Apply location filters
+        if ($province || $regency) {
+            $query->whereHas('toko.alamat_toko', function($q) use ($province, $regency) {
+                if ($province) {
+                    $q->where('provinsi', $province);
+                }
+                if ($regency) {
+                    $q->where('kota', $regency);
+                }
+            });
         }
         
         // Apply sorting
-        $query->orderBy($sortBy, $sortOrder);
+        $allowedSortFields = ['created_at', 'harga', 'nama_barang', 'stok'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
         
         // Get paginated results
         $products = $query->paginate($perPage);

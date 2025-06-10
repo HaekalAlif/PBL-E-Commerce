@@ -286,7 +286,7 @@ export default function Katalog() {
               key={product.id_barang}
               className="overflow-hidden hover:shadow-md transition-shadow"
             >
-              <Link href={`/user/katalog/detail/${product.slug}`}>
+              <Link href={`/detail/${product.slug}`}>
                 <div className="relative h-48 w-full">
                   {(product.gambarBarang && product.gambarBarang.length > 0) ||
                   (product.gambar_barang &&

@@ -235,6 +235,12 @@ export const useDashboard = (): UseDashboardReturn => {
     setFilters,
 
     // Actions
+    fetchStats,
+    fetchRevenueChart,
+    fetchUserGrowth,
+    fetchRecentActivities,
+    fetchOrderStatusDistribution,
+    fetchRegionalData,
     refreshAll,
   };
 };

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\PesananManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
 use App\Http\Controllers\Admin\KomplainManagementController;
 use App\Http\Controllers\User\ChatOfferController;
+use App\Http\Controllers\User\LocationController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -142,6 +143,14 @@ Route::get('/districts/{id}/villages', [RegionController::class, 'getVillages'])
 
 // Public Midtrans notification callback
 Route::post('/payments/callback', [TagihanController::class, 'callback']);
+
+// Location routes (public)
+Route::prefix('location')->group(function () {
+    Route::get('/provinces', [LocationController::class, 'getProvinces']);
+    Route::get('/regencies/{province_id}', [LocationController::class, 'getRegencies']);
+    Route::get('/districts/{regency_id}', [LocationController::class, 'getDistricts']);
+    Route::get('/villages/{district_id}', [LocationController::class, 'getVillages']);
+});
 
 // Protected routes - require authentication
 Route::middleware('auth:sanctum')->group(function () {

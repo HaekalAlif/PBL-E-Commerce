@@ -155,7 +155,7 @@ const Navigation = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              E Commerce
+              SecondCycle
             </motion.a>
 
             <div className="flex flex-1 max-w-3xl mx-8">

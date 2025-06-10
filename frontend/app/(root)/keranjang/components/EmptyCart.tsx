@@ -26,7 +26,7 @@ export function EmptyCart() {
                   Yuk mulai belanja dan tambahkan produk ke keranjangmu
                 </p>
                 <Button
-                  onClick={() => router.push("/user/katalog")}
+                  onClick={() => router.push("/katalog")}
                   className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-6 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   Mulai Belanja
