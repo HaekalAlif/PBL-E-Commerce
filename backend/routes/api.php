@@ -24,6 +24,9 @@ use App\Http\Controllers\Admin\KomplainManagementController;
 use App\Http\Controllers\User\ChatOfferController;
 use App\Http\Controllers\User\LocationController;
 use App\Http\Controllers\User\ProfileTokoController;
+use App\Http\Controllers\User\DashboardTokoController;
+use App\Http\Controllers\User\SaldoPenjualController;
+use App\Http\Controllers\User\PengajuanPencairanController;
 
 // Debug endpoint for checking auth status
 Route::middleware('auth:sanctum')->get('/auth-check', function (Request $request) {
@@ -126,11 +129,11 @@ Route::prefix('toko')->group(function() {
 });
 
 // Public Product Routes
-Route::get('/featured-products', [App\Http\Controllers\User\BarangController::class, 'getFeaturedProducts']);                                                                                                                                         
-Route::get('/recommended-products', [App\Http\Controllers\User\BarangController::class, 'getRecommendedProducts']);
+Route::get('/featured-products', [BarangController::class, 'getFeaturedProducts']);                                                                                                                                         
+Route::get('/recommended-products', [BarangController::class, 'getRecommendedProducts']);
 
 // Add a public kategori endpoint for the frontend
-Route::get('/kategori', [App\Http\Controllers\User\KategoriController::class, 'index']);
+Route::get('/kategori', [KategoriController::class, 'index']);
 
 // Public product catalog routes
 Route::get('/products', [BarangController::class, 'getPublicProducts']);
@@ -155,10 +158,10 @@ Route::prefix('location')->group(function () {
 
 // Store profile routes
 Route::prefix('store')->group(function () {
-    Route::get('/{slug}/profile', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreProfile']);
-    Route::get('/{slug}/products', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreProducts']);
-    Route::get('/{slug}/reviews', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreReviews']);
-    Route::get('/{slug}/categories', [App\Http\Controllers\User\ProfileTokoController::class, 'getStoreCategories']);
+    Route::get('/{slug}/profile', [ProfileTokoController::class, 'getStoreProfile']);
+    Route::get('/{slug}/products', [ProfileTokoController::class, 'getStoreProducts']);
+    Route::get('/{slug}/reviews', [ProfileTokoController::class, 'getStoreReviews']);
+    Route::get('/{slug}/categories', [ProfileTokoController::class, 'getStoreCategories']);
 });
 
 // Protected routes - require authentication
@@ -167,8 +170,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/profile', [UserController::class, 'getCurrentUser']);
     Route::get('/auth/me', [UserController::class, 'getCurrentUser']); // Alternative endpoint
     
+    // Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [App\Http\Controllers\User\NotificationController::class, 'index']);
+        Route::get('/unread-count', [App\Http\Controllers\User\NotificationController::class, 'getUnreadCount']);
+        Route::get('/recent-unread', [App\Http\Controllers\User\NotificationController::class, 'getRecentUnread']);
+        Route::post('/{id}/read', [App\Http\Controllers\User\NotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [App\Http\Controllers\User\NotificationController::class, 'markAllAsRead']);
+        Route::post('/test', [App\Http\Controllers\User\NotificationController::class, 'testNotification']); // ADD THIS LINE
+    });
+    
     // Toko (Store) management for regular users
-    Route::prefix('toko')->group(function() {
+    Route::prefix('toko')->group(function(): void {
         // Get my store (based on authenticated user)
         Route::get('/my-store', [TokoController::class, 'getMyStore']);
         
@@ -225,9 +238,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [PembelianController::class, 'store']);
         Route::get('/{kode}', [PembelianController::class, 'show']);
         Route::post('/{kode}/checkout', [PembelianController::class, 'checkout']);
-        Route::post('/{kode}/multi-checkout', [PembelianController::class, 'multiCheckout']); // Add multi-checkout route here
+        Route::post('/{kode}/multi-checkout', [PembelianController::class, 'multiCheckout']); 
         Route::put('/{kode}/cancel', [PembelianController::class, 'cancel']);
-        Route::put('/{kode}/confirm-delivery', [PembelianController::class, 'confirmDelivery']); // Add this new route
+        Route::put('/{kode}/confirm-delivery', [PembelianController::class, 'confirmDelivery']);
         Route::put('/{kode}/complete', [PembelianController::class, 'completePurchase']);
         
         // Purchase Details Management
@@ -260,7 +273,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Seller Order Management Routes
     Route::middleware(['auth:sanctum', 'verified'])->prefix('seller')->group(function () {
         // Analytics Dashboard Routes - Move this to the top for better organization
-        Route::get('/analytics', [App\Http\Controllers\User\DashboardTokoController::class, 'getAnalytics']);
+        Route::get('/analytics', [DashboardTokoController::class, 'getAnalytics']);
         
         // List all orders for seller's shop
         Route::get('/orders', [PesananTokoController::class, 'index']);
@@ -279,18 +292,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Seller Balance Management
         Route::prefix('balance')->group(function () {
-            Route::get('/', [App\Http\Controllers\User\SaldoPenjualController::class, 'index']);
-            Route::get('/history', [App\Http\Controllers\User\SaldoPenjualController::class, 'getBalanceHistory']);
-            Route::post('/hold', [App\Http\Controllers\User\SaldoPenjualController::class, 'holdBalance']);
-            Route::post('/release', [App\Http\Controllers\User\SaldoPenjualController::class, 'releaseBalance']);
+            Route::get('/', [SaldoPenjualController::class, 'index']);
+            Route::get('/history', [SaldoPenjualController::class, 'getBalanceHistory']);
+            Route::post('/hold', [SaldoPenjualController::class, 'holdBalance']);
+            Route::post('/release', [SaldoPenjualController::class, 'releaseBalance']);
         });
 
         // Withdrawal Request Management
         Route::prefix('withdrawals')->group(function () {
-            Route::get('/', [App\Http\Controllers\User\PengajuanPencairanController::class, 'index']);
-            Route::post('/', [App\Http\Controllers\User\PengajuanPencairanController::class, 'store']);
-            Route::get('/{id}', [App\Http\Controllers\User\PengajuanPencairanController::class, 'show']);
-            Route::post('/{id}/cancel', [App\Http\Controllers\User\PengajuanPencairanController::class, 'cancel']);
+            Route::get('/', [PengajuanPencairanController::class, 'index']);
+            Route::post('/', [PengajuanPencairanController::class, 'store']);
+            Route::get('/{id}', [PengajuanPencairanController::class, 'show']);
+            Route::post('/{id}/cancel', [ PengajuanPencairanController::class, 'cancel']);
         });
     });
 

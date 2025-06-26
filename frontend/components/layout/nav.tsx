@@ -5,8 +5,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Searchbar from "../ui/searchbar";
 import { useRouter } from "next/navigation";
 import ProfileCardNav from "../common/profile-card-nav";
-import axios from "axios";
-import { motion } from "framer-motion";
+import axios from "../../lib/axios"; // CHANGE: Use the configured axios instance
+import { motion, AnimatePresence } from "framer-motion";
+import echo from "../../app/(root)/chat/libs/echo";
 
 const MenuIcon = () => (
   <svg
@@ -41,8 +42,12 @@ const MenuIcon = () => (
   </svg>
 );
 
-const NotificationIcon = () => (
-  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+const NotificationIcon = ({ hasUnread }: { hasUnread: boolean }) => (
+  <motion.div
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.95 }}
+    className="relative"
+  >
     <svg
       width="24"
       height="24"
@@ -59,25 +64,85 @@ const NotificationIcon = () => (
         strokeLinejoin="round"
       />
     </svg>
+    {hasUnread && (
+      <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+    )}
   </motion.div>
 );
 
-const CartIcon = () => (
-  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 28 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="transition-colors duration-200 hover:opacity-80"
-    >
-      <path
-        d="M27.9959 20.7756C27.9924 19.8162 27.709 18.88 27.1821 18.088C26.6553 17.296 25.9094 16.6845 25.0407 16.3328L27.9492 5.14596C28.01 4.90771 28.0163 4.65826 27.9677 4.41708C27.9192 4.1759 27.817 3.94951 27.6692 3.7556C27.5182 3.5739 27.3294 3.42933 27.1167 3.33253C26.9041 3.23573 26.673 3.18916 26.4405 3.19625H5.13258L4.61932 1.18262C4.53008 0.842082 4.33372 0.541433 4.06084 0.327526C3.78796 0.113619 3.45387 -0.00153239 3.11065 1.54017e-05H0V3.19625H1.91305L5.77026 17.9948C5.8614 18.3435 6.06474 18.6502 6.34717 18.8649C6.62959 19.0796 6.97445 19.1898 7.32558 19.1775H23.3299C23.7424 19.1775 24.138 19.3458 24.4297 19.6455C24.7214 19.9452 24.8852 20.3517 24.8852 20.7756C24.8852 21.1994 24.7214 21.6059 24.4297 21.9056C24.138 22.2053 23.7424 22.3737 23.3299 22.3737H3.11065C2.69815 22.3737 2.30255 22.5421 2.01087 22.8418C1.71919 23.1415 1.55533 23.548 1.55533 23.9718C1.55533 24.3957 1.71919 24.8021 2.01087 25.1019C2.30255 25.4016 2.69815 25.5699 3.11065 25.5699H4.94594C4.69014 26.2941 4.60794 27.0709 4.70631 27.8346C4.80467 28.5984 5.0807 29.3265 5.51101 29.9573C5.94133 30.5882 6.51326 31.1032 7.17838 31.4588C7.84349 31.8144 8.5822 32 9.33196 32C10.0817 32 10.8204 31.8144 11.4855 31.4588C12.1506 31.1032 12.7226 30.5882 13.1529 29.9573C13.5832 29.3265 13.8592 28.5984 13.9576 27.8346C14.056 27.0709 13.9738 26.2941 13.718 25.5699H17.3885C17.1557 26.2293 17.0665 26.9332 17.1272 27.6319C17.188 28.3305 17.3972 29.007 17.7401 29.6135C18.083 30.2201 18.5513 30.7419 19.1119 31.1422C19.6725 31.5425 20.3118 31.8116 20.9846 31.9304C21.6574 32.0491 22.3474 32.0148 23.0059 31.8297C23.6643 31.6446 24.2753 31.3133 24.7956 30.8592C25.3159 30.405 25.7328 29.8391 26.017 29.2013C26.3013 28.5636 26.4458 27.8695 26.4405 27.168C26.4376 26.3424 26.2231 25.5321 25.8184 24.8188C26.4835 24.388 27.0318 23.7914 27.4125 23.0845C27.7932 22.3777 27.9938 21.5834 27.9959 20.7756ZM21.9145 15.9812H8.55429L5.97245 6.39249H24.4186L21.9145 15.9812ZM9.33196 28.7662C9.02434 28.7662 8.72363 28.6724 8.46786 28.4968C8.21209 28.3212 8.01274 28.0716 7.89502 27.7796C7.7773 27.4876 7.7465 27.1663 7.80651 26.8563C7.86653 26.5463 8.01466 26.2615 8.23217 26.038C8.44969 25.8145 8.72682 25.6623 9.02853 25.6006C9.33023 25.539 9.64295 25.5706 9.92715 25.6916C10.2114 25.8125 10.4543 26.0174 10.6252 26.2802C10.7961 26.543 10.8873 26.852 10.8873 27.168C10.8873 27.5919 10.7234 27.9984 10.4317 28.2981C10.1401 28.5978 9.74445 28.7662 9.33196 28.7662ZM21.7746 28.7662C21.4669 28.7662 21.1662 28.6724 20.9105 28.4968C20.6547 28.3212 20.4553 28.0716 20.3376 27.7796C20.2199 27.4876 20.1891 27.1663 20.2491 26.8563C20.3091 26.5463 20.4573 26.2615 20.6748 26.038C20.8923 25.8145 21.1694 25.6623 21.4711 25.6006C21.7728 25.539 22.0856 25.5706 22.3698 25.6916C22.654 25.8125 22.8969 26.0174 23.0678 26.2802C23.2387 26.543 23.3299 26.852 23.3299 27.168C23.3299 27.5919 23.166 27.9984 22.8743 28.2981C22.5827 28.5978 22.1871 28.7662 21.7746 28.7662Z"
-        fill="#F5A921"
-      />
-    </svg>
-  </motion.div>
+// Add Notification Popup Component
+const NotificationPopup = ({
+  notifications,
+  isOpen,
+  onClose,
+  onMarkAsRead,
+  onMarkAllAsRead,
+}: {
+  notifications: any[];
+  isOpen: boolean;
+  onClose: () => void;
+  onMarkAsRead: (id: number) => void;
+  onMarkAllAsRead: () => void;
+}) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="absolute top-12 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+      >
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="font-semibold text-gray-900">Notifikasi</h3>
+          {notifications.length > 0 && (
+            <button
+              onClick={onMarkAllAsRead}
+              className="text-xs text-amber-600 hover:text-amber-700"
+            >
+              Tandai semua dibaca
+            </button>
+          )}
+        </div>
+
+        <div className="max-h-64 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              <div className="mb-2">🔔</div>
+              <p className="text-sm">Tidak ada notifikasi baru</p>
+            </div>
+          ) : (
+            notifications.map((notif) => (
+              <div
+                key={notif.id_notifikasi}
+                className={`p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${
+                  !notif.is_read ? "bg-amber-50" : ""
+                }`}
+                onClick={() => onMarkAsRead(notif.id_notifikasi)}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      {notif.tipe_notifikasi}
+                    </p>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      {notif.isi_notifikasi}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(notif.created_at).toLocaleString("id-ID")}
+                    </p>
+                  </div>
+                  {!notif.is_read && (
+                    <div className="w-2 h-2 bg-amber-500 rounded-full ml-2 mt-1" />
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
 );
 
 const LoadingSkeleton = () => (
@@ -100,21 +165,37 @@ const MobileLoadingSkeleton = () => (
   </div>
 );
 
+const CartIcon = () => (
+  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 28 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="transition-colors duration-200 hover:opacity-80"
+    >
+      <path
+        d="M27.9959 20.7756C27.9924 19.8162 27.709 18.88 27.1821 18.088C26.6553 17.296 25.9094 16.6845 25.0407 16.3328L27.9492 5.14596C28.01 4.90771 28.0163 4.65826 27.9677 4.41708C27.9192 4.1759 27.817 3.94951 27.6692 3.7556C27.5182 3.5739 27.3294 3.42933 27.1167 3.33253C26.9041 3.23573 26.673 3.18916 26.4405 3.19625H5.13258L4.61932 1.18262C4.53008 0.842082 4.33372 0.541433 4.06084 0.327526C3.78796 0.113619 3.45387 -0.00153239 3.11065 1.54017e-05H0V3.19625H1.91305L5.77026 17.9948C5.8614 18.3435 6.06474 18.6502 6.34717 18.8649C6.62959 19.0796 6.97445 19.1898 7.32558 19.1775H23.3299C23.7424 19.1775 24.138 19.3458 24.4297 19.6455C24.7214 19.9452 24.8852 20.3517 24.8852 20.7756C24.8852 21.1994 24.7214 21.6059 24.4297 21.9056C24.138 22.2053 23.7424 22.3737 23.3299 22.3737H3.11065C2.69815 22.3737 2.30255 22.5421 2.01087 22.8418C1.71919 23.1415 1.55533 23.548 1.55533 23.9718C1.55533 24.3957 1.71919 24.8021 2.01087 25.1019C2.30255 25.4016 2.69815 25.5699 3.11065 25.5699H4.94594C4.69014 26.2941 4.60794 27.0709 4.70631 27.8346C4.80467 28.5984 5.0807 29.3265 5.51101 29.9573C5.94133 30.5882 6.51326 31.1032 7.17838 31.4588C7.84349 31.8144 8.5822 32 9.33196 32C10.0817 32 10.8204 31.8144 11.4855 31.4588C12.1506 31.1032 12.7226 30.5882 13.1529 29.9573C13.5832 29.3265 13.8592 28.5984 13.9576 27.8346C14.056 27.0709 13.9738 26.2941 13.718 25.5699H17.3885C17.1557 26.2293 17.0665 26.9332 17.1272 27.6319C17.188 28.3305 17.3972 29.007 17.7401 29.6135C18.083 30.2201 18.5513 30.7419 19.1119 31.1422C19.6725 31.5425 20.3118 31.8116 20.9846 31.9304C21.6574 32.0491 22.3474 32.0148 23.0059 31.8297C23.6643 31.6446 24.2753 31.3133 24.7956 30.8592C25.3159 30.405 25.7328 29.8391 26.017 29.2013C26.3013 28.5636 26.4458 27.8695 26.4405 27.168C26.4376 26.3424 26.2231 25.5321 25.8184 24.8188C26.4835 24.388 27.0318 23.7914 27.4125 23.0845C27.7932 22.3777 27.9938 21.5834 27.9959 20.7756ZM21.9145 15.9812H8.55429L5.97245 6.39249H24.4186L21.9145 15.9812ZM9.33196 28.7662C9.02434 28.7662 8.72363 28.6724 8.46786 28.4968C8.21209 28.3212 8.01274 28.0716 7.89502 27.7796C7.7773 27.4876 7.7465 27.1663 7.80651 26.8563C7.86653 26.5463 8.01466 26.2615 8.23217 26.038C8.44969 25.8145 8.72682 25.6623 9.02853 25.6006C9.33023 25.539 9.64295 25.5706 9.92715 25.6916C10.2114 25.8125 10.4543 26.0174 10.6252 26.2802C10.7961 26.543 10.8873 26.852 10.8873 27.168C10.8873 27.5919 10.7234 27.9984 10.4317 28.2981C10.1401 28.5978 9.74445 28.7662 9.33196 28.7662ZM21.7746 28.7662C21.4669 28.7662 21.1662 28.6724 20.9105 28.4968C20.6547 28.3212 20.4553 28.0716 20.3376 27.7796C20.2199 27.4876 20.1891 27.1663 20.2491 26.8563C20.3091 26.5463 20.4573 26.2615 20.6748 26.038C20.8923 25.8145 21.1694 25.6623 21.4711 25.6006C21.7728 25.539 22.0856 25.5706 22.3698 25.6916C22.654 25.8125 22.8969 26.0174 23.0678 26.2802C23.2387 26.543 23.3299 26.852 23.3299 27.168C23.3299 27.5919 23.166 27.9984 22.8743 28.2981C22.5827 28.5978 22.1871 28.7662 21.7746 28.7662Z"
+        fill="#F5A921"
+      />
+    </svg>
+  </motion.div>
+);
+
 const Navigation = () => {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = React.useState<boolean | null>(null);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = React.useState(0);
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [userId, setUserId] = React.useState<number | null>(null);
 
+  // Fetch user and setup notifications
   React.useEffect(() => {
     const fetchUser = async () => {
       try {
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-        const response = await axios.get(`${apiUrl}/user/profile`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          withCredentials: true,
+        const response = await axios.get("/api/user/profile", {
           validateStatus: (status) => {
             return status === 200 || status === 401;
           },
@@ -122,6 +203,11 @@ const Navigation = () => {
 
         if (response.status === 200 && response.data?.status === "success") {
           setIsLoggedIn(true);
+          setUserId(response.data.data.id_user);
+
+          // Fetch initial notifications
+          fetchNotifications();
+          fetchUnreadCount();
         } else {
           setIsLoggedIn(false);
         }
@@ -133,6 +219,124 @@ const Navigation = () => {
 
     fetchUser();
   }, []);
+
+  // Setup real-time notifications
+  React.useEffect(() => {
+    if (!userId) return;
+
+    const channelName = `notifications.${userId}`;
+    console.log(`🔗 Subscribing to notification channel: ${channelName}`);
+
+    const channel = echo.private(channelName);
+
+    channel.listen(".NotificationReceived", (data: any) => {
+      console.log("📨 New notification received:", data);
+
+      // Add to notifications list
+      setNotifications((prev) => [data, ...prev.slice(0, 9)]);
+      setUnreadCount((prev) => prev + 1);
+
+      // Show toast notification
+      showToastNotification(data);
+    });
+
+    channel.subscribed(() => {
+      console.log(`✅ Successfully subscribed to ${channelName}`);
+
+      // Test notification after successful subscription
+      setTimeout(() => {
+        console.log("🧪 Sending test notification...");
+      }, 2000);
+    });
+
+    channel.error((error: any) => {
+      console.error("❌ Notification subscription error:", error);
+    });
+
+    return () => {
+      console.log(`👋 Leaving notification channel: ${channelName}`);
+      echo.leave(channelName);
+    };
+  }, [userId]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get("/api/notifications/recent-unread");
+
+      if (response.data.status === "success") {
+        setNotifications(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get("/api/notifications/unread-count");
+
+      if (response.data.status === "success") {
+        setUnreadCount(response.data.data.unread_count);
+      }
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+    }
+  };
+
+  const markAsRead = async (notificationId: number) => {
+    try {
+      await axios.post(`/api/notifications/${notificationId}/read`);
+
+      // Update local state
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id_notifikasi === notificationId
+            ? { ...notif, is_read: true }
+            : notif
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await axios.post("/api/notifications/mark-all-read");
+
+      // Update local state
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, is_read: true }))
+      );
+      setUnreadCount(0);
+      setShowNotifications(false);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+    }
+  };
+
+  const showToastNotification = (notification: any) => {
+    // Create a simple toast notification
+    console.log("🔔 Toast notification:", notification.isi_notifikasi);
+
+    // You can also create a visual toast here
+    const toast = document.createElement("div");
+    toast.className =
+      "fixed top-4 right-4 bg-amber-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm";
+    toast.innerHTML = `
+      <div class="font-semibold">${notification.tipe_notifikasi}</div>
+      <div class="text-sm">${notification.isi_notifikasi}</div>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 5000);
+  };
 
   const handleLogin = () => router.push("/login");
   const handleRegister = () => router.push("/register");
@@ -170,15 +374,30 @@ const Navigation = () => {
                   transition={{ duration: 0.3 }}
                   className="flex items-center gap-6"
                 >
-                  <motion.button
-                    aria-label="Notifications"
-                    className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <NotificationIcon />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                  </motion.button>
+                  <div className="relative">
+                    <motion.button
+                      aria-label="Notifications"
+                      className="relative p-2 rounded-full hover:bg-gray-50 transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowNotifications(!showNotifications)}
+                    >
+                      <NotificationIcon hasUnread={unreadCount > 0} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </motion.button>
+
+                    <NotificationPopup
+                      notifications={notifications}
+                      isOpen={showNotifications}
+                      onClose={() => setShowNotifications(false)}
+                      onMarkAsRead={markAsRead}
+                      onMarkAllAsRead={markAllAsRead}
+                    />
+                  </div>
 
                   <motion.button
                     aria-label="Shopping cart"
@@ -241,6 +460,24 @@ const Navigation = () => {
             </div>
             {isLoggedIn ? (
               <div className="flex items-center gap-3 ml-3">
+                <div className="relative">
+                  <motion.button
+                    aria-label="Notifications"
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <NotificationIcon hasUnread={unreadCount > 0} />
+                  </motion.button>
+
+                  <NotificationPopup
+                    notifications={notifications}
+                    isOpen={showNotifications}
+                    onClose={() => setShowNotifications(false)}
+                    onMarkAsRead={markAsRead}
+                    onMarkAllAsRead={markAllAsRead}
+                  />
+                </div>
                 <motion.button
                   aria-label="Cart"
                   onClick={() => router.push("/keranjang")}
@@ -263,6 +500,14 @@ const Navigation = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Click outside to close notifications */}
+      {showNotifications && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowNotifications(false)}
+        />
+      )}
     </motion.nav>
   );
 };

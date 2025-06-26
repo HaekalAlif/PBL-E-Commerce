@@ -18,6 +18,7 @@ use App\Services\RajaOngkirService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\User\NotificationController;
 
 class PembelianController extends Controller
 {
@@ -527,7 +528,7 @@ class PembelianController extends Controller
         }
         
         // Group details by store
-        $detailsByStore = collect($pembelian->detailPembelian)->groupBy('id_toko');
+        $detailsByStore = collect($pembelian->detailPembelian->all())->groupBy('id_toko');
         
         // Check if all stores from the purchase are included in the request
         $requestStoreIds = collect($request->stores)->pluck('id_toko')->toArray();
@@ -773,6 +774,7 @@ class PembelianController extends Controller
         $pembelian = Pembelian::where('kode_pembelian', $kode)
                            ->where('id_pembeli', $user->id_user)
                            ->where('status_pembelian', 'Dikirim')
+                           ->with('detailPembelian.barang.toko')
                            ->first();
         
         if (!$pembelian) {
@@ -788,6 +790,18 @@ class PembelianController extends Controller
             $pembelian->status_pembelian = 'Diterima';
             $pembelian->updated_by = $user->id_user;
             $pembelian->save();
+            
+            // Create notification for sellers
+            $sellerIds = $pembelian->detailPembelian->pluck('barang.toko.id_user')->unique();
+            foreach ($sellerIds as $sellerId) {
+                NotificationController::createAndBroadcast(
+                    $sellerId,
+                    'Status Pesanan',
+                    "Pesanan {$pembelian->kode_pembelian} telah diterima oleh pembeli",
+                    ['order_code' => $pembelian->kode_pembelian, 'status' => 'Diterima'],
+                    "/seller/orders/{$pembelian->kode_pembelian}"
+                );
+            }
             
             DB::commit();
             
@@ -837,6 +851,18 @@ class PembelianController extends Controller
             
             // Add balance to sellers automatically
             $this->addBalanceToSellers($pembelian);
+            
+            // Create notifications for sellers
+            $sellerIds = $pembelian->detailPembelian->pluck('barang.toko.id_user')->unique();
+            foreach ($sellerIds as $sellerId) {
+                NotificationController::createAndBroadcast(
+                    $sellerId,
+                    'Transaksi Selesai',
+                    "Transaksi pesanan {$pembelian->kode_pembelian} telah selesai. Saldo telah ditambahkan.",
+                    ['order_code' => $pembelian->kode_pembelian, 'status' => 'Selesai'],
+                    "/seller/orders/{$pembelian->kode_pembelian}"
+                );
+            }
             
             DB::commit();
             

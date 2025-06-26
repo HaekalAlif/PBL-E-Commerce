@@ -93,3 +93,14 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('user.{userId}', function ($user, $userId) {
     return (int)$user->id_user === (int)$userId;
 });
+
+// Notification channel
+Broadcast::channel('notifications.{userId}', function ($user, $userId) {
+    \Log::info('Channel auth for notifications', [
+        'user_id' => $user->id_user,
+        'requested_user_id' => $userId,
+        'match' => (int) $user->id_user === (int) $userId
+    ]);
+    
+    return (int) $user->id_user === (int) $userId;
+});

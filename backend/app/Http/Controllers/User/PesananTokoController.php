@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\User\NotificationController;
 
 class PesananTokoController extends Controller
 {
@@ -244,7 +245,7 @@ class PesananTokoController extends Controller
                 ->whereIn('status_pembelian', ['Dibayar'])
                 ->with(['detailPembelian' => function ($q) use ($toko) {
                     $q->where('id_toko', $toko->id_toko);
-                }])
+                }, 'pembeli'])
                 ->first();
             
             if (!$pembelian) {
@@ -268,6 +269,15 @@ class PesananTokoController extends Controller
             $pembelian->status_pembelian = 'Diproses';
             $pembelian->updated_by = $user->id_user;
             $pembelian->save();
+            
+            // Create notification for buyer
+            NotificationController::createAndBroadcast(
+                $pembelian->id_pembeli,
+                'Status Pesanan',
+                "Pesanan {$pembelian->kode_pembelian} sedang diproses oleh {$toko->nama_toko}",
+                ['order_code' => $pembelian->kode_pembelian, 'status' => 'Diproses'],
+                "/orders/{$pembelian->kode_pembelian}"
+            );
             
             DB::commit();
             
@@ -302,11 +312,11 @@ class PesananTokoController extends Controller
     public function shipOrder(Request $request, $kode)
     {
         try {
-            // Validate request - remove kurir field
+            // Validate request
             $validator = Validator::make($request->all(), [
                 'nomor_resi' => 'required|string|max:100',
                 'catatan_pengiriman' => 'nullable|string',
-                'bukti_pengiriman' => 'required|image|max:2048', // 2MB max
+                'bukti_pengiriman' => 'required|image|max:2048',
             ]);
             
             if ($validator->fails()) {
@@ -329,12 +339,12 @@ class PesananTokoController extends Controller
                 ], 404);
             }
             
-            // Find the purchase by code - only allow shipping for orders with status "Diproses"
+            // Find the purchase by code
             $pembelian = Pembelian::where('kode_pembelian', $kode)
                 ->where('status_pembelian', 'Diproses')
                 ->with(['detailPembelian' => function ($q) use ($toko) {
                     $q->where('id_toko', $toko->id_toko);
-                }])
+                }, 'pembeli'])
                 ->first();
             
             if (!$pembelian) {
@@ -354,32 +364,21 @@ class PesananTokoController extends Controller
             
             DB::beginTransaction();
             
-            // Handle image upload - IMPROVED VERSION
+            // Handle image upload
             $buktiPath = null;
             if ($request->hasFile('bukti_pengiriman')) {
                 $file = $request->file('bukti_pengiriman');
                 $fileName = time() . '_' . $file->getClientOriginalName();
                 
-                // Make sure the directory exists
                 if (!file_exists(public_path('storage/pengiriman'))) {
                     mkdir(public_path('storage/pengiriman'), 0755, true);
                 }
                 
-                // Store the file directly in the public storage
                 $file->move(public_path('storage/pengiriman'), $fileName);
-                
-                // Set the relative path for database storage (accessible from web)
                 $buktiPath = 'storage/pengiriman/' . $fileName;
-                
-                // Log successful upload
-                Log::info('Shipping proof image saved', [
-                    'file_name' => $fileName,
-                    'path' => $buktiPath,
-                    'full_url' => asset($buktiPath)
-                ]);
             }
             
-            // Create shipping record - ensure we use id_detail as the foreign key
+            // Create shipping record
             $pengiriman = new PengirimanPembelian();
             $pengiriman->id_detail_pembelian = $pembelian->detailPembelian->first()->id_detail;
             $pengiriman->nomor_resi = $request->nomor_resi;
@@ -388,23 +387,26 @@ class PesananTokoController extends Controller
             $pengiriman->tanggal_pengiriman = Carbon::now();
             $pengiriman->save();
             
-            // Log the newly created shipping record for debugging
-            Log::info('Created shipping record', [
-                'pengiriman_id' => $pengiriman->id_pengiriman,
-                'detail_id' => $pembelian->detailPembelian->first()->id_detail,
-                'resi' => $request->nomor_resi,
-                'bukti_path' => $buktiPath,
-                'bukti_url' => asset($buktiPath) // Full URL for easier debugging
-            ]);
-            
             // Update purchase status
             $pembelian->status_pembelian = 'Dikirim';
             $pembelian->updated_by = $user->id_user;
             $pembelian->save();
             
+            // Create notification for buyer
+            NotificationController::createAndBroadcast(
+                $pembelian->id_pembeli,
+                'Pengiriman',
+                "Pesanan {$pembelian->kode_pembelian} telah dikirim oleh {$toko->nama_toko}. No. Resi: {$request->nomor_resi}",
+                [
+                    'order_code' => $pembelian->kode_pembelian, 
+                    'status' => 'Dikirim', 
+                    'tracking_number' => $request->nomor_resi
+                ],
+                "/orders/{$pembelian->kode_pembelian}"
+            );
+            
             DB::commit();
             
-            // Include full image URL in response for frontend
             $pengirimanData = $pengiriman->toArray();
             $pengirimanData['bukti_pengiriman_url'] = asset($buktiPath);
             

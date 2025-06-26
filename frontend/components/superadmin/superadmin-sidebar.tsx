@@ -85,18 +85,6 @@ const menuGroups = [
         icon: Wallet,
         badge: "",
       },
-      {
-        title: "Balances",
-        url: "/superadmin/saldo",
-        icon: BarChart3,
-        badge: "",
-      },
-      {
-        title: "Financial Audit",
-        url: "/superadmin/audit",
-        icon: Activity,
-        badge: "",
-      },
     ],
   },
   {

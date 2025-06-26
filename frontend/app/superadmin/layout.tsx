@@ -66,27 +66,13 @@ const sidebarLinks = [
         href: "/superadmin/pencairan-dana",
         icon: Wallet,
       },
-      { label: "Balances", href: "/transaction/balances", icon: LineChart },
-      { label: "Financial Audit", href: "/transaction/audit", icon: Activity },
     ],
   },
   {
     label: "Operations",
     icon: BarChart,
     children: [
-      {
-        label: "Transactions",
-        href: "/operations/transactions",
-        icon: CreditCard,
-      },
-      { label: "Escrow", href: "/operations/escrow", icon: ShieldCheck },
-      { label: "Shipping", href: "/operations/shipping", icon: Truck },
-      { label: "Complaints", href: "/operations/complaints", icon: Megaphone },
-      {
-        label: "Notifications",
-        href: "/operations/notifications",
-        icon: Bell,
-      },
+      { label: "Complaints", href: "/superadmin/komplain", icon: Megaphone },
     ],
   },
 ];
@@ -304,7 +290,7 @@ export default function SuperAdminLayout({
 
           {/* Logout Button */}
           <div className="p-4 border-t border-gray-200 bg-gradient-to-t from-white to-orange-50/30">
-          <Logout />
+            <Logout />
           </div>
         </div>
       </aside>

@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "E-Commerce",
+  description:
+    "Platform E-Commerce terpercaya untuk kebutuhan belanja online Anda",
 };
 
 export default function RootLayout({
