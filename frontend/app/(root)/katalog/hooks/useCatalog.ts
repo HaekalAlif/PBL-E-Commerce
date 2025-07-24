@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Product, Category, Province, Regency, FilterOptions } from "../types";
 import { toast } from "sonner";
 
 export function useCatalog() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [provinces, setProvinces] = useState<Province[]>([]);
@@ -16,7 +15,6 @@ export function useCatalog() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Initialize filters from URL parameters
   const [filters, setFilters] = useState<FilterOptions>({
     category: null,
     province: null,
@@ -31,37 +29,8 @@ export function useCatalog() {
   useEffect(() => {
     fetchCategories();
     fetchProvinces();
-
-    // Initialize filters from URL parameters with null check
-    if (searchParams) {
-      const categoryParam = searchParams.get("category");
-      const provinceParam = searchParams.get("province");
-      const regencyParam = searchParams.get("regency");
-      const minPriceParam = searchParams.get("min_price");
-      const maxPriceParam = searchParams.get("max_price");
-      const gradeParam = searchParams.get("grade");
-      const sortByParam = searchParams.get("sort_by");
-      const sortOrderParam = searchParams.get("sort_order");
-      const searchParam = searchParams.get("search");
-
-      // Always update filters, even if all params are null
-      setFilters((prev) => ({
-        ...prev,
-        category: categoryParam || null,
-        province: provinceParam || null,
-        regency: regencyParam || null,
-        minPrice: minPriceParam ? parseInt(minPriceParam) : null,
-        maxPrice: maxPriceParam ? parseInt(maxPriceParam) : null,
-        grade: gradeParam || null,
-        sortBy: sortByParam || "created_at",
-        sortOrder: (sortOrderParam as "asc" | "desc") || "desc",
-      }));
-
-      if (searchParam) {
-        setSearchQuery(searchParam);
-      }
-    }
-  }, [searchParams]);
+    initializeFiltersFromURL();
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -74,6 +43,35 @@ export function useCatalog() {
       setRegencies([]);
     }
   }, [filters.province]);
+
+  const initializeFiltersFromURL = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const categoryParam = searchParams.get("category");
+    const provinceParam = searchParams.get("province");
+    const regencyParam = searchParams.get("regency");
+    const minPriceParam = searchParams.get("min_price");
+    const maxPriceParam = searchParams.get("max_price");
+    const gradeParam = searchParams.get("grade");
+    const sortByParam = searchParams.get("sort_by");
+    const sortOrderParam = searchParams.get("sort_order");
+    const searchParam = searchParams.get("search");
+
+    setFilters((prev) => ({
+      ...prev,
+      category: categoryParam || null,
+      province: provinceParam || null,
+      regency: regencyParam || null,
+      minPrice: minPriceParam ? parseInt(minPriceParam) : null,
+      maxPrice: maxPriceParam ? parseInt(maxPriceParam) : null,
+      grade: gradeParam || null,
+      sortBy: sortByParam || "created_at",
+      sortOrder: (sortOrderParam as "asc" | "desc") || "desc",
+    }));
+
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -121,7 +119,7 @@ export function useCatalog() {
       const queryParams = new URLSearchParams();
 
       if (searchQuery) queryParams.append("search", searchQuery);
-      if (filters.category) queryParams.append("category", filters.category); // Now sends slug
+      if (filters.category) queryParams.append("category", filters.category);
       if (filters.province) queryParams.append("province", filters.province);
       if (filters.regency) queryParams.append("regency", filters.regency);
       if (filters.minPrice)
@@ -158,21 +156,17 @@ export function useCatalog() {
   };
 
   const updateFilter = (key: keyof FilterOptions, value: any) => {
-    // Special handling for regency when province changes
     let newFilters = {
       ...filters,
       [key]: value,
     };
 
-    // If province is changed, reset regency
     if (key === "province") {
       newFilters.regency = null;
     }
 
     setFilters(newFilters);
     setCurrentPage(1);
-
-    // Update URL parameters
     updateURLParams(newFilters, searchQuery);
   };
 
@@ -192,7 +186,6 @@ export function useCatalog() {
     setCurrentPage(1);
     setSearchQuery("");
 
-    // Clear URL parameters by navigating to clean URL
     router.push("/katalog", { scroll: false });
   };
 

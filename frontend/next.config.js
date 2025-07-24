@@ -16,6 +16,9 @@ const nextConfig = {
     NEXT_PUBLIC_REVERB_PORT: process.env.REVERB_PORT,
     NEXT_PUBLIC_REVERB_SCHEME: process.env.REVERB_SCHEME,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;

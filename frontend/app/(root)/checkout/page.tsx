@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,7 +125,8 @@ const CheckoutSkeleton = () => (
   </div>
 );
 
-export default function CheckoutPage() {
+// New content component that uses useSearchParams
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const code = searchParams?.get("code");
   const multiStore = searchParams?.get("multi_store") === "true";
@@ -175,7 +177,6 @@ export default function CheckoutPage() {
           </p>
         </div>
 
-        {/* Show offer savings banner if applicable */}
         {(isFromOffer || fromOffer) && totalSavings > 0 && (
           <div className="mb-8">
             <OfferSavingsCard totalSavings={totalSavings} />
@@ -183,7 +184,6 @@ export default function CheckoutPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content - Left Side */}
           <div className="lg:col-span-2 space-y-8">
             {storeCheckouts.map((store, storeIndex) => (
               <div key={store.id_toko} className="space-y-6">
@@ -211,7 +211,6 @@ export default function CheckoutPage() {
             ))}
           </div>
 
-          {/* Order Summary - Right Side */}
           <div className="w-full lg:w-[380px]">
             <OrderSummary
               subtotal={subtotal}
@@ -228,5 +227,14 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component wrapped with Suspense
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutSkeleton />}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

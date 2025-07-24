@@ -1,13 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Suspense, lazy } from "react";
 import { useCatalog } from "./hooks/useCatalog";
 import { useBuyNow } from "./hooks/useBuyNow";
-import { SearchAndFilter } from "./components/SearchAndFilter";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { ProductGrid } from "./components/ProductGrid";
 import { Pagination } from "./components/Pagination";
 import { Package, Sparkles } from "lucide-react";
+
+// Lazy load the SearchAndFilter component
+const LazySearchAndFilter = lazy(() => import("./components/SearchAndFilter"));
 
 export default function KatalogPage() {
   const {
@@ -104,17 +107,19 @@ export default function KatalogPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-6"
             >
-              {/* Search Bar with Category Filter */}
-              <SearchAndFilter
-                searchQuery={searchQuery}
-                categories={categories}
-                selectedCategory={filters.category}
-                onSearchChange={setSearchQuery}
-                onSearch={handleSearch}
-                onCategoryChange={(categorySlug) =>
-                  updateFilter("category", categorySlug)
-                }
-              />
+              {/* Wrap Lazy Search Bar with Category Filter in Suspense */}
+              <Suspense fallback={<div>Loading search and filter...</div>}>
+                <LazySearchAndFilter
+                  searchQuery={searchQuery}
+                  categories={categories}
+                  selectedCategory={filters.category}
+                  onSearchChange={setSearchQuery}
+                  onSearch={handleSearch}
+                  onCategoryChange={(categorySlug: string | null) =>
+                    updateFilter("category", categorySlug)
+                  }
+                />
+              </Suspense>
 
               {/* Products Grid */}
               <motion.div

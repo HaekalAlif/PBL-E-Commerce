@@ -1,15 +1,26 @@
 "use client";
-
+import dynamic from 'next/dynamic';
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { MessageCircle, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import ChatRoom from "./components/ChatRoom";
 import { ChatRoomList } from "./components/ChatRoomList";
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { ChatRoomSkeleton } from "./components/ChatRoomSkeleton";
+import { ChatRoomListSkeleton } from "./components/ChatRoomListSkeleton";
 import { getCurrentUser } from "../../../lib/auth";
 import axios from "../../../lib/axios";
-import { MessageCircle, ArrowLeft } from "lucide-react";
-import { ChatRoomSkeleton } from "./components/ChatRoomSkeleton";
-import { Button } from "@/components/ui/button";
-import { ChatRoomListSkeleton } from "./components/ChatRoomListSkeleton";
+
+// Dynamically import components that use window
+const ChatRoom = dynamic(() => import('./components/ChatRoom'), {
+  ssr: false,
+  loading: () => <ChatRoomSkeleton />
+});
+
+const ChatRoomList = dynamic(() => import('./components/ChatRoomList'), {
+  ssr: false,
+  loading: () => <ChatRoomListSkeleton />
+});
 
 interface User {
   id_user: number;
@@ -31,72 +42,70 @@ interface ChatRoomData {
   };
 }
 
-function ChatPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [chatRoom, setChatRoom] = useState<ChatRoomData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showChatList, setShowChatList] = useState(true);
-
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const roomId = searchParams?.get("room");
-  const isOfferMode = searchParams?.get("offer") === "true";
-  const quantity = searchParams?.get("quantity");
-  const productSlug = searchParams?.get("product");
-
-  useEffect(() => {
-    const initializeChat = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // First get current user
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
-          setError("Please log in to access the chat");
-          return;
-        }
-        setUser(currentUser);
-
-        if (roomId) {
-          // Load specific room
-          try {
-            const roomResponse = await axios.get(
-              `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`
-            );
-            if (roomResponse.data.success) {
-              setChatRoom(roomResponse.data.data);
-              setShowChatList(false); // Hide chat list on mobile when room is selected
-            } else {
-              setError("Chat room not found");
-            }
-          } catch (error) {
-            console.error("Error loading specific room:", error);
-            setError("Failed to load chat room");
+function ChatContent() {
+    const [isMounted, setIsMounted] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
+    const [chatRoom, setChatRoom] = useState<ChatRoomData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showChatList, setShowChatList] = useState(true);
+  
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const roomId = searchParams?.get("room");
+    const isOfferMode = searchParams?.get("offer") === "true";
+    const quantity = searchParams?.get("quantity");
+    const productSlug = searchParams?.get("product");
+  
+    useEffect(() => {
+      setIsMounted(true);
+    }, []);
+  
+    useEffect(() => {
+      if (!isMounted) return;
+  
+      const initializeChat = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+  
+          const currentUser = await getCurrentUser();
+          if (!currentUser) {
+            setError("Please log in to access the chat");
+            return;
           }
+          setUser(currentUser);
+  
+          if (roomId) {
+            try {
+              const roomResponse = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_URL}/chat/${roomId}`
+              );
+              if (roomResponse.data.success) {
+                setChatRoom(roomResponse.data.data);
+                setShowChatList(false);
+              } else {
+                setError("Chat room not found");
+              }
+            } catch (error) {
+              console.error("Error loading specific room:", error);
+              setError("Failed to load chat room");
+            }
+          }
+        } catch (error: any) {
+          console.error("Error initializing chat:", error);
+          setError("Failed to load chat. Please try again.");
+        } finally {
+          setLoading(false);
         }
-      } catch (error: any) {
-        console.error("Error initializing chat:", error);
-        setError("Failed to load chat. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeChat();
-  }, [roomId]);
-
-  const handleRoomSelect = (roomId: number) => {
-    router.push(`/chat?room=${roomId}`);
-    setShowChatList(false); // Hide chat list on mobile
-  };
-
-  const handleBackToList = () => {
-    router.push("/chat");
-    setShowChatList(true);
-    setChatRoom(null);
-  };
+      };
+  
+      initializeChat();
+    }, [roomId, isMounted]);
+  
+    if (!isMounted) {
+      return <ChatRoomSkeleton />;
+    }
 
   if (loading) {
     return (
@@ -141,18 +150,19 @@ function ChatPage() {
                 </h2>
                 <p className="text-red-500 mb-6">{error}</p>
                 <div className="flex gap-4 justify-center">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="px-6 py-3 bg-[#F79E0E] text-white rounded-lg hover:bg-[#F79E0E]/90 transition-colors font-medium"
+                  <Button
+                    onClick={() => router.refresh()}
+                    className="bg-[#F79E0E] text-white hover:bg-[#F79E0E]/90"
                   >
                     Coba Lagi
-                  </button>
-                  <button
-                    onClick={() => window.history.back()}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.back()}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
                   >
                     Kembali
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -177,6 +187,17 @@ function ChatPage() {
       </div>
     );
   }
+
+  const handleRoomSelect = (roomId: number) => {
+    router.push(`/chat?room=${roomId}`);
+    setShowChatList(false);
+  };
+
+  const handleBackToList = () => {
+    router.push("/chat");
+    setShowChatList(true);
+    setChatRoom(null);
+  };
 
   // Create a session-like object for compatibility
   const sessionLike = {
@@ -294,4 +315,10 @@ function ChatPage() {
   );
 }
 
-export default ChatPage;
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<ChatRoomSkeleton />}>
+      <ChatContent />
+    </Suspense>
+  );
+}
